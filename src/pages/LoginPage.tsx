@@ -16,10 +16,10 @@ export function LoginPage() {
     setIsLoading(true);
     
     try {
-      // Real API call
+
       const { default: api } = await import('@/lib/axios');
       const response = await api.post('/auth/login', { username, password });
-      // Normalize backend user DTO to include legacy fields used across the UI
+
       const backendUser = response.data.user || {};
       const fullName = backendUser.fullName || backendUser.username || '';
       const [firstName = '', ...rest] = fullName.split(' ').filter(Boolean);
@@ -31,7 +31,6 @@ export function LoginPage() {
         email: backendUser.email || backendUser.username || '',
       };
 
-      // store token and user
       login(normalizedUser as any, response.data.accessToken);
     } catch (error: any) {
       console.error('Login failed', error);
@@ -95,7 +94,7 @@ export function LoginPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
-        {/* Logo */}
+        
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-2xl shadow-xl shadow-indigo-200 mb-4">
             <span className="text-white font-bold text-3xl">С</span>
@@ -149,7 +148,7 @@ export function LoginPage() {
             </div>
           </div>
 
-          {/* Demo login buttons */}
+          
           <div className="grid grid-cols-2 gap-3">
             <Button
               type="button"
@@ -185,7 +184,7 @@ export function LoginPage() {
           </p>
         </Card>
 
-        {/* Features */}
+        
         <div className="mt-8 grid grid-cols-3 gap-4 text-center">
           <div className="p-3">
             <div className="text-2xl mb-1">📚</div>

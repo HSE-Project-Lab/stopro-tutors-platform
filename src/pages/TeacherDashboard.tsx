@@ -9,7 +9,6 @@ import { HomeworkList } from '@/components/dashboard/HomeworkList';
 import { useAuthStore } from '@/store/authStore';
 import { useAppStore } from '@/store/appStore';
 
-// Temporary defaults until API-backed endpoints provide data
 const teacherStatsDefault = {
   totalStudents: 0,
   activeHomeworks: 0,
@@ -95,7 +94,7 @@ export function TeacherDashboard() {
       alert(`Ученик ${newStudent.firstName} добавлен!`);
       setShowAddStudentModal(false);
       setNewStudent({ email: '', firstName: '', lastName: '', groupId: '' });
-      // refresh students count for dashboard
+
       try {
         const sres = await api.get('/teacher/students');
         const students: any[] = sres.data || [];
@@ -114,11 +113,10 @@ export function TeacherDashboard() {
     setActiveTab('homework');
   };
 
-  // Edit group handler
   const handleEditGroup = (group: any) => {
     setEditGroupModal({ open: true, group });
   };
-  // Delete group handler
+
   const handleDeleteGroup = async (groupId: string) => {
     if (!window.confirm('Удалить группу?')) return;
     try {
@@ -132,7 +130,6 @@ export function TeacherDashboard() {
     }
   };
 
-  // load groups on mount
   useEffect(() => {
     let mounted = true;
     (async () => {
@@ -144,7 +141,7 @@ export function TeacherDashboard() {
         console.error('Failed to load groups', err);
       }
     })();
-    // also fetch students count for dashboard stats
+
     (async () => {
       try {
         const { default: api } = await import('@/lib/axios');
@@ -160,7 +157,7 @@ export function TeacherDashboard() {
 
   const openGroupDetails = async (group: any) => {
     setSelectedGroup(group);
-    // fetch students for teacher and filter by groupId
+
     try {
       const { default: api } = await import('@/lib/axios');
       const res = await api.get('/teacher/students');
@@ -188,10 +185,10 @@ export function TeacherDashboard() {
   const addStudentToGroup = async (groupId: string, fullName: string, desiredScore?: string) => {
     try {
       const { default: api } = await import('@/lib/axios');
-      // use bulk endpoint to get credentials
+
       const res = await api.post(`/groups/${groupId}/students`, { studentNames: [fullName] });
       const creds = res.data?.credentials || [];
-      // refresh students list
+
       const sres = await api.get('/teacher/students');
       const students: any[] = sres.data || [];
       setStudentsForGroup(students.filter(s => s.groupId === groupId));
@@ -207,13 +204,13 @@ export function TeacherDashboard() {
     try {
       const { default: api } = await import('@/lib/axios');
       await api.delete(`/teacher/students/${studentId}`);
-      // refresh current group's students
+
       if (selectedGroup) {
         const res = await api.get('/teacher/students');
         const students: any[] = res.data || [];
         setStudentsForGroup(students.filter(s => s.groupId === selectedGroup.id));
       }
-      // refresh dashboard count
+
       try {
         const sres = await api.get('/teacher/students');
         const students: any[] = sres.data || [];
@@ -246,9 +243,9 @@ export function TeacherDashboard() {
 
   return (
     <div className="space-y-6">
-      {/* Welcome Banner */}
+      
       <div className="relative overflow-hidden bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-700 rounded-3xl p-8 text-white">
-        {/* Background decorations */}
+        
         <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2" />
         <div className="absolute bottom-0 left-1/4 w-32 h-32 bg-white/5 rounded-full translate-y-1/2" />
         <div className="absolute top-1/2 right-1/4 w-16 h-16 bg-white/10 rounded-full" />
@@ -307,7 +304,7 @@ export function TeacherDashboard() {
           </div>
         </div>
 
-        {/* Today's schedule hint */}
+        
         <div className="relative z-10 mt-6 p-4 bg-white/10 backdrop-blur-sm rounded-xl flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Calendar size={20} />
@@ -327,7 +324,7 @@ export function TeacherDashboard() {
         </div>
       </div>
 
-      {/* Quick actions for mobile */}
+      
       <div className="lg:hidden grid grid-cols-2 gap-3">
         <Button onClick={() => setShowAddStudentModal(true)} className="w-full">
           <Plus size={18} className="mr-2" />
@@ -339,7 +336,7 @@ export function TeacherDashboard() {
         </Button>
       </div>
 
-      {/* Stats cards */}
+      
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <div onClick={() => setActiveTab('students')} className="cursor-pointer">
           <StatsCard
@@ -377,11 +374,11 @@ export function TeacherDashboard() {
         </div>
       </div>
 
-      {/* Main content */}
+      
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left column - Activity chart + Homework */}
+        
         <div className="lg:col-span-2 space-y-6">
-          {/* Weekly activity */}
+          
           <Card>
             <CardHeader
               title="Активность учеников"
@@ -426,13 +423,13 @@ export function TeacherDashboard() {
             </div>
           </Card>
 
-          {/* Homework list */}
+          
           <HomeworkList homeworks={homeworks} viewType="teacher" />
         </div>
 
-        {/* Right column - Top performers + Needs attention */}
+        
         <div className="space-y-6">
-          {/* Groups */}
+          
           <Card>
             <CardHeader
               title="Мои группы"
@@ -496,7 +493,7 @@ export function TeacherDashboard() {
             </div>
           </Card>
 
-          {/* Group details modal (students list + add student) */}
+          
           {selectedGroup && (
             <div className="fixed inset-0 bg-black/40 flex items-start justify-center z-50 p-6">
               <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[80vh] overflow-auto">
@@ -561,7 +558,7 @@ export function TeacherDashboard() {
             </div>
           )}
 
-          {/* Top performers */}
+          
           <Card>
             <CardHeader
               title="Лучшие результаты"
@@ -589,7 +586,7 @@ export function TeacherDashboard() {
             </div>
           </Card>
 
-          {/* Needs attention */}
+          
           <Card>
             <CardHeader
               title="Требуют внимания"
@@ -616,7 +613,7 @@ export function TeacherDashboard() {
         </div>
       </div>
 
-      {/* Add Student Modal */}
+      
       {showAddStudentModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
@@ -676,7 +673,7 @@ export function TeacherDashboard() {
         </div>
       )}
 
-      {/* Create Homework Quick Modal */}
+      
       {showCreateHomeworkModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md text-center p-8">
@@ -700,7 +697,7 @@ export function TeacherDashboard() {
         </div>
       )}
 
-      {/* Edit Group Modal */}
+      
       {editGroupModal.open && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
@@ -734,7 +731,7 @@ export function TeacherDashboard() {
         </div>
       )}
 
-      {/* Credentials modal (shows generated username/password after bulk add) */}
+      
       {showCredentialsModal.open && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">

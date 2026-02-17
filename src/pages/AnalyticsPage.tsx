@@ -1,7 +1,7 @@
 import { Card, CardHeader } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
-// Temporary placeholder until we fetch real student progress from the backend
+
 const studentProgress = {
   completedTasks: 0,
   correctAnswers: 0,
@@ -35,14 +35,12 @@ const COLORS = ['#818cf8', '#34d399', '#fbbf24', '#f87171', '#a78bfa', '#22d3ee'
 export function AnalyticsPage() {
   const { topicStats } = studentProgress;
 
-  // Prepare data for pie chart
   const pieData = [
     { name: 'Отлично (80%+)', value: topicStats.filter((t) => t.successRate >= 80).length },
     { name: 'Хорошо (60-80%)', value: topicStats.filter((t) => t.successRate >= 60 && t.successRate < 80).length },
     { name: 'Требует внимания (<60%)', value: topicStats.filter((t) => t.successRate < 60).length },
   ];
 
-  // Prepare data for radar chart
   const radarData = topicStats.slice(0, 6).map((t) => ({
     subject: `№${t.egeNumber}`,
     value: t.successRate,
@@ -53,7 +51,7 @@ export function AnalyticsPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
+      
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">Аналитика</h1>
@@ -78,7 +76,7 @@ export function AnalyticsPage() {
         </div>
       </div>
 
-      {/* Stats overview */}
+      
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card className="bg-gradient-to-br from-indigo-500 to-indigo-600 text-white">
           <p className="text-indigo-100 text-sm">Всего задач решено</p>
@@ -105,9 +103,9 @@ export function AnalyticsPage() {
         </Card>
       </div>
 
-      {/* Charts row 1 */}
+      
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Progress over time */}
+        
         <Card>
           <CardHeader
             title="Динамика за месяц"
@@ -156,7 +154,7 @@ export function AnalyticsPage() {
           </div>
         </Card>
 
-        {/* Radar chart - skills */}
+        
         <Card>
           <CardHeader
             title="Профиль навыков"
@@ -188,9 +186,9 @@ export function AnalyticsPage() {
         </Card>
       </div>
 
-      {/* Charts row 2 */}
+      
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Pie chart */}
+        
         <Card>
           <CardHeader title="Распределение тем" />
           <div className="h-[250px]">
@@ -229,7 +227,7 @@ export function AnalyticsPage() {
           </div>
         </Card>
 
-        {/* Topic breakdown */}
+        
         <Card className="lg:col-span-2">
           <CardHeader
             title="Детализация по темам"
@@ -273,7 +271,7 @@ export function AnalyticsPage() {
         </Card>
       </div>
 
-      {/* Export section */}
+      
       <Card className="bg-gradient-to-r from-slate-50 to-indigo-50">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">

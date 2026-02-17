@@ -22,7 +22,7 @@ export function Header() {
       )}
     >
     <div className="h-full px-6 flex items-center justify-between">
-        {/* Left side */}
+        
         <div className="flex items-center gap-4">
           <button
             onClick={toggleSidebar}
@@ -36,9 +36,9 @@ export function Header() {
           </div>
         </div>
 
-        {/* Right side */}
+        
         <div className="flex items-center gap-3">
-          {/* Search */}
+          
           <div className="relative hidden md:block">
             <Search
               size={18}
@@ -51,13 +51,13 @@ export function Header() {
             />
           </div>
 
-          {/* Notifications */}
+          
           <button className="relative p-2 rounded-xl hover:bg-slate-100 text-slate-600 transition-colors">
             <Bell size={20} />
             <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full" />
           </button>
 
-          {/* Avatar */}
+          
           <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-xl flex items-center justify-center text-white font-semibold">
             {(() => {
               const name = user?.fullName || '';

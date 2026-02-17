@@ -65,6 +65,9 @@ public class SecurityConfig {
 
                 // Личный кабинет ученика
                 .requestMatchers("/api/student/**").hasRole("STUDENT")
+                .requestMatchers(HttpMethod.GET, "/api/ege-tasks/**").authenticated()
+                .requestMatchers(HttpMethod.POST, "/api/ege-tasks").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.DELETE, "/api/ege-tasks/**").hasRole("ADMIN")
 
                 // Всё остальное — требуется аутентификация
                 .anyRequest().authenticated()

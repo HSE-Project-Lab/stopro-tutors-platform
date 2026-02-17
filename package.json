@@ -13,6 +13,7 @@
     "axios": "^1.13.4",
     "clsx": "2.1.1",
     "date-fns": "^4.1.0",
+    "katex": "^0.16.28",
     "lucide-react": "^0.563.0",
     "react": "19.2.3",
     "react-dom": "19.2.3",
@@ -23,6 +24,7 @@
   },
   "devDependencies": {
     "@tailwindcss/vite": "4.1.17",
+    "@types/katex": "^0.16.8",
     "@types/node": "^22.0.0",
     "@types/react": "19.2.7",
     "@types/react-dom": "19.2.3",

@@ -3,7 +3,6 @@ import { Card, CardHeader } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 
-// Placeholder until AI recommendations endpoint is wired
 const aiRecommendations: any[] = [];
 import {
   Brain,
@@ -78,7 +77,7 @@ sin(x) = ±√2/2
 
   return (
     <div className="space-y-6">
-      {/* Header */}
+      
       <div className="flex items-center gap-3">
         <div className="p-3 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-xl shadow-lg">
           <Brain size={24} className="text-white" />
@@ -92,7 +91,7 @@ sin(x) = ±√2/2
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Upload section */}
+        
         <Card padding="lg">
           <CardHeader
             title="Загрузить решение"
@@ -157,11 +156,11 @@ sin(x) = ±√2/2
           </div>
         </Card>
 
-        {/* Analysis result */}
+        
         <div className="space-y-6">
           {analysisResult ? (
             <>
-              {/* Recognized text */}
+              
               <Card>
                 <CardHeader
                   title="Распознанный текст"
@@ -177,7 +176,7 @@ sin(x) = ±√2/2
                 </pre>
               </Card>
 
-              {/* Errors */}
+              
               <Card>
                 <CardHeader
                   title="Найденные ошибки"
@@ -205,7 +204,7 @@ sin(x) = ±√2/2
                 </div>
               </Card>
 
-              {/* Recommendations */}
+              
               <Card>
                 <CardHeader title="Рекомендации" />
                 <div className="space-y-2">
@@ -221,7 +220,7 @@ sin(x) = ±√2/2
                 </div>
               </Card>
 
-              {/* Score */}
+              
               <Card className="bg-gradient-to-br from-slate-800 to-slate-900 text-white">
                 <div className="text-center py-4">
                   <p className="text-slate-400 mb-2">Оценка решения</p>
@@ -245,7 +244,7 @@ sin(x) = ±√2/2
         </div>
       </div>
 
-      {/* AI Recommendations from history */}
+      
       <Card>
         <CardHeader
           title="Персональные рекомендации"

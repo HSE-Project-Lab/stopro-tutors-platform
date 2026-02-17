@@ -14,7 +14,6 @@ import {
   ChevronRight,
 } from 'lucide-react';
 
-// Убраны дубликаты: "Группы" объединено с "Ученики", "Отчёты" с "Аналитика"
 const teacherNavItems = [
   { id: 'dashboard', label: 'Дашборд', icon: LayoutDashboard },
   { id: 'students', label: 'Ученики и группы', icon: Users },
@@ -44,7 +43,7 @@ export function Sidebar() {
         sidebarOpen ? 'w-64' : 'w-20'
       )}
     >
-      {/* Logo */}
+      
       <div className="h-16 flex items-center justify-between px-4 border-b border-slate-100">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-200">
@@ -62,7 +61,7 @@ export function Sidebar() {
         </button>
       </div>
 
-      {/* Navigation */}
+      
       <nav className="flex-1 py-6 px-3 space-y-1 overflow-y-auto">
         {navItems.map((item) => (
           <button
@@ -83,7 +82,7 @@ export function Sidebar() {
         ))}
       </nav>
 
-      {/* User section */}
+      
       <div className="p-3 border-t border-slate-100">
         <button
           onClick={() => setActiveTab('settings')}

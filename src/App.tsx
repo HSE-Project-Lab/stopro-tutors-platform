@@ -19,7 +19,6 @@ function AppContent() {
     return <LoginPage />;
   }
 
-  // Render page based on activeTab
   const renderPage = () => {
     switch (activeTab) {
       case 'dashboard':

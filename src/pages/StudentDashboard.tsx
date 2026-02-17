@@ -10,7 +10,6 @@ import { ProgressBar } from '@/components/ui/ProgressBar';
 import { useAuthStore } from '@/store/authStore';
 import { useAppStore } from '@/store/appStore';
 
-// Temporary empty defaults until these endpoints are implemented
 const studentProgress = {
   completedTasks: 0,
   correctAnswers: 0,
@@ -47,21 +46,19 @@ export function StudentDashboard() {
     return 'Добрый вечер';
   };
 
-  // Calculate days until exam (примерная дата ЕГЭ - конец мая)
   const examDate = new Date(2025, 4, 29); // 29 мая 2025
   const today = new Date();
   const daysUntilExam = Math.ceil((examDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
 
   const currentStreak = 0;
 
-  // Predicted score based on current success rate
   const predictedScore = Math.min(100, Math.round(successRate * 1.1));
 
   return (
     <div className="space-y-6">
-      {/* Welcome Banner */}
+      
       <div className="relative overflow-hidden bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 rounded-3xl p-8 text-white">
-        {/* Background decorations */}
+        
         <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2" />
         <div className="absolute bottom-0 left-1/4 w-32 h-32 bg-white/5 rounded-full translate-y-1/2" />
         <div className="absolute top-1/2 right-1/3 w-20 h-20 bg-white/10 rounded-full" />
@@ -121,7 +118,7 @@ export function StudentDashboard() {
             </div>
           </div>
 
-          {/* Progress to target score */}
+          
           <div className="mt-6 p-4 bg-white/10 backdrop-blur-sm rounded-xl">
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
@@ -143,7 +140,7 @@ export function StudentDashboard() {
         </div>
       </div>
 
-      {/* Quick actions for mobile */}
+      
       <div className="lg:hidden grid grid-cols-2 gap-3">
         <Button onClick={() => setActiveTab('practice')} className="w-full">
           <Zap size={18} className="mr-2" />
@@ -155,7 +152,7 @@ export function StudentDashboard() {
         </Button>
       </div>
 
-      {/* Stats cards */}
+      
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <div onClick={() => setActiveTab('analytics')} className="cursor-pointer">
           <StatsCard
@@ -192,7 +189,7 @@ export function StudentDashboard() {
         </div>
       </div>
 
-      {/* Today's goals */}
+      
       <Card>
         <CardHeader 
           title="Цели на сегодня" 
@@ -243,13 +240,13 @@ export function StudentDashboard() {
         </div>
       </Card>
 
-      {/* Charts row */}
+      
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <WeeklyChart data={weeklyProgress} />
         <TopicProgressChart topics={topicStats} />
       </div>
 
-      {/* Bottom row */}
+      
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div onClick={() => setActiveTab('homework')} className="cursor-pointer">
           <HomeworkList homeworks={homeworks.slice(0, 3)} viewType="student" />
@@ -257,7 +254,7 @@ export function StudentDashboard() {
         <RecommendationsList recommendations={aiRecommendations} />
       </div>
 
-      {/* Quick practice section */}
+      
       <Card className="bg-gradient-to-r from-indigo-50 to-purple-50">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">

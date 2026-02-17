@@ -7,7 +7,6 @@ import { Select } from '@/components/ui/Select';
 import { ProgressBar } from '@/components/ui/ProgressBar';
 import { useAuthStore } from '@/store/authStore';
 
-// Temporary placeholders until backend endpoints are consumed
 const homeworks: any[] = [];
 const groups: any[] = [];
 const tasks: any[] = [];
@@ -36,8 +35,7 @@ export function HomeworkPage() {
   const [selectedStatus, setSelectedStatus] = useState('');
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedHomework, setSelectedHomework] = useState<Homework | null>(null);
-  
-  // Form state for creating homework
+
   const [newHomework, setNewHomework] = useState({
     title: '',
     description: '',
@@ -72,7 +70,7 @@ export function HomeworkPage() {
   };
 
   const handleCreateHomework = () => {
-    // В реальном приложении здесь был бы API call
+
     alert(`Создано ДЗ: ${newHomework.title}\nГруппа: ${newHomework.groupId}\nЗадач: ${newHomework.selectedTasks.length}`);
     setShowCreateModal(false);
     setNewHomework({ title: '', description: '', groupId: '', deadline: '', selectedTasks: [] });
@@ -94,7 +92,6 @@ export function HomeworkPage() {
     }));
   };
 
-  // Homework detail view
   if (selectedHomework) {
     return (
       <div className="space-y-6">
@@ -176,7 +173,7 @@ export function HomeworkPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
+      
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">
@@ -197,7 +194,7 @@ export function HomeworkPage() {
         )}
       </div>
 
-      {/* Filters */}
+      
       <Card>
         <div className="flex flex-wrap gap-4">
           <div className="flex-1 min-w-[200px]">
@@ -223,7 +220,7 @@ export function HomeworkPage() {
         </div>
       </Card>
 
-      {/* Stats for teacher */}
+      
       {isTeacher && (
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <Card className="flex items-center gap-4">
@@ -269,7 +266,7 @@ export function HomeworkPage() {
         </div>
       )}
 
-      {/* Homework list */}
+      
       <div className="space-y-4">
         {filteredHomeworks.map((hw) => (
           <Card
@@ -328,7 +325,7 @@ export function HomeworkPage() {
         )}
       </div>
 
-      {/* Create Homework Modal */}
+      
       {showCreateModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">

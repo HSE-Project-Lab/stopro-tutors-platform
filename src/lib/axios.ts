@@ -11,8 +11,8 @@ const api = axios.create({
 api.interceptors.request.use((config) => {
   const token = useAuthStore.getState().token;
   if (token) {
-    // Some environments make headers readonly or config.headers may be undefined.
-    // Build a new headers object to avoid runtime errors.
+
+
     config.headers = {
       ...(config.headers || {}),
       Authorization: `Bearer ${token}`,

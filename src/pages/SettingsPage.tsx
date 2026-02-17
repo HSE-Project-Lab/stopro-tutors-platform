@@ -46,7 +46,7 @@ export function SettingsPage() {
 
   const handleSave = async () => {
     setIsSaving(true);
-    // Симуляция API call
+
     await new Promise(resolve => setTimeout(resolve, 1000));
     
     updateUser({
@@ -73,13 +73,13 @@ export function SettingsPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
+      
       <div>
         <h1 className="text-2xl font-bold text-slate-900">Настройки</h1>
         <p className="text-slate-500 mt-1">Управление аккаунтом и персонализация</p>
       </div>
 
-      {/* Success notification */}
+      
       {showSuccess && (
         <div className="fixed top-4 right-4 bg-emerald-500 text-white px-4 py-3 rounded-xl shadow-lg flex items-center gap-2 z-50 animate-fade-in">
           <CheckCircle size={20} />
@@ -88,7 +88,7 @@ export function SettingsPage() {
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        {/* Sidebar navigation */}
+        
         <div className="lg:col-span-1">
           <Card padding="sm">
             <nav className="space-y-1">
@@ -110,9 +110,9 @@ export function SettingsPage() {
           </Card>
         </div>
 
-        {/* Content */}
+        
         <div className="lg:col-span-3">
-          {/* Profile Section */}
+          
           {activeSection === 'profile' && (
             <Card>
               <CardHeader 
@@ -202,7 +202,7 @@ export function SettingsPage() {
             </Card>
           )}
 
-          {/* Security Section */}
+          
           {activeSection === 'security' && (
             <Card>
               <CardHeader 
@@ -257,7 +257,7 @@ export function SettingsPage() {
             </Card>
           )}
 
-          {/* Notifications Section */}
+          
           {activeSection === 'notifications' && (
             <Card>
               <CardHeader 
@@ -316,7 +316,7 @@ export function SettingsPage() {
             </Card>
           )}
 
-          {/* Appearance Section */}
+          
           {activeSection === 'appearance' && (
             <Card>
               <CardHeader 
@@ -359,7 +359,7 @@ export function SettingsPage() {
             </Card>
           )}
 
-          {/* Data Section */}
+          
           {activeSection === 'data' && (
             <Card>
               <CardHeader 
