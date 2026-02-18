@@ -25,7 +25,7 @@ const priorityStyles = {
 
 export function RecommendationsList({ recommendations }: RecommendationsListProps) {
   const { setActiveTab } = useAppStore();
-  
+
   const handleGoToTasks = () => {
     setActiveTab('practice');
   };
@@ -65,16 +65,16 @@ export function RecommendationsList({ recommendations }: RecommendationsListProp
                         rec.priority === 'HIGH'
                           ? 'danger'
                           : rec.priority === 'MEDIUM'
-                          ? 'warning'
-                          : 'success'
+                            ? 'warning'
+                            : 'success'
                       }
                       size="sm"
                     >
                       {rec.priority === 'HIGH'
                         ? 'Важно'
                         : rec.priority === 'MEDIUM'
-                        ? 'Рекомендуется'
-                        : 'По желанию'}
+                          ? 'Рекомендуется'
+                          : 'По желанию'}
                     </Badge>
                   </div>
                   <p className="text-sm text-slate-600">{rec.description}</p>

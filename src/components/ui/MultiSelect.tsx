@@ -73,9 +73,7 @@ export function MultiSelect({
     onChange([]);
   };
 
-  const selectedLabels = selected.map(
-    (v) => options.find((o) => o.value === v)?.label || v
-  );
+  const selectedLabels = selected.map((v) => options.find((o) => o.value === v)?.label || v);
 
   return (
     <div ref={containerRef} className={cn('relative', className)}>
@@ -109,28 +107,20 @@ export function MultiSelect({
               </span>
             ))}
             {selected.length > 3 && (
-              <span className="text-xs text-slate-500">
-                +{selected.length - 3}
-              </span>
+              <span className="text-xs text-slate-500">+{selected.length - 3}</span>
             )}
           </>
         )}
 
         <div className="ml-auto flex items-center gap-1 shrink-0">
           {selected.length > 0 && (
-            <button
-              onClick={clearAll}
-              className="p-0.5 hover:bg-slate-100 rounded"
-            >
+            <button onClick={clearAll} className="p-0.5 hover:bg-slate-100 rounded">
               <X size={14} className="text-slate-400" />
             </button>
           )}
           <ChevronDown
             size={16}
-            className={cn(
-              'text-slate-400 transition-transform',
-              isOpen && 'rotate-180'
-            )}
+            className={cn('text-slate-400 transition-transform', isOpen && 'rotate-180')}
           />
         </div>
       </button>
@@ -142,7 +132,10 @@ export function MultiSelect({
           {searchable && (
             <div className="p-2 border-b border-slate-100">
               <div className="relative">
-                <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                <Search
+                  size={14}
+                  className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400"
+                />
                 <input
                   ref={searchInputRef}
                   value={search}
@@ -157,9 +150,7 @@ export function MultiSelect({
           {/* Опции */}
           <div className="overflow-y-auto max-h-56 p-1">
             {Object.keys(grouped).length === 0 ? (
-              <p className="text-sm text-slate-400 text-center py-4">
-                Ничего не найдено
-              </p>
+              <p className="text-sm text-slate-400 text-center py-4">Ничего не найдено</p>
             ) : (
               Object.entries(grouped).map(([group, opts]) => (
                 <div key={group}>
@@ -184,14 +175,18 @@ export function MultiSelect({
                         <div
                           className={cn(
                             'w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 transition-colors',
-                            isSelected
-                              ? 'bg-indigo-600 border-indigo-600'
-                              : 'border-slate-300'
+                            isSelected ? 'bg-indigo-600 border-indigo-600' : 'border-slate-300'
                           )}
                         >
                           {isSelected && (
                             <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
-                              <path d="M1 4L3.5 6.5L9 1" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                              <path
+                                d="M1 4L3.5 6.5L9 1"
+                                stroke="white"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                              />
                             </svg>
                           )}
                         </div>
@@ -207,9 +202,7 @@ export function MultiSelect({
           {/* Быстрые действия */}
           {selected.length > 0 && (
             <div className="p-2 border-t border-slate-100 flex justify-between items-center">
-              <span className="text-xs text-slate-500">
-                Выбрано: {selected.length}
-              </span>
+              <span className="text-xs text-slate-500">Выбрано: {selected.length}</span>
               <button
                 onClick={clearAll}
                 className="text-xs text-indigo-600 hover:text-indigo-700 font-medium"

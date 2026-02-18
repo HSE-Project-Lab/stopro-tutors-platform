@@ -121,10 +121,7 @@ export function FilterDropdown({
               <X size={14} />
             </button>
           )}
-          <ChevronDown
-            size={14}
-            className={cn('transition-transform', isOpen && 'rotate-180')}
-          />
+          <ChevronDown size={14} className={cn('transition-transform', isOpen && 'rotate-180')} />
         </div>
       </button>
 
@@ -173,14 +170,10 @@ export function FilterDropdown({
                           className={cn(
                             'w-4 h-4 flex items-center justify-center shrink-0 transition-colors border-2',
                             multiple ? 'rounded' : 'rounded-full',
-                            isSelected
-                              ? 'bg-indigo-600 border-indigo-600'
-                              : 'border-slate-300'
+                            isSelected ? 'bg-indigo-600 border-indigo-600' : 'border-slate-300'
                           )}
                         >
-                          {isSelected && (
-                            <Check size={10} className="text-white" strokeWidth={3} />
-                          )}
+                          {isSelected && <Check size={10} className="text-white" strokeWidth={3} />}
                         </div>
                         {opt.icon && <span>{opt.icon}</span>}
                         <span className="truncate">{opt.label}</span>

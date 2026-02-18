@@ -14,9 +14,8 @@ export function LoginPage() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    
-    try {
 
+    try {
       const { default: api } = await import('@/lib/axios');
       const response = await api.post('/auth/login', { username, password });
 
@@ -79,30 +78,37 @@ export function LoginPage() {
   const handleDemoLogin = async (role: 'teacher' | 'student') => {
     setIsLoading(true);
     await new Promise((resolve) => setTimeout(resolve, 500));
-    const demoTeacher = { id: 't-demo', username: 'teacher_demo', fullName: 'Учитель Демонстрационный', role: 'TEACHER' };
-    const demoStudent = { id: 's-demo', username: 'student_demo', fullName: 'Ученик Демонстрационный', role: 'STUDENT' };
+    const demoTeacher = {
+      id: 't-demo',
+      username: 'teacher_demo',
+      fullName: 'Учитель Демонстрационный',
+      role: 'TEACHER',
+    };
+    const demoStudent = {
+      id: 's-demo',
+      username: 'student_demo',
+      fullName: 'Ученик Демонстрационный',
+      role: 'STUDENT',
+    };
 
     if (role === 'teacher') {
       login(demoTeacher as any, 'demo-token-teacher');
     } else {
       login(demoStudent as any, 'demo-token-student');
     }
-    
+
     setIsLoading(false);
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
-        
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-2xl shadow-xl shadow-indigo-200 mb-4">
             <span className="text-white font-bold text-3xl">С</span>
           </div>
           <h1 className="text-3xl font-bold text-slate-900">СТОПРО</h1>
-          <p className="text-slate-500 mt-2">
-            Платформа для подготовки к профильной математике
-          </p>
+          <p className="text-slate-500 mt-2">Платформа для подготовки к профильной математике</p>
         </div>
 
         <Card padding="lg" className="shadow-xl">
@@ -123,7 +129,7 @@ export function LoginPage() {
               onChange={(e) => setPassword(e.target.value)}
               icon={<Lock size={18} />}
             />
-            
+
             <div className="flex items-center justify-between text-sm">
               <label className="flex items-center gap-2 text-slate-600">
                 <input type="checkbox" className="rounded border-slate-300" />
@@ -148,7 +154,6 @@ export function LoginPage() {
             </div>
           </div>
 
-          
           <div className="grid grid-cols-2 gap-3">
             <Button
               type="button"
@@ -174,9 +179,9 @@ export function LoginPage() {
 
           <p className="text-center text-sm text-slate-500 mt-6">
             Нет аккаунта?{' '}
-            <button 
+            <button
               type="button"
-              onClick={handleRegister} 
+              onClick={handleRegister}
               className="text-indigo-600 hover:text-indigo-700 font-medium"
             >
               Зарегистрироваться как Учитель
@@ -184,7 +189,6 @@ export function LoginPage() {
           </p>
         </Card>
 
-        
         <div className="mt-8 grid grid-cols-3 gap-4 text-center">
           <div className="p-3">
             <div className="text-2xl mb-1">📚</div>

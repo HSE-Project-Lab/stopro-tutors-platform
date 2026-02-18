@@ -22,12 +22,7 @@ import {
   X,
   Tag,
 } from 'lucide-react';
-import type {
-  EgeTask,
-  EgeTaskCreateRequest,
-  EgeTaskPage,
-  TaskDifficulty,
-} from '@/types';
+import type { EgeTask, EgeTaskCreateRequest, EgeTaskPage, TaskDifficulty } from '@/types';
 import { EGE_TOPICS, DIFFICULTY_LABELS } from '@/types';
 
 // ===== Опции для фильтров =====
@@ -267,9 +262,7 @@ function TaskDetail({
                       <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-3">
                         Решение
                       </p>
-                      <LaTeX className="text-slate-700 leading-relaxed">
-                        {task.solution}
-                      </LaTeX>
+                      <LaTeX className="text-slate-700 leading-relaxed">{task.solution}</LaTeX>
                     </Card>
                   )}
                 </div>
@@ -290,8 +283,7 @@ function TaskDetail({
         {isAdmin && !showResult && (
           <div className="mt-4 pt-4 border-t border-dashed border-slate-200">
             <p className="text-xs text-slate-400">
-              🔑 Ответ (видно только админу):{' '}
-              <span className="font-mono">{task.answer}</span>
+              🔑 Ответ (видно только админу): <span className="font-mono">{task.answer}</span>
             </p>
           </div>
         )}
@@ -340,9 +332,7 @@ function Pagination({
             key={p}
             onClick={() => onChange(p as number)}
             className={`w-9 h-9 rounded-lg text-sm font-medium transition-colors ${
-              p === page
-                ? 'bg-indigo-600 text-white'
-                : 'hover:bg-slate-100 text-slate-600'
+              p === page ? 'bg-indigo-600 text-white' : 'hover:bg-slate-100 text-slate-600'
             }`}
           >
             {(p as number) + 1}
@@ -383,29 +373,26 @@ export function TasksPage() {
   const [showCreateModal, setShowCreateModal] = useState(false);
 
   const topicOptions = (() => {
-  if (selectedNumbers.length === 0) return ALL_TOPIC_OPTIONS;
-  if (selectedNumbers.length === 1) {
-    return ALL_TOPIC_OPTIONS.filter((o) => o.group === selectedNumbers[0]);
-  }
+    if (selectedNumbers.length === 0) return ALL_TOPIC_OPTIONS;
+    if (selectedNumbers.length === 1) {
+      return ALL_TOPIC_OPTIONS.filter((o) => o.group === selectedNumbers[0]);
+    }
 
-  // Пересечение: только темы, которые встречаются у КАЖДОГО выбранного номера
-  const topicsByNumber = selectedNumbers.map((num) =>
-    new Set(
-      EGE_TOPICS[parseInt(num)]?.map((t) => t) || []
-    )
-  );
+    // Пересечение: только темы, которые встречаются у КАЖДОГО выбранного номера
+    const topicsByNumber = selectedNumbers.map(
+      (num) => new Set(EGE_TOPICS[parseInt(num)]?.map((t) => t) || [])
+    );
 
-  // Находим пересечение множеств
-  const intersection = topicsByNumber.reduce((acc, set) => {
-    return new Set([...acc].filter((topic) => set.has(topic)));
-  });
+    // Находим пересечение множеств
+    const intersection = topicsByNumber.reduce((acc, set) => {
+      return new Set([...acc].filter((topic) => set.has(topic)));
+    });
 
-  // Возвращаем опции только для пересекающихся тем (от всех выбранных номеров)
-  return ALL_TOPIC_OPTIONS.filter(
-    (o) =>
-      selectedNumbers.includes(o.group || '') && intersection.has(topicValueToName(o.value))
-  );
-})();
+    // Возвращаем опции только для пересекающихся тем (от всех выбранных номеров)
+    return ALL_TOPIC_OPTIONS.filter(
+      (o) => selectedNumbers.includes(o.group || '') && intersection.has(topicValueToName(o.value))
+    );
+  })();
 
   // Загрузка задач
   const fetchTasks = useCallback(async () => {
@@ -416,8 +403,7 @@ export function TasksPage() {
       if (selectedNumbers.length === 1) params.egeNumber = parseInt(selectedNumbers[0]);
       if (selectedNumbers.length > 1) params.egeNumbers = selectedNumbers.join(',');
       if (selectedDifficulties.length === 1) params.difficulty = selectedDifficulties[0];
-      if (selectedDifficulties.length > 1)
-        params.difficulties = selectedDifficulties.join(',');
+      if (selectedDifficulties.length > 1) params.difficulties = selectedDifficulties.join(',');
       if (selectedTopics.length > 0) {
         params.topics = selectedTopics.map(topicValueToName).join(',');
       }
@@ -485,11 +471,7 @@ export function TasksPage() {
   // ===== Детальный просмотр =====
   if (selectedTask) {
     return (
-      <TaskDetail
-        task={selectedTask}
-        onBack={() => setSelectedTask(null)}
-        isAdmin={isAdmin}
-      />
+      <TaskDetail task={selectedTask} onBack={() => setSelectedTask(null)} isAdmin={isAdmin} />
     );
   }
 
@@ -502,9 +484,7 @@ export function TasksPage() {
           <h1 className="text-2xl font-bold text-slate-900">База задач ЕГЭ</h1>
           <p className="text-slate-500 mt-1">
             Профильная математика · Задания 1–12
-            {totalElements > 0 && (
-              <span className="text-slate-400"> · {totalElements} задач</span>
-            )}
+            {totalElements > 0 && <span className="text-slate-400"> · {totalElements} задач</span>}
           </p>
         </div>
         {isAdmin && (
@@ -578,11 +558,7 @@ export function TasksPage() {
               >
                 <Hash size={11} />
                 Задание {num}
-                <button
-                  onClick={() =>
-                    setSelectedNumbers((prev) => prev.filter((n) => n !== num))
-                  }
-                >
+                <button onClick={() => setSelectedNumbers((prev) => prev.filter((n) => n !== num))}>
                   <X size={12} />
                 </button>
               </span>
@@ -595,9 +571,7 @@ export function TasksPage() {
                 <Tag size={11} />
                 {topicValueToName(topic)}
                 <button
-                  onClick={() =>
-                    setSelectedTopics((prev) => prev.filter((t) => t !== topic))
-                  }
+                  onClick={() => setSelectedTopics((prev) => prev.filter((t) => t !== topic))}
                 >
                   <X size={12} />
                 </button>
@@ -611,9 +585,7 @@ export function TasksPage() {
                 {DIFFICULTY_OPTIONS.find((o) => o.value === d)?.icon}{' '}
                 {DIFFICULTY_LABELS[d as TaskDifficulty]}
                 <button
-                  onClick={() =>
-                    setSelectedDifficulties((prev) => prev.filter((x) => x !== d))
-                  }
+                  onClick={() => setSelectedDifficulties((prev) => prev.filter((x) => x !== d))}
                 >
                   <X size={12} />
                 </button>

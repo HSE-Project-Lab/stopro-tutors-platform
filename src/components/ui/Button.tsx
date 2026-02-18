@@ -8,7 +8,10 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant = 'primary', size = 'md', isLoading, children, disabled, ...props }, ref) => {
+  (
+    { className, variant = 'primary', size = 'md', isLoading, children, disabled, ...props },
+    ref
+  ) => {
     return (
       <button
         ref={ref}
@@ -22,10 +25,8 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
               variant === 'secondary',
             'border-2 border-slate-200 text-slate-700 hover:bg-slate-50 focus:ring-slate-500':
               variant === 'outline',
-            'text-slate-600 hover:bg-slate-100 focus:ring-slate-500':
-              variant === 'ghost',
-            'bg-red-600 text-white hover:bg-red-700 focus:ring-red-500':
-              variant === 'danger',
+            'text-slate-600 hover:bg-slate-100 focus:ring-slate-500': variant === 'ghost',
+            'bg-red-600 text-white hover:bg-red-700 focus:ring-red-500': variant === 'danger',
           },
           {
             'px-3 py-1.5 text-sm': size === 'sm',
@@ -37,11 +38,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         {...props}
       >
         {isLoading && (
-          <svg
-            className="animate-spin -ml-1 mr-2 h-4 w-4"
-            fill="none"
-            viewBox="0 0 24 24"
-          >
+          <svg className="animate-spin -ml-1 mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24">
             <circle
               className="opacity-25"
               cx="12"

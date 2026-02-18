@@ -77,7 +77,9 @@ interface LaTeXPreviewProps {
 export function LaTeXPreview({ content, label, className = '' }: LaTeXPreviewProps) {
   if (!content.trim()) {
     return (
-      <div className={`border border-dashed border-slate-200 rounded-xl p-6 text-center text-slate-400 ${className}`}>
+      <div
+        className={`border border-dashed border-slate-200 rounded-xl p-6 text-center text-slate-400 ${className}`}
+      >
         {label || 'Предпросмотр появится здесь...'}
       </div>
     );
@@ -86,9 +88,7 @@ export function LaTeXPreview({ content, label, className = '' }: LaTeXPreviewPro
   return (
     <div className={`border border-slate-200 rounded-xl p-4 bg-slate-50 ${className}`}>
       {label && (
-        <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-2">
-          {label}
-        </p>
+        <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-2">{label}</p>
       )}
       <LaTeX className="text-slate-900 leading-relaxed">{content}</LaTeX>
     </div>

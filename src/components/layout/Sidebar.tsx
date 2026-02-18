@@ -43,15 +43,12 @@ export function Sidebar() {
         sidebarOpen ? 'w-64' : 'w-20'
       )}
     >
-      
       <div className="h-16 flex items-center justify-between px-4 border-b border-slate-100">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-200">
             <span className="text-white font-bold text-lg">С</span>
           </div>
-          {sidebarOpen && (
-            <span className="font-bold text-xl text-slate-900">СТОПРО</span>
-          )}
+          {sidebarOpen && <span className="font-bold text-xl text-slate-900">СТОПРО</span>}
         </div>
         <button
           onClick={toggleSidebar}
@@ -61,7 +58,6 @@ export function Sidebar() {
         </button>
       </div>
 
-      
       <nav className="flex-1 py-6 px-3 space-y-1 overflow-y-auto">
         {navItems.map((item) => (
           <button
@@ -75,14 +71,11 @@ export function Sidebar() {
             )}
           >
             <item.icon size={20} className="flex-shrink-0" />
-            {sidebarOpen && (
-              <span className="font-medium text-sm">{item.label}</span>
-            )}
+            {sidebarOpen && <span className="font-medium text-sm">{item.label}</span>}
           </button>
         ))}
       </nav>
 
-      
       <div className="p-3 border-t border-slate-100">
         <button
           onClick={() => setActiveTab('settings')}

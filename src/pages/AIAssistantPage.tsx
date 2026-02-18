@@ -4,15 +4,7 @@ import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 
 const aiRecommendations: any[] = [];
-import {
-  Brain,
-  Upload,
-  Camera,
-  Sparkles,
-  XCircle,
-  Lightbulb,
-  FileImage,
-} from 'lucide-react';
+import { Brain, Upload, Camera, Sparkles, XCircle, Lightbulb, FileImage } from 'lucide-react';
 
 export function AIAssistantPage() {
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
@@ -39,7 +31,7 @@ export function AIAssistantPage() {
   const simulateAnalysis = async () => {
     setIsAnalyzing(true);
     await new Promise((resolve) => setTimeout(resolve, 3000));
-    
+
     setAnalysisResult({
       recognized: `Дано: cos(2x) + sin²(x) = 0.5
       
@@ -53,7 +45,8 @@ sin(x) = ±√2/2
       errors: [
         {
           type: 'CALCULATION',
-          description: 'Неправильно применена формула двойного угла. cos(2x) = 1 - 2sin²(x), но в решении потеряно слагаемое.',
+          description:
+            'Неправильно применена формула двойного угла. cos(2x) = 1 - 2sin²(x), но в решении потеряно слагаемое.',
         },
         {
           type: 'CONCEPT',
@@ -77,26 +70,19 @@ sin(x) = ±√2/2
 
   return (
     <div className="space-y-6">
-      
       <div className="flex items-center gap-3">
         <div className="p-3 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-xl shadow-lg">
           <Brain size={24} className="text-white" />
         </div>
         <div>
           <h1 className="text-2xl font-bold text-slate-900">ИИ-ассистент</h1>
-          <p className="text-slate-500">
-            Загрузите фото решения для анализа ошибок
-          </p>
+          <p className="text-slate-500">Загрузите фото решения для анализа ошибок</p>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        
         <Card padding="lg">
-          <CardHeader
-            title="Загрузить решение"
-            subtitle="Поддерживаются JPG, PNG до 10 МБ"
-          />
+          <CardHeader title="Загрузить решение" subtitle="Поддерживаются JPG, PNG до 10 МБ" />
 
           {!uploadedImage ? (
             <label className="block">
@@ -108,17 +94,10 @@ sin(x) = ±√2/2
                   <p className="text-slate-900 font-medium mb-1">
                     Перетащите файл или нажмите для выбора
                   </p>
-                  <p className="text-sm text-slate-500">
-                    Фото рукописного или печатного решения
-                  </p>
+                  <p className="text-sm text-slate-500">Фото рукописного или печатного решения</p>
                 </div>
               </div>
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleImageUpload}
-                className="hidden"
-              />
+              <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
             </label>
           ) : (
             <div className="space-y-4">
@@ -156,11 +135,9 @@ sin(x) = ±√2/2
           </div>
         </Card>
 
-        
         <div className="space-y-6">
           {analysisResult ? (
             <>
-              
               <Card>
                 <CardHeader
                   title="Распознанный текст"
@@ -176,7 +153,6 @@ sin(x) = ±√2/2
                 </pre>
               </Card>
 
-              
               <Card>
                 <CardHeader
                   title="Найденные ошибки"
@@ -184,18 +160,15 @@ sin(x) = ±√2/2
                 />
                 <div className="space-y-3">
                   {analysisResult.errors.map((error, index) => (
-                    <div
-                      key={index}
-                      className="p-4 bg-red-50 rounded-xl border-l-4 border-red-500"
-                    >
+                    <div key={index} className="p-4 bg-red-50 rounded-xl border-l-4 border-red-500">
                       <div className="flex items-center gap-2 mb-1">
                         <XCircle size={16} className="text-red-600" />
                         <span className="font-medium text-red-900">
                           {error.type === 'CALCULATION'
                             ? 'Вычислительная ошибка'
                             : error.type === 'CONCEPT'
-                            ? 'Концептуальная ошибка'
-                            : error.type}
+                              ? 'Концептуальная ошибка'
+                              : error.type}
                         </span>
                       </div>
                       <p className="text-sm text-red-800">{error.description}</p>
@@ -204,15 +177,11 @@ sin(x) = ±√2/2
                 </div>
               </Card>
 
-              
               <Card>
                 <CardHeader title="Рекомендации" />
                 <div className="space-y-2">
                   {analysisResult.recommendations.map((rec, index) => (
-                    <div
-                      key={index}
-                      className="flex items-start gap-3 p-3 bg-indigo-50 rounded-xl"
-                    >
+                    <div key={index} className="flex items-start gap-3 p-3 bg-indigo-50 rounded-xl">
                       <Lightbulb size={18} className="text-indigo-600 mt-0.5" />
                       <p className="text-sm text-indigo-900">{rec}</p>
                     </div>
@@ -220,7 +189,6 @@ sin(x) = ±√2/2
                 </div>
               </Card>
 
-              
               <Card className="bg-gradient-to-br from-slate-800 to-slate-900 text-white">
                 <div className="text-center py-4">
                   <p className="text-slate-400 mb-2">Оценка решения</p>
@@ -235,21 +203,15 @@ sin(x) = ±√2/2
                 <div className="p-4 bg-slate-100 rounded-full inline-block mb-4">
                   <Brain size={32} className="text-slate-400" />
                 </div>
-                <p className="text-slate-500">
-                  Загрузите решение для получения анализа
-                </p>
+                <p className="text-slate-500">Загрузите решение для получения анализа</p>
               </div>
             </Card>
           )}
         </div>
       </div>
 
-      
       <Card>
-        <CardHeader
-          title="Персональные рекомендации"
-          subtitle="На основе истории ваших решений"
-        />
+        <CardHeader title="Персональные рекомендации" subtitle="На основе истории ваших решений" />
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {aiRecommendations.map((rec) => (
             <div
@@ -263,16 +225,16 @@ sin(x) = ±√2/2
                     rec.priority === 'HIGH'
                       ? 'danger'
                       : rec.priority === 'MEDIUM'
-                      ? 'warning'
-                      : 'success'
+                        ? 'warning'
+                        : 'success'
                   }
                   size="sm"
                 >
                   {rec.priority === 'HIGH'
                     ? 'Важно'
                     : rec.priority === 'MEDIUM'
-                    ? 'Средний'
-                    : 'Низкий'}
+                      ? 'Средний'
+                      : 'Низкий'}
                 </Badge>
               </div>
               <h4 className="font-semibold text-slate-900 mb-1">{rec.title}</h4>

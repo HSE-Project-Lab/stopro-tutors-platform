@@ -6,14 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { LaTeXPreview } from '@/components/ui/LaTeX';
-import {
-  X,
-  Eye,
-  Upload,
-  FileText,
-  Plus,
-  Trash2,
-} from 'lucide-react';
+import { X, Eye, Upload, FileText, Plus, Trash2 } from 'lucide-react';
 import {
   EGE_TOPICS,
   DIFFICULTY_LABELS,
@@ -154,10 +147,7 @@ export function CreateTaskModal({ isOpen, onClose, onSubmit }: CreateTaskModalPr
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center pt-10 pb-10">
       {/* Оверлей */}
-      <div
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-        onClick={handleClose}
-      />
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={handleClose} />
 
       {/* Модальное окно */}
       <div className="relative w-full max-w-4xl max-h-[90vh] overflow-y-auto bg-white rounded-2xl shadow-2xl z-10">
@@ -226,10 +216,7 @@ export function CreateTaskModal({ isOpen, onClose, onSubmit }: CreateTaskModalPr
                 <Button onClick={parseLatexTemplate} disabled={!latexInput.trim()}>
                   Распарсить и заполнить форму
                 </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => setLatexInput(LATEX_TEMPLATE)}
-                >
+                <Button variant="outline" onClick={() => setLatexInput(LATEX_TEMPLATE)}>
                   Вставить пример
                 </Button>
               </div>
@@ -257,9 +244,7 @@ export function CreateTaskModal({ isOpen, onClose, onSubmit }: CreateTaskModalPr
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                    Тема
-                  </label>
+                  <label className="block text-sm font-medium text-slate-700 mb-1.5">Тема</label>
                   <Select
                     options={[
                       { value: '', label: 'Выберите тему...' },
@@ -306,11 +291,7 @@ export function CreateTaskModal({ isOpen, onClose, onSubmit }: CreateTaskModalPr
                   className="w-full h-32 px-4 py-3 border border-slate-200 rounded-xl text-sm resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                 />
                 {showPreview && (
-                  <LaTeXPreview
-                    content={content}
-                    label="Предпросмотр условия"
-                    className="mt-2"
-                  />
+                  <LaTeXPreview content={content} label="Предпросмотр условия" className="mt-2" />
                 )}
               </div>
 
@@ -326,11 +307,7 @@ export function CreateTaskModal({ isOpen, onClose, onSubmit }: CreateTaskModalPr
                   className="w-full h-28 px-4 py-3 border border-slate-200 rounded-xl text-sm resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                 />
                 {showPreview && solution && (
-                  <LaTeXPreview
-                    content={solution}
-                    label="Предпросмотр решения"
-                    className="mt-2"
-                  />
+                  <LaTeXPreview content={solution} label="Предпросмотр решения" className="mt-2" />
                 )}
               </div>
 
@@ -409,10 +386,7 @@ export function CreateTaskModal({ isOpen, onClose, onSubmit }: CreateTaskModalPr
             <Button variant="outline" onClick={handleClose}>
               Отмена
             </Button>
-            <Button
-              onClick={handleSubmit}
-              disabled={!isValid || isSubmitting}
-            >
+            <Button onClick={handleSubmit} disabled={!isValid || isSubmitting}>
               {isSubmitting ? 'Сохранение...' : 'Добавить задачу'}
             </Button>
           </div>

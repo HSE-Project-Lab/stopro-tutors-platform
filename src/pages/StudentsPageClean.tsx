@@ -34,34 +34,47 @@ export function StudentsPage(): JSX.Element {
         if (remaining > 0) {
           setPendingDelete({ student: obj.student });
           timerRef.current = window.setTimeout(async () => {
-            try { await api.delete(`/teacher/students/${obj.student.id}`); } catch (e) { }
+            try {
+              await api.delete(`/teacher/students/${obj.student.id}`);
+            } catch (e) {}
             localStorage.removeItem(PENDING_KEY);
             if (mounted) {
-              const rr = await api.get('/teacher/students'); setStudents(rr.data || []);
+              const rr = await api.get('/teacher/students');
+              setStudents(rr.data || []);
               setPendingDelete(null);
             }
             timerRef.current = null;
           }, remaining);
         }
       }
-    } catch (e) { }
+    } catch (e) {}
 
-    return () => { mounted = false; if (timerRef.current) clearTimeout(timerRef.current); };
+    return () => {
+      mounted = false;
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
   }, []);
 
-  const visible = students.filter(s => (s.fullName || s.username || '').toLowerCase().includes(query.toLowerCase()));
+  const visible = students.filter((s) =>
+    (s.fullName || s.username || '').toLowerCase().includes(query.toLowerCase())
+  );
 
   const scheduleDelete = (student: Student) => {
     setConfirmDelete(null);
-    setStudents(prev => prev.filter(p => p.id !== student.id));
+    setStudents((prev) => prev.filter((p) => p.id !== student.id));
     setPendingDelete({ student });
     const expiresAt = Date.now() + 5000;
-    try { localStorage.setItem(PENDING_KEY, JSON.stringify({ student, expiresAt })); } catch (e) { }
+    try {
+      localStorage.setItem(PENDING_KEY, JSON.stringify({ student, expiresAt }));
+    } catch (e) {}
     if (timerRef.current) clearTimeout(timerRef.current);
     timerRef.current = window.setTimeout(async () => {
-      try { await api.delete(`/teacher/students/${student.id}`); } catch (e) { }
+      try {
+        await api.delete(`/teacher/students/${student.id}`);
+      } catch (e) {}
       localStorage.removeItem(PENDING_KEY);
-      const rr = await api.get('/teacher/students'); setStudents(rr.data || []);
+      const rr = await api.get('/teacher/students');
+      setStudents(rr.data || []);
       setPendingDelete(null);
       timerRef.current = null;
     }, 5000);
@@ -69,9 +82,14 @@ export function StudentsPage(): JSX.Element {
 
   const undo = () => {
     if (!pendingDelete) return;
-    if (timerRef.current) { clearTimeout(timerRef.current); timerRef.current = null; }
-    try { localStorage.removeItem(PENDING_KEY); } catch (e) { }
-    setStudents(prev => [pendingDelete.student, ...prev]);
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+    try {
+      localStorage.removeItem(PENDING_KEY);
+    } catch (e) {}
+    setStudents((prev) => [pendingDelete.student, ...prev]);
     setPendingDelete(null);
   };
 
@@ -84,14 +102,18 @@ export function StudentsPage(): JSX.Element {
 
       <Card>
         <div className="space-y-2">
-          {visible.map(s => (
+          {visible.map((s) => (
             <div key={s.id} className="flex items-center justify-between p-3 border rounded-md">
               <div>
                 <div className="font-medium">{s.fullName || s.username}</div>
                 <div className="text-sm text-slate-500">{s.username}</div>
               </div>
               <div className="flex items-center gap-2">
-                <button className="text-red-600" onClick={() => setConfirmDelete(s)} aria-label="Удалить">
+                <button
+                  className="text-red-600"
+                  onClick={() => setConfirmDelete(s)}
+                  aria-label="Удалить"
+                >
                   <Trash size={16} />
                 </button>
               </div>
@@ -103,10 +125,16 @@ export function StudentsPage(): JSX.Element {
       {confirmDelete && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-40">
           <div className="bg-white p-6 rounded-lg">
-            <div className="mb-4">Удалить ученика «{confirmDelete.fullName || confirmDelete.username}»?</div>
+            <div className="mb-4">
+              Удалить ученика «{confirmDelete.fullName || confirmDelete.username}»?
+            </div>
             <div className="flex gap-2 justify-end">
-              <Button variant="outline" onClick={() => setConfirmDelete(null)}>Отмена</Button>
-              <Button variant="danger" onClick={() => scheduleDelete(confirmDelete)}>Удалить</Button>
+              <Button variant="outline" onClick={() => setConfirmDelete(null)}>
+                Отмена
+              </Button>
+              <Button variant="danger" onClick={() => scheduleDelete(confirmDelete)}>
+                Удалить
+              </Button>
             </div>
           </div>
         </div>
@@ -115,8 +143,14 @@ export function StudentsPage(): JSX.Element {
       <div className="fixed right-6 bottom-6 z-50">
         <AnimatedToast show={!!pendingDelete}>
           <div className="bg-white rounded-lg shadow px-4 py-3 flex items-center gap-4">
-            <div className="flex-1">Ученик «{pendingDelete?.student.fullName || pendingDelete?.student.username}» удалён</div>
-            <div><Button variant="ghost" size="sm" onClick={undo}>Отменить</Button></div>
+            <div className="flex-1">
+              Ученик «{pendingDelete?.student.fullName || pendingDelete?.student.username}» удалён
+            </div>
+            <div>
+              <Button variant="ghost" size="sm" onClick={undo}>
+                Отменить
+              </Button>
+            </div>
           </div>
         </AnimatedToast>
       </div>

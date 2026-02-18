@@ -38,29 +38,31 @@ import {
   Pencil,
   Trash,
 } from 'lucide-react';
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-} from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 export function TeacherDashboard() {
   const { user } = useAuthStore();
   const { setActiveTab } = useAppStore();
   const [showAddStudentModal, setShowAddStudentModal] = useState(false);
   const [showCreateHomeworkModal, setShowCreateHomeworkModal] = useState(false);
-  const [newStudent, setNewStudent] = useState({ email: '', firstName: '', lastName: '', groupId: '' });
-  const [editGroupModal, setEditGroupModal] = useState<{ open: boolean; group: any | null }>({ open: false, group: null });
+  const [newStudent, setNewStudent] = useState({
+    email: '',
+    firstName: '',
+    lastName: '',
+    groupId: '',
+  });
+  const [editGroupModal, setEditGroupModal] = useState<{ open: boolean; group: any | null }>({
+    open: false,
+    group: null,
+  });
   const [deleteGroupId, setDeleteGroupId] = useState<string | null>(null);
   const [groupsState, setGroupsState] = useState<any[]>([]);
   const [teacherStats, setTeacherStats] = useState(() => ({ ...teacherStatsDefault }));
   const [selectedGroup, setSelectedGroup] = useState<any | null>(null);
   const [studentsForGroup, setStudentsForGroup] = useState<any[]>([]);
-  const [showCredentialsModal, setShowCredentialsModal] = useState<{ open: boolean; creds: any[] }>({ open: false, creds: [] });
+  const [showCredentialsModal, setShowCredentialsModal] = useState<{ open: boolean; creds: any[] }>(
+    { open: false, creds: [] }
+  );
   const [addingStudent, setAddingStudent] = useState({ fullName: '', desiredScore: '' });
 
   const getGreeting = () => {
@@ -88,9 +90,9 @@ export function TeacherDashboard() {
         firstName: newStudent.firstName,
         lastName: newStudent.lastName,
         grade: 11, // Default
-        level: 'BEGINNER' // Default
+        level: 'BEGINNER', // Default
       });
-      
+
       alert(`Ученик ${newStudent.firstName} добавлен!`);
       setShowAddStudentModal(false);
       setNewStudent({ email: '', firstName: '', lastName: '', groupId: '' });
@@ -98,7 +100,7 @@ export function TeacherDashboard() {
       try {
         const sres = await api.get('/teacher/students');
         const students: any[] = sres.data || [];
-        setTeacherStats(prev => ({ ...prev, totalStudents: students.length }));
+        setTeacherStats((prev) => ({ ...prev, totalStudents: students.length }));
       } catch (err) {
         console.warn('Failed to refresh students after add', err);
       }
@@ -122,7 +124,7 @@ export function TeacherDashboard() {
     try {
       const { default: api } = await import('@/lib/axios');
       await api.delete(`/groups/${groupId}`);
-      setGroupsState(prev => prev.filter(g => g.id !== groupId));
+      setGroupsState((prev) => prev.filter((g) => g.id !== groupId));
       if (selectedGroup?.id === groupId) setSelectedGroup(null);
       alert('Группа удалена');
     } catch (e: any) {
@@ -147,12 +149,14 @@ export function TeacherDashboard() {
         const { default: api } = await import('@/lib/axios');
         const sres = await api.get('/teacher/students');
         const students: any[] = sres.data || [];
-        if (mounted) setTeacherStats(prev => ({ ...prev, totalStudents: students.length }));
+        if (mounted) setTeacherStats((prev) => ({ ...prev, totalStudents: students.length }));
       } catch (err) {
         console.error('Failed to load students for stats', err);
       }
     })();
-    return () => { mounted = false; };
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   const openGroupDetails = async (group: any) => {
@@ -162,7 +166,7 @@ export function TeacherDashboard() {
       const { default: api } = await import('@/lib/axios');
       const res = await api.get('/teacher/students');
       const students: any[] = res.data || [];
-      setStudentsForGroup(students.filter(s => s.groupId === group.id));
+      setStudentsForGroup(students.filter((s) => s.groupId === group.id));
     } catch (err) {
       console.error('Failed to load students', err);
       setStudentsForGroup([]);
@@ -174,7 +178,7 @@ export function TeacherDashboard() {
       const { default: api } = await import('@/lib/axios');
       const res = await api.put(`/groups/${groupId}`, { name });
       const updated = res.data;
-      setGroupsState(prev => prev.map(g => (g.id === updated.id ? updated : g)));
+      setGroupsState((prev) => prev.map((g) => (g.id === updated.id ? updated : g)));
       setEditGroupModal({ open: false, group: null });
       alert('Группа обновлена');
     } catch (err: any) {
@@ -191,7 +195,7 @@ export function TeacherDashboard() {
 
       const sres = await api.get('/teacher/students');
       const students: any[] = sres.data || [];
-      setStudentsForGroup(students.filter(s => s.groupId === groupId));
+      setStudentsForGroup(students.filter((s) => s.groupId === groupId));
       setShowCredentialsModal({ open: true, creds });
       setAddingStudent({ fullName: '', desiredScore: '' });
     } catch (err: any) {
@@ -208,13 +212,13 @@ export function TeacherDashboard() {
       if (selectedGroup) {
         const res = await api.get('/teacher/students');
         const students: any[] = res.data || [];
-        setStudentsForGroup(students.filter(s => s.groupId === selectedGroup.id));
+        setStudentsForGroup(students.filter((s) => s.groupId === selectedGroup.id));
       }
 
       try {
         const sres = await api.get('/teacher/students');
         const students: any[] = sres.data || [];
-        setTeacherStats(prev => ({ ...prev, totalStudents: students.length }));
+        setTeacherStats((prev) => ({ ...prev, totalStudents: students.length }));
       } catch (err) {
         console.warn('Failed to refresh students after delete', err);
       }
@@ -233,7 +237,7 @@ export function TeacherDashboard() {
       if (selectedGroup) {
         const res = await api.get('/teacher/students');
         const students: any[] = res.data || [];
-        setStudentsForGroup(students.filter(s => s.groupId === selectedGroup.id));
+        setStudentsForGroup(students.filter((s) => s.groupId === selectedGroup.id));
       }
       alert('Данные ученика обновлены');
     } catch (err: any) {
@@ -243,13 +247,11 @@ export function TeacherDashboard() {
 
   return (
     <div className="space-y-6">
-      
       <div className="relative overflow-hidden bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-700 rounded-3xl p-8 text-white">
-        
         <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2" />
         <div className="absolute bottom-0 left-1/4 w-32 h-32 bg-white/5 rounded-full translate-y-1/2" />
         <div className="absolute top-1/2 right-1/4 w-16 h-16 bg-white/10 rounded-full" />
-        
+
         <div className="relative z-10 flex items-center justify-between">
           <div className="flex-1">
             <div className="flex items-center gap-2 mb-2">
@@ -259,10 +261,8 @@ export function TeacherDashboard() {
             <h1 className="text-3xl font-bold mb-2">
               {getGreeting()}, {user?.fullName}! 👋
             </h1>
-            <p className="text-indigo-100 text-lg mb-4">
-              {motivationalText}
-            </p>
-            
+            <p className="text-indigo-100 text-lg mb-4">{motivationalText}</p>
+
             <div className="flex flex-wrap gap-4 mt-6">
               <div className="flex items-center gap-2 bg-white/20 backdrop-blur-sm rounded-xl px-4 py-2">
                 <Users size={18} />
@@ -281,10 +281,10 @@ export function TeacherDashboard() {
               </div>
             </div>
           </div>
-          
+
           <div className="hidden lg:flex flex-col gap-3">
-            <Button 
-              variant="secondary" 
+            <Button
+              variant="secondary"
               size="lg"
               className="bg-white text-indigo-600 hover:bg-indigo-50 shadow-lg"
               onClick={() => setShowAddStudentModal(true)}
@@ -292,8 +292,8 @@ export function TeacherDashboard() {
               <Plus size={18} className="mr-2" />
               Добавить ученика
             </Button>
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               size="lg"
               className="border-white/30 text-white hover:bg-white/10"
               onClick={() => setShowCreateHomeworkModal(true)}
@@ -304,17 +304,18 @@ export function TeacherDashboard() {
           </div>
         </div>
 
-        
         <div className="relative z-10 mt-6 p-4 bg-white/10 backdrop-blur-sm rounded-xl flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Calendar size={20} />
             <div>
               <p className="font-medium">Сегодняшний план</p>
-              <p className="text-sm text-indigo-200">2 урока • 5 ДЗ на проверке • 3 ученика ждут обратную связь</p>
+              <p className="text-sm text-indigo-200">
+                2 урока • 5 ДЗ на проверке • 3 ученика ждут обратную связь
+              </p>
             </div>
           </div>
-          <Button 
-            variant="ghost" 
+          <Button
+            variant="ghost"
             className="text-white hover:bg-white/10"
             onClick={() => setActiveTab('homework')}
           >
@@ -324,19 +325,21 @@ export function TeacherDashboard() {
         </div>
       </div>
 
-      
       <div className="lg:hidden grid grid-cols-2 gap-3">
         <Button onClick={() => setShowAddStudentModal(true)} className="w-full">
           <Plus size={18} className="mr-2" />
           Добавить ученика
         </Button>
-        <Button variant="outline" onClick={() => setShowCreateHomeworkModal(true)} className="w-full">
+        <Button
+          variant="outline"
+          onClick={() => setShowCreateHomeworkModal(true)}
+          className="w-full"
+        >
           <BookOpen size={18} className="mr-2" />
           Создать ДЗ
         </Button>
       </div>
 
-      
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <div onClick={() => setActiveTab('students')} className="cursor-pointer">
           <StatsCard
@@ -374,11 +377,8 @@ export function TeacherDashboard() {
         </div>
       </div>
 
-      
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        
         <div className="lg:col-span-2 space-y-6">
-          
           <Card>
             <CardHeader
               title="Активность учеников"
@@ -412,24 +412,16 @@ export function TeacherDashboard() {
                       borderRadius: '12px',
                     }}
                   />
-                  <Bar
-                    dataKey="tasks"
-                    fill="#818cf8"
-                    radius={[4, 4, 0, 0]}
-                    name="Задач решено"
-                  />
+                  <Bar dataKey="tasks" fill="#818cf8" radius={[4, 4, 0, 0]} name="Задач решено" />
                 </BarChart>
               </ResponsiveContainer>
             </div>
           </Card>
 
-          
           <HomeworkList homeworks={homeworks} viewType="teacher" />
         </div>
 
-        
         <div className="space-y-6">
-          
           <Card>
             <CardHeader
               title="Мои группы"
@@ -449,9 +441,7 @@ export function TeacherDashboard() {
                 >
                   <div>
                     <p className="font-medium text-slate-900">{group.name}</p>
-                    <p className="text-sm text-slate-500">
-                      {group.studentsCount} учеников
-                    </p>
+                    <p className="text-sm text-slate-500">{group.studentsCount} учеников</p>
                   </div>
                   <div className="flex items-center gap-2">
                     <Badge
@@ -459,15 +449,15 @@ export function TeacherDashboard() {
                         group.level === 'ADVANCED'
                           ? 'success'
                           : group.level === 'INTERMEDIATE'
-                          ? 'info'
-                          : 'default'
+                            ? 'info'
+                            : 'default'
                       }
                     >
                       {group.level === 'ADVANCED'
                         ? 'Продвинутый'
                         : group.level === 'INTERMEDIATE'
-                        ? 'Средний'
-                        : 'Начальный'}
+                          ? 'Средний'
+                          : 'Начальный'}
                     </Badge>
                     <button
                       onClick={(e) => {
@@ -493,14 +483,15 @@ export function TeacherDashboard() {
             </div>
           </Card>
 
-          
           {selectedGroup && (
             <div className="fixed inset-0 bg-black/40 flex items-start justify-center z-50 p-6">
               <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[80vh] overflow-auto">
                 <div className="p-6 border-b flex items-center justify-between">
                   <h3 className="text-lg font-bold">Группа: {selectedGroup.name}</h3>
                   <div className="flex items-center gap-2">
-                    <Button variant="outline" size="sm" onClick={() => setSelectedGroup(null)}>Закрыть</Button>
+                    <Button variant="outline" size="sm" onClick={() => setSelectedGroup(null)}>
+                      Закрыть
+                    </Button>
                   </div>
                 </div>
                 <div className="p-6 space-y-4">
@@ -516,21 +507,35 @@ export function TeacherDashboard() {
                           </tr>
                         </thead>
                         <tbody>
-                          {studentsForGroup.map(s => (
+                          {studentsForGroup.map((s) => (
                             <tr key={s.id} className="border-t">
                               <td className="py-2">{s.fullName}</td>
                               <td className="py-2">{s.username}</td>
                               <td className="py-2">{selectedGroup.name}</td>
                               <td className="py-2">
                                 <div className="flex items-center gap-2">
-                                  <button onClick={() => editStudent(s.id)} className="p-1 rounded hover:bg-slate-100">Изменить</button>
-                                  <button onClick={() => deleteStudent(s.id)} className="p-1 rounded hover:bg-red-100">Удалить</button>
+                                  <button
+                                    onClick={() => editStudent(s.id)}
+                                    className="p-1 rounded hover:bg-slate-100"
+                                  >
+                                    Изменить
+                                  </button>
+                                  <button
+                                    onClick={() => deleteStudent(s.id)}
+                                    className="p-1 rounded hover:bg-red-100"
+                                  >
+                                    Удалить
+                                  </button>
                                 </div>
                               </td>
                             </tr>
                           ))}
                           {studentsForGroup.length === 0 && (
-                            <tr><td colSpan={3} className="py-4 text-sm text-slate-500">Пока нет учеников в этой группе.</td></tr>
+                            <tr>
+                              <td colSpan={3} className="py-4 text-sm text-slate-500">
+                                Пока нет учеников в этой группе.
+                              </td>
+                            </tr>
                           )}
                         </tbody>
                       </table>
@@ -539,17 +544,26 @@ export function TeacherDashboard() {
 
                   <div>
                     <h4 className="font-medium mb-2">Добавить ученика</h4>
-                    <form onSubmit={async (e) => {
-                      e.preventDefault();
-                      const name = (e.target as any).fullName.value;
-                      const desired = (e.target as any).desiredScore.value;
-                      await addStudentToGroup(selectedGroup.id, name, desired);
-                    }} className="grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
+                    <form
+                      onSubmit={async (e) => {
+                        e.preventDefault();
+                        const name = (e.target as any).fullName.value;
+                        const desired = (e.target as any).desiredScore.value;
+                        await addStudentToGroup(selectedGroup.id, name, desired);
+                      }}
+                      className="grid grid-cols-1 md:grid-cols-3 gap-3 items-end"
+                    >
                       <Input name="fullName" label="ФИО" required />
                       <Input name="desiredScore" label="Желаемый балл (опционально)" />
                       <div className="flex gap-2">
                         <Button type="submit">Добавить</Button>
-                        <Button variant="outline" onClick={() => setSelectedGroup(null)} type="button">Отмена</Button>
+                        <Button
+                          variant="outline"
+                          onClick={() => setSelectedGroup(null)}
+                          type="button"
+                        >
+                          Отмена
+                        </Button>
                       </div>
                     </form>
                   </div>
@@ -558,7 +572,6 @@ export function TeacherDashboard() {
             </div>
           )}
 
-          
           <Card>
             <CardHeader
               title="Лучшие результаты"
@@ -578,15 +591,12 @@ export function TeacherDashboard() {
                     <p className="font-medium text-slate-900">{student.name}</p>
                     <p className="text-xs text-slate-500">{student.group}</p>
                   </div>
-                  <span className="text-lg font-bold text-emerald-600">
-                    {student.score}%
-                  </span>
+                  <span className="text-lg font-bold text-emerald-600">{student.score}%</span>
                 </div>
               ))}
             </div>
           </Card>
 
-          
           <Card>
             <CardHeader
               title="Требуют внимания"
@@ -601,9 +611,7 @@ export function TeacherDashboard() {
                 >
                   <div className="flex items-center justify-between mb-1">
                     <p className="font-medium text-slate-900">{student.name}</p>
-                    <span className="text-sm font-bold text-red-600">
-                      {student.score}%
-                    </span>
+                    <span className="text-sm font-bold text-red-600">{student.score}%</span>
                   </div>
                   <p className="text-sm text-red-600">{student.issue}</p>
                 </div>
@@ -613,7 +621,6 @@ export function TeacherDashboard() {
         </div>
       </div>
 
-      
       {showAddStudentModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
@@ -633,7 +640,7 @@ export function TeacherDashboard() {
                 type="email"
                 placeholder="student@example.com"
                 value={newStudent.email}
-                onChange={(e) => setNewStudent(prev => ({ ...prev, email: e.target.value }))}
+                onChange={(e) => setNewStudent((prev) => ({ ...prev, email: e.target.value }))}
                 icon={<Mail size={18} />}
               />
               <div className="grid grid-cols-2 gap-4">
@@ -641,28 +648,34 @@ export function TeacherDashboard() {
                   label="Имя"
                   placeholder="Иван"
                   value={newStudent.firstName}
-                  onChange={(e) => setNewStudent(prev => ({ ...prev, firstName: e.target.value }))}
+                  onChange={(e) =>
+                    setNewStudent((prev) => ({ ...prev, firstName: e.target.value }))
+                  }
                 />
                 <Input
                   label="Фамилия"
                   placeholder="Иванов"
                   value={newStudent.lastName}
-                  onChange={(e) => setNewStudent(prev => ({ ...prev, lastName: e.target.value }))}
+                  onChange={(e) => setNewStudent((prev) => ({ ...prev, lastName: e.target.value }))}
                 />
               </div>
               <Select
                 label="Группа"
                 options={[
                   { value: '', label: 'Выберите группу' },
-                  ...groupsState.map(g => ({ value: g.id, label: g.name }))
+                  ...groupsState.map((g) => ({ value: g.id, label: g.name })),
                 ]}
                 value={newStudent.groupId}
-                onChange={(e) => setNewStudent(prev => ({ ...prev, groupId: e.target.value }))}
+                onChange={(e) => setNewStudent((prev) => ({ ...prev, groupId: e.target.value }))}
               />
             </div>
 
             <div className="p-6 border-t border-slate-100 flex gap-3">
-              <Button variant="outline" className="flex-1" onClick={() => setShowAddStudentModal(false)}>
+              <Button
+                variant="outline"
+                className="flex-1"
+                onClick={() => setShowAddStudentModal(false)}
+              >
                 Отмена
               </Button>
               <Button className="flex-1" onClick={handleAddStudent} disabled={!newStudent.email}>
@@ -673,7 +686,6 @@ export function TeacherDashboard() {
         </div>
       )}
 
-      
       {showCreateHomeworkModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md text-center p-8">
@@ -685,7 +697,11 @@ export function TeacherDashboard() {
               Перейдите в раздел "Домашние задания" для создания нового ДЗ с выбором задач и групп.
             </p>
             <div className="flex gap-3">
-              <Button variant="outline" className="flex-1" onClick={() => setShowCreateHomeworkModal(false)}>
+              <Button
+                variant="outline"
+                className="flex-1"
+                onClick={() => setShowCreateHomeworkModal(false)}
+              >
                 Отмена
               </Button>
               <Button className="flex-1" onClick={handleCreateHomework}>
@@ -697,21 +713,26 @@ export function TeacherDashboard() {
         </div>
       )}
 
-      
       {editGroupModal.open && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
             <div className="p-6 border-b border-slate-100 flex items-center justify-between">
               <h2 className="text-xl font-bold text-slate-900">Редактировать группу</h2>
-              <button onClick={() => setEditGroupModal({ open: false, group: null })} className="p-2 hover:bg-slate-100 rounded-lg">
+              <button
+                onClick={() => setEditGroupModal({ open: false, group: null })}
+                className="p-2 hover:bg-slate-100 rounded-lg"
+              >
                 <X size={20} className="text-slate-500" />
               </button>
             </div>
-            <form className="p-6 space-y-4" onSubmit={async (e) => {
-              e.preventDefault();
-              const name = (e.target as any).groupName.value;
-              await submitEditGroup(editGroupModal.group.id, name);
-            }}>
+            <form
+              className="p-6 space-y-4"
+              onSubmit={async (e) => {
+                e.preventDefault();
+                const name = (e.target as any).groupName.value;
+                await submitEditGroup(editGroupModal.group.id, name);
+              }}
+            >
               <Input
                 label="Название группы"
                 name="groupName"
@@ -719,7 +740,12 @@ export function TeacherDashboard() {
                 required
               />
               <div className="flex gap-3 pt-4">
-                <Button variant="outline" className="flex-1" onClick={() => setEditGroupModal({ open: false, group: null })} type="button">
+                <Button
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => setEditGroupModal({ open: false, group: null })}
+                  type="button"
+                >
                   Отмена
                 </Button>
                 <Button className="flex-1" type="submit">
@@ -731,13 +757,15 @@ export function TeacherDashboard() {
         </div>
       )}
 
-      
       {showCredentialsModal.open && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-bold">Учётные данные</h3>
-              <button onClick={() => setShowCredentialsModal({ open: false, creds: [] })} className="p-2 hover:bg-slate-100 rounded-lg">
+              <button
+                onClick={() => setShowCredentialsModal({ open: false, creds: [] })}
+                className="p-2 hover:bg-slate-100 rounded-lg"
+              >
                 <X size={18} />
               </button>
             </div>
@@ -746,10 +774,19 @@ export function TeacherDashboard() {
                 <div key={idx} className="p-3 border rounded-lg flex items-center justify-between">
                   <div>
                     <div className="font-medium">{c.fullName}</div>
-                    <div className="text-sm text-slate-500">{c.username} / {c.password}</div>
+                    <div className="text-sm text-slate-500">
+                      {c.username} / {c.password}
+                    </div>
                   </div>
                   <div className="flex gap-2">
-                    <button onClick={() => { navigator.clipboard.writeText(`${c.username}:${c.password}`); }} className="px-3 py-1 bg-slate-100 rounded">Копировать</button>
+                    <button
+                      onClick={() => {
+                        navigator.clipboard.writeText(`${c.username}:${c.password}`);
+                      }}
+                      className="px-3 py-1 bg-slate-100 rounded"
+                    >
+                      Копировать
+                    </button>
                   </div>
                 </div>
               ))}

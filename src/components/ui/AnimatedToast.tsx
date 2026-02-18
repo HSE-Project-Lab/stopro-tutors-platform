@@ -19,12 +19,16 @@ export default function AnimatedToast({ children, show = true, className = '' }:
       setVisible(false);
       t = setTimeout(() => setRender(false), 220);
     }
-    return () => { if (t) clearTimeout(t); };
+    return () => {
+      if (t) clearTimeout(t);
+    };
   }, [show]);
 
   if (!render) return null;
   return (
-    <div className={`transform transition-all duration-200 ${visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-3'} ${className}`}>
+    <div
+      className={`transform transition-all duration-200 ${visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-3'} ${className}`}
+    >
       {children}
     </div>
   );

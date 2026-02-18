@@ -68,10 +68,7 @@ export function StatsCard({ title, value, change, icon: Icon, color }: StatsCard
         </div>
       </div>
       <div
-        className={cn(
-          'absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r',
-          styles.gradient
-        )}
+        className={cn('absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r', styles.gradient)}
       />
     </Card>
   );

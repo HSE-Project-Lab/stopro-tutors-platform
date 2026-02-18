@@ -25,10 +25,7 @@ export function WeeklyChart({ data }: WeeklyChartProps) {
 
   return (
     <Card>
-      <CardHeader
-        title="Активность за неделю"
-        subtitle="Решённые задачи и правильные ответы"
-      />
+      <CardHeader title="Активность за неделю" subtitle="Решённые задачи и правильные ответы" />
       <div className="h-[300px]">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
@@ -39,11 +36,7 @@ export function WeeklyChart({ data }: WeeklyChartProps) {
               tickLine={false}
               tick={{ fill: '#64748b', fontSize: 12 }}
             />
-            <YAxis
-              axisLine={false}
-              tickLine={false}
-              tick={{ fill: '#64748b', fontSize: 12 }}
-            />
+            <YAxis axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 12 }} />
             <Tooltip
               contentStyle={{
                 backgroundColor: 'white',
@@ -55,22 +48,10 @@ export function WeeklyChart({ data }: WeeklyChartProps) {
             />
             <Legend
               wrapperStyle={{ paddingTop: 20 }}
-              formatter={(value) =>
-                value === 'solved' ? 'Решено' : 'Правильно'
-              }
+              formatter={(value) => (value === 'solved' ? 'Решено' : 'Правильно')}
             />
-            <Bar
-              dataKey="solved"
-              fill="#818cf8"
-              radius={[4, 4, 0, 0]}
-              name="solved"
-            />
-            <Bar
-              dataKey="correct"
-              fill="#34d399"
-              radius={[4, 4, 0, 0]}
-              name="correct"
-            />
+            <Bar dataKey="solved" fill="#818cf8" radius={[4, 4, 0, 0]} name="solved" />
+            <Bar dataKey="correct" fill="#34d399" radius={[4, 4, 0, 0]} name="correct" />
           </BarChart>
         </ResponsiveContainer>
       </div>

@@ -27,10 +27,7 @@ export function TopicProgressChart({ topics }: TopicProgressChartProps) {
 
   return (
     <Card>
-      <CardHeader
-        title="Прогресс по темам"
-        subtitle="Успешность решения по заданиям ЕГЭ"
-      />
+      <CardHeader title="Прогресс по темам" subtitle="Успешность решения по заданиям ЕГЭ" />
       <div className="space-y-4">
         {topics.map((topic) => (
           <div key={topic.topicId} className="flex items-center gap-4">
@@ -43,9 +40,7 @@ export function TopicProgressChart({ topics }: TopicProgressChartProps) {
                   {topic.topicName}
                 </span>
                 <div className="flex items-center gap-2">
-                  <span className="text-sm font-semibold text-slate-700">
-                    {topic.successRate}%
-                  </span>
+                  <span className="text-sm font-semibold text-slate-700">{topic.successRate}%</span>
                   {getStatusBadge(topic.status)}
                 </div>
               </div>

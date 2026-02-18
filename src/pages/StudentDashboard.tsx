@@ -19,11 +19,11 @@ const studentProgress = {
 };
 const homeworks: any[] = [];
 const aiRecommendations: any[] = [];
-import { 
-  BookOpen, 
-  Target, 
-  CheckCircle, 
-  Clock, 
+import {
+  BookOpen,
+  Target,
+  CheckCircle,
+  Clock,
   Sparkles,
   Flame,
   Trophy,
@@ -36,7 +36,8 @@ import {
 export function StudentDashboard() {
   const { user } = useAuthStore();
   const { setActiveTab } = useAppStore();
-  const { completedTasks, correctAnswers, averageTime, weeklyProgress, topicStats } = studentProgress;
+  const { completedTasks, correctAnswers, averageTime, weeklyProgress, topicStats } =
+    studentProgress;
   const successRate = completedTasks ? Math.round((correctAnswers / completedTasks) * 100) : 0;
 
   const getGreeting = () => {
@@ -56,19 +57,19 @@ export function StudentDashboard() {
 
   return (
     <div className="space-y-6">
-      
       <div className="relative overflow-hidden bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 rounded-3xl p-8 text-white">
-        
         <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2" />
         <div className="absolute bottom-0 left-1/4 w-32 h-32 bg-white/5 rounded-full translate-y-1/2" />
         <div className="absolute top-1/2 right-1/3 w-20 h-20 bg-white/10 rounded-full" />
-        
+
         <div className="relative z-10">
           <div className="flex items-start justify-between">
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-2">
                 <Sparkles size={20} className="text-yellow-300" />
-                <span className="text-emerald-100 text-sm font-medium">СТОПРО • Профильная математика</span>
+                <span className="text-emerald-100 text-sm font-medium">
+                  СТОПРО • Профильная математика
+                </span>
               </div>
               <h1 className="text-3xl font-bold mb-2">
                 {getGreeting()}, {user?.fullName}! 🎯
@@ -76,7 +77,7 @@ export function StudentDashboard() {
               <p className="text-emerald-100 text-lg mb-4">
                 Продолжай в том же духе! Ты уже решил {completedTasks} задач.
               </p>
-              
+
               <div className="flex flex-wrap gap-4 mt-4">
                 <div className="flex items-center gap-2 bg-white/20 backdrop-blur-sm rounded-xl px-4 py-2">
                   <Flame size={18} className="text-orange-300" />
@@ -95,10 +96,10 @@ export function StudentDashboard() {
                 </div>
               </div>
             </div>
-            
+
             <div className="hidden lg:flex flex-col gap-3">
-              <Button 
-                variant="secondary" 
+              <Button
+                variant="secondary"
                 size="lg"
                 className="bg-white text-emerald-600 hover:bg-emerald-50 shadow-lg"
                 onClick={() => setActiveTab('practice')}
@@ -106,8 +107,8 @@ export function StudentDashboard() {
                 <Zap size={18} className="mr-2" />
                 Начать практику
               </Button>
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 size="lg"
                 className="border-white/30 text-white hover:bg-white/10"
                 onClick={() => setActiveTab('ai-assistant')}
@@ -118,7 +119,6 @@ export function StudentDashboard() {
             </div>
           </div>
 
-          
           <div className="mt-6 p-4 bg-white/10 backdrop-blur-sm rounded-xl">
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
@@ -128,7 +128,7 @@ export function StudentDashboard() {
               <span className="text-emerald-200">{successRate}% готовности</span>
             </div>
             <div className="w-full bg-white/20 rounded-full h-3">
-              <div 
+              <div
                 className="bg-white rounded-full h-3 transition-all duration-500"
                 style={{ width: `${Math.min(100, (successRate / 85) * 100)}%` }}
               />
@@ -140,7 +140,6 @@ export function StudentDashboard() {
         </div>
       </div>
 
-      
       <div className="lg:hidden grid grid-cols-2 gap-3">
         <Button onClick={() => setActiveTab('practice')} className="w-full">
           <Zap size={18} className="mr-2" />
@@ -152,7 +151,6 @@ export function StudentDashboard() {
         </Button>
       </div>
 
-      
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <div onClick={() => setActiveTab('analytics')} className="cursor-pointer">
           <StatsCard
@@ -172,12 +170,7 @@ export function StudentDashboard() {
             color="emerald"
           />
         </div>
-        <StatsCard
-          title="Целевой балл"
-          value="85"
-          icon={Target}
-          color="amber"
-        />
+        <StatsCard title="Целевой балл" value="85" icon={Target} color="amber" />
         <div onClick={() => setActiveTab('analytics')} className="cursor-pointer">
           <StatsCard
             title="Среднее время"
@@ -189,10 +182,9 @@ export function StudentDashboard() {
         </div>
       </div>
 
-      
       <Card>
-        <CardHeader 
-          title="Цели на сегодня" 
+        <CardHeader
+          title="Цели на сегодня"
           subtitle="Выполни задания и получи достижения"
           action={
             <Badge variant="info">
@@ -202,7 +194,7 @@ export function StudentDashboard() {
           }
         />
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div 
+          <div
             onClick={() => setActiveTab('practice')}
             className="p-4 bg-emerald-50 rounded-xl border-2 border-emerald-200 cursor-pointer hover:bg-emerald-100 transition-colors"
           >
@@ -213,8 +205,8 @@ export function StudentDashboard() {
             <ProgressBar value={7} max={10} color="success" size="md" />
             <p className="text-sm text-emerald-600 mt-2">7 из 10 выполнено</p>
           </div>
-          
-          <div 
+
+          <div
             onClick={() => setActiveTab('practice')}
             className="p-4 bg-amber-50 rounded-xl border-2 border-amber-200 cursor-pointer hover:bg-amber-100 transition-colors"
           >
@@ -225,8 +217,8 @@ export function StudentDashboard() {
             <ProgressBar value={3} max={5} color="warning" size="md" />
             <p className="text-sm text-amber-600 mt-2">3 из 5 задач</p>
           </div>
-          
-          <div 
+
+          <div
             onClick={() => setActiveTab('homework')}
             className="p-4 bg-blue-50 rounded-xl border-2 border-blue-200 cursor-pointer hover:bg-blue-100 transition-colors"
           >
@@ -240,13 +232,11 @@ export function StudentDashboard() {
         </div>
       </Card>
 
-      
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <WeeklyChart data={weeklyProgress} />
         <TopicProgressChart topics={topicStats} />
       </div>
 
-      
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div onClick={() => setActiveTab('homework')} className="cursor-pointer">
           <HomeworkList homeworks={homeworks.slice(0, 3)} viewType="student" />
@@ -254,7 +244,6 @@ export function StudentDashboard() {
         <RecommendationsList recommendations={aiRecommendations} />
       </div>
 
-      
       <Card className="bg-gradient-to-r from-indigo-50 to-purple-50">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
@@ -263,9 +252,7 @@ export function StudentDashboard() {
             </div>
             <div>
               <h3 className="font-bold text-lg text-slate-900">Быстрая практика</h3>
-              <p className="text-slate-600">
-                Реши 5 случайных задач из твоих слабых тем
-              </p>
+              <p className="text-slate-600">Реши 5 случайных задач из твоих слабых тем</p>
             </div>
           </div>
           <Button onClick={() => setActiveTab('practice')} size="lg">

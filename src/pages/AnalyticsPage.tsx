@@ -37,7 +37,10 @@ export function AnalyticsPage() {
 
   const pieData = [
     { name: 'Отлично (80%+)', value: topicStats.filter((t) => t.successRate >= 80).length },
-    { name: 'Хорошо (60-80%)', value: topicStats.filter((t) => t.successRate >= 60 && t.successRate < 80).length },
+    {
+      name: 'Хорошо (60-80%)',
+      value: topicStats.filter((t) => t.successRate >= 60 && t.successRate < 80).length,
+    },
     { name: 'Требует внимания (<60%)', value: topicStats.filter((t) => t.successRate < 60).length },
   ];
 
@@ -51,13 +54,10 @@ export function AnalyticsPage() {
 
   return (
     <div className="space-y-6">
-      
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">Аналитика</h1>
-          <p className="text-slate-500 mt-1">
-            Детальная статистика и динамика успеваемости
-          </p>
+          <p className="text-slate-500 mt-1">Детальная статистика и динамика успеваемости</p>
         </div>
         <div className="flex gap-3">
           <Select
@@ -76,7 +76,6 @@ export function AnalyticsPage() {
         </div>
       </div>
 
-      
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card className="bg-gradient-to-br from-indigo-500 to-indigo-600 text-white">
           <p className="text-indigo-100 text-sm">Всего задач решено</p>
@@ -103,14 +102,9 @@ export function AnalyticsPage() {
         </Card>
       </div>
 
-      
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        
         <Card>
-          <CardHeader
-            title="Динамика за месяц"
-            subtitle="Решённые задачи и правильные ответы"
-          />
+          <CardHeader title="Динамика за месяц" subtitle="Решённые задачи и правильные ответы" />
           <div className="h-[300px]">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={monthlyData}>
@@ -121,11 +115,7 @@ export function AnalyticsPage() {
                   tickLine={false}
                   tick={{ fill: '#64748b', fontSize: 12 }}
                 />
-                <YAxis
-                  axisLine={false}
-                  tickLine={false}
-                  tick={{ fill: '#64748b', fontSize: 12 }}
-                />
+                <YAxis axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 12 }} />
                 <Tooltip
                   contentStyle={{
                     backgroundColor: 'white',
@@ -154,20 +144,13 @@ export function AnalyticsPage() {
           </div>
         </Card>
 
-        
         <Card>
-          <CardHeader
-            title="Профиль навыков"
-            subtitle="Успешность по заданиям ЕГЭ"
-          />
+          <CardHeader title="Профиль навыков" subtitle="Успешность по заданиям ЕГЭ" />
           <div className="h-[300px]">
             <ResponsiveContainer width="100%" height="100%">
               <RadarChart data={radarData}>
                 <PolarGrid stroke="#e2e8f0" />
-                <PolarAngleAxis
-                  dataKey="subject"
-                  tick={{ fill: '#64748b', fontSize: 12 }}
-                />
+                <PolarAngleAxis dataKey="subject" tick={{ fill: '#64748b', fontSize: 12 }} />
                 <PolarRadiusAxis
                   angle={30}
                   domain={[0, 100]}
@@ -186,9 +169,7 @@ export function AnalyticsPage() {
         </Card>
       </div>
 
-      
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        
         <Card>
           <CardHeader title="Распределение тем" />
           <div className="h-[250px]">
@@ -227,12 +208,8 @@ export function AnalyticsPage() {
           </div>
         </Card>
 
-        
         <Card className="lg:col-span-2">
-          <CardHeader
-            title="Детализация по темам"
-            subtitle="Успешность и количество попыток"
-          />
+          <CardHeader title="Детализация по темам" subtitle="Успешность и количество попыток" />
           <div className="h-[300px]">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={topicStats} layout="vertical">
@@ -271,7 +248,6 @@ export function AnalyticsPage() {
         </Card>
       </div>
 
-      
       <Card className="bg-gradient-to-r from-slate-50 to-indigo-50">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">

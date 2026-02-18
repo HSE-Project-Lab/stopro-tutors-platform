@@ -71,12 +71,12 @@ function Modal({ children, onClose }: { children: React.ReactNode; onClose: () =
   );
 }
 
-function AnimatedToast({ 
-  children, 
+function AnimatedToast({
+  children,
   duration = 5000,
-  onDone 
-}: { 
-  children: React.ReactNode; 
+  onDone,
+}: {
+  children: React.ReactNode;
   duration?: number;
   onDone?: () => void;
 }) {
@@ -85,10 +85,10 @@ function AnimatedToast({
   useEffect(() => {
     // Enter animation
     const enterTimer = window.setTimeout(() => setPhase('visible'), 10);
-    
+
     // Start exit animation before removal
     const exitTimer = window.setTimeout(() => setPhase('exit'), duration - 300);
-    
+
     // Actually remove
     const removeTimer = window.setTimeout(() => {
       onDone?.();
@@ -107,8 +107,8 @@ function AnimatedToast({
         phase === 'enter'
           ? 'opacity-0 translate-y-3'
           : phase === 'exit'
-          ? 'opacity-0 translate-y-3'
-          : 'opacity-100 translate-y-0'
+            ? 'opacity-0 translate-y-3'
+            : 'opacity-100 translate-y-0'
       }`}
     >
       {children}
@@ -411,7 +411,8 @@ export function StudentsPage() {
 
   const submitEditStudent = async () => {
     if (!editingStudent) return;
-    const fullName = `${editStudentForm.firstName.trim()} ${editStudentForm.lastName.trim()}`.trim();
+    const fullName =
+      `${editStudentForm.firstName.trim()} ${editStudentForm.lastName.trim()}`.trim();
     if (!fullName) return alert('Укажите имя');
     try {
       await api.put(`/teacher/students/${editingStudent.id}`, {
@@ -497,8 +498,7 @@ export function StudentsPage() {
       if (status === 401) return alert('Сессия истекла. Войдите снова.');
       if (status === 403) return alert('Нет прав для создания группы.');
       if (status === 400 && msg) return alert(msg);
-      if (err.code === 'ERR_NETWORK' || !status)
-        return alert('Не удалось связаться с сервером.');
+      if (err.code === 'ERR_NETWORK' || !status) return alert('Не удалось связаться с сервером.');
       alert(msg || `Ошибка создания группы${status ? ` (${status})` : ''}`);
     }
   };
@@ -512,8 +512,7 @@ export function StudentsPage() {
   });
 
   const filteredGroups = groups.filter((group) => {
-    if (searchQuery && !group.name.toLowerCase().includes(searchQuery.toLowerCase()))
-      return false;
+    if (searchQuery && !group.name.toLowerCase().includes(searchQuery.toLowerCase())) return false;
     return true;
   });
 
@@ -528,7 +527,9 @@ export function StudentsPage() {
                 <div className="text-sm text-slate-800">
                   Ученик &quot;{lastRemoval.name}&quot; удалён из группы
                 </div>
-                <div className="text-xs text-slate-500">Можно отменить в течение нескольких секунд</div>
+                <div className="text-xs text-slate-500">
+                  Можно отменить в течение нескольких секунд
+                </div>
               </div>
               <Button variant="ghost" size="sm" onClick={handleUndoRemoval}>
                 Отменить
@@ -545,7 +546,9 @@ export function StudentsPage() {
                 <div className="text-sm text-slate-800">
                   Группа &quot;{lastGroupDeletion.group.name}&quot; удалена
                 </div>
-                <div className="text-xs text-slate-500">Можно отменить в течение нескольких секунд</div>
+                <div className="text-xs text-slate-500">
+                  Можно отменить в течение нескольких секунд
+                </div>
               </div>
               <Button variant="ghost" size="sm" onClick={handleUndoDeleteGroup}>
                 Отменить
@@ -565,7 +568,9 @@ export function StudentsPage() {
                     pendingStudentDeletion.student.username}
                   &quot; удалён
                 </div>
-                <div className="text-xs text-slate-500">Можно отменить в течение нескольких секунд</div>
+                <div className="text-xs text-slate-500">
+                  Можно отменить в течение нескольких секунд
+                </div>
               </div>
               <Button variant="ghost" size="sm" onClick={handleUndoStudentDelete}>
                 Отменить
@@ -575,14 +580,14 @@ export function StudentsPage() {
         </div>
       )}
       {lastRemoval && (
-  <div className="fixed right-6 bottom-6 z-50">
-    <AnimatedToast duration={5000} onDone={() => setLastRemoval(null)}>
-      <div className="bg-white rounded-lg shadow-lg px-4 py-3 flex items-center gap-4 border">
-        {/* ... содержимое ... */}
-      </div>
-    </AnimatedToast>
-  </div>
-)}
+        <div className="fixed right-6 bottom-6 z-50">
+          <AnimatedToast duration={5000} onDone={() => setLastRemoval(null)}>
+            <div className="bg-white rounded-lg shadow-lg px-4 py-3 flex items-center gap-4 border">
+              {/* ... содержимое ... */}
+            </div>
+          </AnimatedToast>
+        </div>
+      )}
     </>
   );
 
@@ -594,7 +599,10 @@ export function StudentsPage() {
         <Modal onClose={() => setStudentToRemove(null)}>
           <div className="p-6 border-b border-slate-100 flex items-center justify-between">
             <h2 className="text-xl font-bold text-slate-900">Убрать из группы</h2>
-            <button onClick={() => setStudentToRemove(null)} className="p-2 hover:bg-slate-100 rounded-lg">
+            <button
+              onClick={() => setStudentToRemove(null)}
+              className="p-2 hover:bg-slate-100 rounded-lg"
+            >
               <X size={20} className="text-slate-500" />
             </button>
           </div>
@@ -620,7 +628,10 @@ export function StudentsPage() {
         <Modal onClose={() => setStudentToDelete(null)}>
           <div className="p-6 border-b border-slate-100 flex items-center justify-between">
             <h2 className="text-xl font-bold text-slate-900">Удалить ученика</h2>
-            <button onClick={() => setStudentToDelete(null)} className="p-2 hover:bg-slate-100 rounded-lg">
+            <button
+              onClick={() => setStudentToDelete(null)}
+              className="p-2 hover:bg-slate-100 rounded-lg"
+            >
               <X size={20} className="text-slate-500" />
             </button>
           </div>
@@ -675,11 +686,19 @@ export function StudentsPage() {
 
       {/* Edit group */}
       {showEditGroupModal && editingGroup && (
-        <Modal onClose={() => { setShowEditGroupModal(false); setEditingGroup(null); }}>
+        <Modal
+          onClose={() => {
+            setShowEditGroupModal(false);
+            setEditingGroup(null);
+          }}
+        >
           <div className="p-6 border-b border-slate-100 flex items-center justify-between">
             <h2 className="text-xl font-bold text-slate-900">Редактировать группу</h2>
             <button
-              onClick={() => { setShowEditGroupModal(false); setEditingGroup(null); }}
+              onClick={() => {
+                setShowEditGroupModal(false);
+                setEditingGroup(null);
+              }}
               className="p-2 hover:bg-slate-100 rounded-lg"
             >
               <X size={20} className="text-slate-500" />
@@ -696,7 +715,10 @@ export function StudentsPage() {
             <Button
               variant="outline"
               className="flex-1"
-              onClick={() => { setShowEditGroupModal(false); setEditingGroup(null); }}
+              onClick={() => {
+                setShowEditGroupModal(false);
+                setEditingGroup(null);
+              }}
             >
               Отмена
             </Button>
@@ -709,11 +731,19 @@ export function StudentsPage() {
 
       {/* Edit student */}
       {showEditStudentModal && editingStudent && (
-        <Modal onClose={() => { setShowEditStudentModal(false); setEditingStudent(null); }}>
+        <Modal
+          onClose={() => {
+            setShowEditStudentModal(false);
+            setEditingStudent(null);
+          }}
+        >
           <div className="p-6 border-b border-slate-100 flex items-center justify-between">
             <h2 className="text-xl font-bold text-slate-900">Редактировать ученика</h2>
             <button
-              onClick={() => { setShowEditStudentModal(false); setEditingStudent(null); }}
+              onClick={() => {
+                setShowEditStudentModal(false);
+                setEditingStudent(null);
+              }}
               className="p-2 hover:bg-slate-100 rounded-lg"
             >
               <X size={20} className="text-slate-500" />
@@ -743,9 +773,7 @@ export function StudentsPage() {
                 ...groups.map((g) => ({ value: g.id, label: g.name })),
               ]}
               value={editStudentForm.groupId}
-              onChange={(e) =>
-                setEditStudentForm((prev) => ({ ...prev, groupId: e.target.value }))
-              }
+              onChange={(value) => setEditStudentForm((prev) => ({ ...prev, groupId: value }))}
             />
             <div className="grid grid-cols-2 gap-4">
               <Select
@@ -755,9 +783,7 @@ export function StudentsPage() {
                   { value: '11', label: '11 класс' },
                 ]}
                 value={editStudentForm.grade}
-                onChange={(e) =>
-                  setEditStudentForm((prev) => ({ ...prev, grade: e.target.value }))
-                }
+                onChange={(value) => setEditStudentForm((prev) => ({ ...prev, grade: value }))}
               />
               <Input
                 label="Целевой балл"
@@ -775,7 +801,10 @@ export function StudentsPage() {
             <Button
               variant="outline"
               className="flex-1"
-              onClick={() => { setShowEditStudentModal(false); setEditingStudent(null); }}
+              onClick={() => {
+                setShowEditStudentModal(false);
+                setEditingStudent(null);
+              }}
             >
               Отмена
             </Button>
@@ -788,11 +817,19 @@ export function StudentsPage() {
 
       {/* Add student */}
       {showAddStudentModal && (
-        <Modal onClose={() => { setShowAddStudentModal(false); setAddOriginGroupId(''); }}>
+        <Modal
+          onClose={() => {
+            setShowAddStudentModal(false);
+            setAddOriginGroupId('');
+          }}
+        >
           <div className="p-6 border-b border-slate-100 flex items-center justify-between">
             <h2 className="text-xl font-bold text-slate-900">Добавить ученика</h2>
             <button
-              onClick={() => { setShowAddStudentModal(false); setAddOriginGroupId(''); }}
+              onClick={() => {
+                setShowAddStudentModal(false);
+                setAddOriginGroupId('');
+              }}
               className="p-2 hover:bg-slate-100 rounded-lg"
             >
               <X size={20} className="text-slate-500" />
@@ -846,9 +883,7 @@ export function StudentsPage() {
                       ...groups.map((g) => ({ value: g.id, label: g.name })),
                     ]}
                     value={newStudent.groupId}
-                    onChange={(e) =>
-                      setNewStudent((prev) => ({ ...prev, groupId: e.target.value }))
-                    }
+                    onChange={(value) => setNewStudent((prev) => ({ ...prev, groupId: value }))}
                   />
                 )}
                 <div className="grid grid-cols-2 gap-4">
@@ -859,9 +894,7 @@ export function StudentsPage() {
                       { value: '11', label: '11 класс' },
                     ]}
                     value={newStudent.grade}
-                    onChange={(e) =>
-                      setNewStudent((prev) => ({ ...prev, grade: e.target.value }))
-                    }
+                    onChange={(value) => setNewStudent((prev) => ({ ...prev, grade: value }))}
                   />
                   <Input
                     label="Целевой балл"
@@ -885,13 +918,12 @@ export function StudentsPage() {
                       ...groups.map((g) => ({ value: g.id, label: g.name })),
                     ]}
                     value={newStudent.groupId}
-                    onChange={(e) =>
-                      setNewStudent((prev) => ({ ...prev, groupId: e.target.value }))
-                    }
+                    onChange={(value) => setNewStudent((prev) => ({ ...prev, groupId: value }))}
                   />
                 )}
                 <Select
                   label="Ученик"
+                  placeholder="Выберите ученика..."
                   options={students
                     .filter((s) => s.groupId !== (addOriginGroupId || newStudent.groupId))
                     .map((s) => ({
@@ -899,7 +931,7 @@ export function StudentsPage() {
                       label: s.fullName || s.username || 'Без имени',
                     }))}
                   value={selectedExistingStudentId}
-                  onChange={(e) => setSelectedExistingStudentId(e.target.value)}
+                  onChange={(value) => setSelectedExistingStudentId(value)}
                 />
               </>
             )}
@@ -908,7 +940,10 @@ export function StudentsPage() {
             <Button
               variant="outline"
               className="flex-1 rounded-full"
-              onClick={() => { setShowAddStudentModal(false); setAddOriginGroupId(''); }}
+              onClick={() => {
+                setShowAddStudentModal(false);
+                setAddOriginGroupId('');
+              }}
             >
               Отмена
             </Button>
@@ -948,7 +983,11 @@ export function StudentsPage() {
             />
           </div>
           <div className="p-6 border-t border-slate-100 flex gap-3">
-            <Button variant="outline" className="flex-1" onClick={() => setShowAddGroupModal(false)}>
+            <Button
+              variant="outline"
+              className="flex-1"
+              onClick={() => setShowAddGroupModal(false)}
+            >
               Отмена
             </Button>
             <Button className="flex-1" onClick={handleAddGroup} disabled={!newGroup.name}>
@@ -978,9 +1017,7 @@ export function StudentsPage() {
                 {getInitials(showStudentDetail.fullName || '')}
               </div>
               <div className="flex-1">
-                <h1 className="text-2xl font-bold text-slate-900">
-                  {showStudentDetail.fullName}
-                </h1>
+                <h1 className="text-2xl font-bold text-slate-900">{showStudentDetail.fullName}</h1>
                 <p className="text-slate-500">{showStudentDetail.username}</p>
                 {group && (
                   <Badge variant="info" className="mt-2">
@@ -1041,9 +1078,7 @@ export function StudentsPage() {
                   <div className="flex-1">
                     <ProgressBar
                       value={topic.rate}
-                      color={
-                        topic.rate >= 80 ? 'success' : topic.rate >= 60 ? 'warning' : 'danger'
-                      }
+                      color={topic.rate >= 80 ? 'success' : topic.rate >= 60 ? 'warning' : 'danger'}
                       size="md"
                     />
                   </div>
@@ -1080,11 +1115,7 @@ export function StudentsPage() {
                 <p className="text-slate-500 mt-1">{groupStudents.length} учеников</p>
               </div>
               <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => openEditGroup(showGroupDetail)}
-                >
+                <Button variant="outline" size="sm" onClick={() => openEditGroup(showGroupDetail)}>
                   <Settings size={16} className="mr-1" />
                   Редактировать
                 </Button>
@@ -1104,10 +1135,7 @@ export function StudentsPage() {
           </Card>
 
           <Card>
-            <CardHeader
-              title="Ученики группы"
-              subtitle={`${groupStudents.length} учеников`}
-            />
+            <CardHeader title="Ученики группы" subtitle={`${groupStudents.length} учеников`} />
             <div className="space-y-3">
               {groupStudents.length === 0 && (
                 <p className="text-center text-slate-400 py-8">В группе пока нет учеников</p>
@@ -1232,9 +1260,7 @@ export function StudentsPage() {
           <div className="flex flex-wrap gap-4">
             <div className="flex-1 min-w-[200px]">
               <Input
-                placeholder={
-                  activeTab === 'students' ? 'Поиск по имени...' : 'Поиск группы...'
-                }
+                placeholder={activeTab === 'students' ? 'Поиск по имени...' : 'Поиск группы...'}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 icon={<Search size={18} />}
@@ -1248,7 +1274,7 @@ export function StudentsPage() {
                     ...groups.map((g) => ({ value: g.id, label: g.name })),
                   ]}
                   value={selectedGroup}
-                  onChange={(e) => setSelectedGroup(e.target.value)}
+                  onChange={(value) => setSelectedGroup(value)}
                 />
               </div>
             )}
@@ -1306,9 +1332,7 @@ export function StudentsPage() {
                     </div>
                     <div className="flex items-center justify-between text-sm">
                       <span className="text-slate-500">Класс</span>
-                      <span className="font-medium text-slate-900">
-                        {student.grade ?? '—'}
-                      </span>
+                      <span className="font-medium text-slate-900">{student.grade ?? '—'}</span>
                     </div>
                     <div className="flex items-center justify-between text-sm">
                       <span className="text-slate-500">Целевой балл</span>
@@ -1336,8 +1360,8 @@ export function StudentsPage() {
                           progress.successRate >= 80
                             ? 'success'
                             : progress.successRate >= 60
-                            ? 'warning'
-                            : 'danger'
+                              ? 'warning'
+                              : 'danger'
                         }
                         size="sm"
                       />
@@ -1385,9 +1409,7 @@ export function StudentsPage() {
                       </div>
                       <div>
                         <h3 className="font-semibold text-slate-900">{group.name}</h3>
-                        <p className="text-sm text-slate-500">
-                          {groupStudents.length} учеников
-                        </p>
+                        <p className="text-sm text-slate-500">{groupStudents.length} учеников</p>
                       </div>
                     </div>
                     <Button

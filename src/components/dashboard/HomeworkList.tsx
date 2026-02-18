@@ -61,7 +61,7 @@ export function HomeworkList({ homeworks, viewType }: HomeworkListProps) {
                 </div>
               </div>
             </div>
-            
+
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 text-sm text-slate-600">
                 <Clock size={14} />

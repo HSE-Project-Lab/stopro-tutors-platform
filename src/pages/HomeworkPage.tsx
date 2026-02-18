@@ -30,7 +30,7 @@ import type { Homework, Task } from '@/types';
 export function HomeworkPage() {
   const { user } = useAuthStore();
   const isTeacher = user?.role === 'TEACHER';
-  
+
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('');
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -70,25 +70,26 @@ export function HomeworkPage() {
   };
 
   const handleCreateHomework = () => {
-
-    alert(`Создано ДЗ: ${newHomework.title}\nГруппа: ${newHomework.groupId}\nЗадач: ${newHomework.selectedTasks.length}`);
+    alert(
+      `Создано ДЗ: ${newHomework.title}\nГруппа: ${newHomework.groupId}\nЗадач: ${newHomework.selectedTasks.length}`
+    );
     setShowCreateModal(false);
     setNewHomework({ title: '', description: '', groupId: '', deadline: '', selectedTasks: [] });
   };
 
   const addTaskToHomework = (task: Task) => {
-    if (!newHomework.selectedTasks.find(t => t.id === task.id)) {
-      setNewHomework(prev => ({
+    if (!newHomework.selectedTasks.find((t) => t.id === task.id)) {
+      setNewHomework((prev) => ({
         ...prev,
-        selectedTasks: [...prev.selectedTasks, task]
+        selectedTasks: [...prev.selectedTasks, task],
       }));
     }
   };
 
   const removeTaskFromHomework = (taskId: string) => {
-    setNewHomework(prev => ({
+    setNewHomework((prev) => ({
       ...prev,
-      selectedTasks: prev.selectedTasks.filter(t => t.id !== taskId)
+      selectedTasks: prev.selectedTasks.filter((t) => t.id !== taskId),
     }));
   };
 
@@ -114,7 +115,10 @@ export function HomeworkPage() {
             <div className="text-right">
               <div className="flex items-center gap-2 text-slate-600">
                 <Calendar size={16} />
-                <span>Дедлайн: {format(parseISO(selectedHomework.deadline), 'd MMMM yyyy', { locale: ru })}</span>
+                <span>
+                  Дедлайн:{' '}
+                  {format(parseISO(selectedHomework.deadline), 'd MMMM yyyy', { locale: ru })}
+                </span>
               </div>
               <p className="text-sm text-slate-500 mt-1">
                 {differenceInDays(parseISO(selectedHomework.deadline), new Date())} дней осталось
@@ -128,7 +132,9 @@ export function HomeworkPage() {
               <p className="text-sm text-slate-500">Задач</p>
             </div>
             <div className="bg-emerald-50 rounded-xl p-4 text-center">
-              <p className="text-2xl font-bold text-emerald-600">{selectedHomework.completedCount}</p>
+              <p className="text-2xl font-bold text-emerald-600">
+                {selectedHomework.completedCount}
+              </p>
               <p className="text-sm text-slate-500">Выполнили</p>
             </div>
             <div className="bg-indigo-50 rounded-xl p-4 text-center">
@@ -149,10 +155,20 @@ export function HomeworkPage() {
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-1">
                     <Badge variant="default">№{task.egeNumber}</Badge>
-                    <Badge 
-                      variant={task.difficulty === 'EASY' ? 'success' : task.difficulty === 'MEDIUM' ? 'warning' : 'danger'}
+                    <Badge
+                      variant={
+                        task.difficulty === 'EASY'
+                          ? 'success'
+                          : task.difficulty === 'MEDIUM'
+                            ? 'warning'
+                            : 'danger'
+                      }
                     >
-                      {task.difficulty === 'EASY' ? 'Лёгкая' : task.difficulty === 'MEDIUM' ? 'Средняя' : 'Сложная'}
+                      {task.difficulty === 'EASY'
+                        ? 'Лёгкая'
+                        : task.difficulty === 'MEDIUM'
+                          ? 'Средняя'
+                          : 'Сложная'}
                     </Badge>
                   </div>
                   <p className="text-slate-700">{task.content}</p>
@@ -173,17 +189,15 @@ export function HomeworkPage() {
 
   return (
     <div className="space-y-6">
-      
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">
             {isTeacher ? 'Домашние задания' : 'Мои задания'}
           </h1>
           <p className="text-slate-500 mt-1">
-            {isTeacher 
+            {isTeacher
               ? 'Управляйте домашними заданиями для ваших групп'
-              : 'Текущие и выполненные домашние задания'
-            }
+              : 'Текущие и выполненные домашние задания'}
           </p>
         </div>
         {isTeacher && (
@@ -194,7 +208,6 @@ export function HomeworkPage() {
         )}
       </div>
 
-      
       <Card>
         <div className="flex flex-wrap gap-4">
           <div className="flex-1 min-w-[200px]">
@@ -220,7 +233,6 @@ export function HomeworkPage() {
         </div>
       </Card>
 
-      
       {isTeacher && (
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <Card className="flex items-center gap-4">
@@ -238,7 +250,7 @@ export function HomeworkPage() {
             </div>
             <div>
               <p className="text-2xl font-bold text-slate-900">
-                {homeworks.filter(h => h.status === 'ACTIVE').length}
+                {homeworks.filter((h) => h.status === 'ACTIVE').length}
               </p>
               <p className="text-sm text-slate-500">Активных</p>
             </div>
@@ -249,7 +261,13 @@ export function HomeworkPage() {
             </div>
             <div>
               <p className="text-2xl font-bold text-slate-900">
-                {homeworks.filter(h => differenceInDays(parseISO(h.deadline), new Date()) <= 2 && h.status === 'ACTIVE').length}
+                {
+                  homeworks.filter(
+                    (h) =>
+                      differenceInDays(parseISO(h.deadline), new Date()) <= 2 &&
+                      h.status === 'ACTIVE'
+                  ).length
+                }
               </p>
               <p className="text-sm text-slate-500">Срочных</p>
             </div>
@@ -266,7 +284,6 @@ export function HomeworkPage() {
         </div>
       )}
 
-      
       <div className="space-y-4">
         {filteredHomeworks.map((hw) => (
           <Card
@@ -281,7 +298,7 @@ export function HomeworkPage() {
                   {getStatusBadge(hw.status, hw.deadline)}
                 </div>
                 <p className="text-slate-500 mb-3">{hw.groupName}</p>
-                
+
                 <div className="flex items-center gap-6 text-sm text-slate-600">
                   <span className="flex items-center gap-1">
                     <Calendar size={14} />
@@ -297,12 +314,14 @@ export function HomeworkPage() {
                   </span>
                 </div>
               </div>
-              
+
               <div className="flex items-center gap-4">
                 <div className="w-32">
                   <div className="flex justify-between text-sm mb-1">
                     <span className="text-slate-500">Прогресс</span>
-                    <span className="font-medium">{Math.round((hw.completedCount / hw.totalCount) * 100)}%</span>
+                    <span className="font-medium">
+                      {Math.round((hw.completedCount / hw.totalCount) * 100)}%
+                    </span>
                   </div>
                   <ProgressBar
                     value={hw.completedCount}
@@ -325,7 +344,6 @@ export function HomeworkPage() {
         )}
       </div>
 
-      
       {showCreateModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
@@ -344,7 +362,7 @@ export function HomeworkPage() {
                 label="Название"
                 placeholder="Например: Тригонометрия - базовые уравнения"
                 value={newHomework.title}
-                onChange={(e) => setNewHomework(prev => ({ ...prev, title: e.target.value }))}
+                onChange={(e) => setNewHomework((prev) => ({ ...prev, title: e.target.value }))}
               />
 
               <div>
@@ -354,7 +372,9 @@ export function HomeworkPage() {
                   rows={3}
                   placeholder="Инструкции для учеников..."
                   value={newHomework.description}
-                  onChange={(e) => setNewHomework(prev => ({ ...prev, description: e.target.value }))}
+                  onChange={(e) =>
+                    setNewHomework((prev) => ({ ...prev, description: e.target.value }))
+                  }
                 />
               </div>
 
@@ -363,16 +383,18 @@ export function HomeworkPage() {
                   label="Группа"
                   options={[
                     { value: '', label: 'Выберите группу' },
-                    ...groups.map(g => ({ value: g.id, label: g.name }))
+                    ...groups.map((g) => ({ value: g.id, label: g.name })),
                   ]}
                   value={newHomework.groupId}
-                  onChange={(e) => setNewHomework(prev => ({ ...prev, groupId: e.target.value }))}
+                  onChange={(e) => setNewHomework((prev) => ({ ...prev, groupId: e.target.value }))}
                 />
                 <Input
                   label="Дедлайн"
                   type="date"
                   value={newHomework.deadline}
-                  onChange={(e) => setNewHomework(prev => ({ ...prev, deadline: e.target.value }))}
+                  onChange={(e) =>
+                    setNewHomework((prev) => ({ ...prev, deadline: e.target.value }))
+                  }
                 />
               </div>
 
@@ -383,7 +405,10 @@ export function HomeworkPage() {
                 {newHomework.selectedTasks.length > 0 ? (
                   <div className="space-y-2 mb-4">
                     {newHomework.selectedTasks.map((task, index) => (
-                      <div key={task.id} className="flex items-center justify-between p-3 bg-indigo-50 rounded-lg">
+                      <div
+                        key={task.id}
+                        className="flex items-center justify-between p-3 bg-indigo-50 rounded-lg"
+                      >
                         <div className="flex items-center gap-2">
                           <span className="font-medium text-indigo-600">#{index + 1}</span>
                           <span className="text-slate-700 line-clamp-1">{task.content}</span>
@@ -406,7 +431,7 @@ export function HomeworkPage() {
                     <button
                       key={task.id}
                       onClick={() => addTaskToHomework(task)}
-                      disabled={newHomework.selectedTasks.some(t => t.id === task.id)}
+                      disabled={newHomework.selectedTasks.some((t) => t.id === task.id)}
                       className="w-full text-left p-3 hover:bg-slate-50 border-b border-slate-100 last:border-b-0 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <div className="flex items-center gap-2">
@@ -420,13 +445,21 @@ export function HomeworkPage() {
             </div>
 
             <div className="sticky bottom-0 bg-white border-t border-slate-100 p-6 flex gap-3">
-              <Button variant="outline" className="flex-1" onClick={() => setShowCreateModal(false)}>
+              <Button
+                variant="outline"
+                className="flex-1"
+                onClick={() => setShowCreateModal(false)}
+              >
                 Отмена
               </Button>
-              <Button 
-                className="flex-1" 
+              <Button
+                className="flex-1"
                 onClick={handleCreateHomework}
-                disabled={!newHomework.title || !newHomework.groupId || newHomework.selectedTasks.length === 0}
+                disabled={
+                  !newHomework.title ||
+                  !newHomework.groupId ||
+                  newHomework.selectedTasks.length === 0
+                }
               >
                 Создать ДЗ
               </Button>
