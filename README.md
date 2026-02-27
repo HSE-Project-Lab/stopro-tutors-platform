@@ -114,7 +114,7 @@
 
 ```bash
 # Клонировать репозиторий
-git clone https://github.com/mirotvoretts/tutors-platform.git
+git clone https://github.com/HSE-Project-Lab/stopro-tutors-platform
 cd tutors-platform
 
 # Собрать и запустить все сервисы
