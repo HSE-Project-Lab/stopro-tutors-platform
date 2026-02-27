@@ -24,19 +24,9 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.List;
 
-/**
- * Конфигурация Spring Security.
- *
- * Правила доступа:
- *  - /api/v1/auth/**        → публичный (регистрация, вход)
- *  - /api/v1/groups/**      → только TEACHER
- *  - /api/student/**        → только STUDENT
- *  - /swagger-ui/**, /api-docs/** → публичный
- *  - остальное              → аутентифицированные пользователи
- */
 @Configuration
 @EnableWebSecurity
-@EnableMethodSecurity          // для @PreAuthorize на уровне методов
+@EnableMethodSecurity
 @RequiredArgsConstructor
 public class SecurityConfig {
 
@@ -48,37 +38,28 @@ public class SecurityConfig {
         http
             .csrf(AbstractHttpConfigurer::disable)
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-            .sessionManagement(session ->
-                    session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authenticationProvider(authenticationProvider())
             .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
             .authorizeHttpRequests(auth -> auth
-                // Публичные эндпоинты
-                .requestMatchers("/api/v1/auth/**").permitAll()
+                .requestMatchers("/api/v1/auth/**", "/error").permitAll()
                 .requestMatchers("/health", "/actuator/health").permitAll()
-                .requestMatchers("/swagger-ui/**", "/swagger-ui.html",
-                                 "/api-docs/**", "/v3/api-docs/**").permitAll()
+                .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
-                // Группы — только учитель
-                .requestMatchers("/api/v1/groups/**").hasRole("TEACHER")
+                .requestMatchers("/api/v1/groups/**", "/api/v1/teacher/**")
+                    .hasAnyAuthority("TEACHER", "ROLE_TEACHER", "ADMIN", "ROLE_ADMIN")
 
-                // Личный кабинет ученика
-                .requestMatchers("/api/student/**").hasRole("STUDENT")
-                .requestMatchers(HttpMethod.GET, "/api/ege-tasks/**").authenticated()
-                .requestMatchers(HttpMethod.POST, "/api/ege-tasks").hasRole("ADMIN")
-                .requestMatchers(HttpMethod.DELETE, "/api/ege-tasks/**").hasRole("ADMIN")
+                .requestMatchers("/api/student/**").hasAnyAuthority("STUDENT", "ROLE_STUDENT")
 
-                // Всё остальное — требуется аутентификация
+                .requestMatchers(HttpMethod.GET, "/api/v1/ege-tasks/**").authenticated()
+                .requestMatchers("/api/v1/ege-tasks/**").hasAnyAuthority("ADMIN", "ROLE_ADMIN")
+
                 .anyRequest().authenticated()
             );
 
         return http.build();
     }
-
-    // =========================================
-    // Бины
-    // =========================================
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -94,8 +75,7 @@ public class SecurityConfig {
     }
 
     @Bean
-    public AuthenticationManager authenticationManager(
-            AuthenticationConfiguration config) throws Exception {
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
         return config.getAuthenticationManager();
     }
 

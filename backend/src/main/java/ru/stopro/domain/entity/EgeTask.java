@@ -1,4 +1,3 @@
-
 package ru.stopro.domain.entity;
 
 import jakarta.persistence.*;
@@ -16,6 +15,7 @@ import java.util.List;
     @Index(name = "idx_ege_tasks_number", columnList = "egeNumber"),
     @Index(name = "idx_ege_tasks_topic", columnList = "topic"),
     @Index(name = "idx_ege_tasks_difficulty", columnList = "difficulty"),
+    @Index(name = "idx_ege_tasks_parent_id", columnList = "parent_id")
 })
 @Getter
 @Setter
@@ -28,8 +28,16 @@ public class EgeTask {
     @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "parent_id")
+    private EgeTask parent;
+
+    @OneToMany(mappedBy = "parent", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<EgeTask> variants = new ArrayList<>();
+
     @Column(nullable = false)
-    private Integer egeNumber; // 1-12
+    private Integer egeNumber;
 
     @Column(nullable = false)
     private String topic;
@@ -39,13 +47,13 @@ public class EgeTask {
     private TaskDifficulty difficulty;
 
     @Column(nullable = false, columnDefinition = "TEXT")
-    private String content; // условие в LaTeX
+    private String content;
 
     @Column(columnDefinition = "TEXT")
-    private String solution; // решение в LaTeX
+    private String solution;
 
     @Column(nullable = false)
-    private String answer; // правильный ответ
+    private String answer;
 
     @ElementCollection
     @CollectionTable(name = "ege_task_images", joinColumns = @JoinColumn(name = "task_id"))

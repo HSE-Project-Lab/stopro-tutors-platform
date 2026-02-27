@@ -36,17 +36,12 @@ import java.util.UUID;
 @AllArgsConstructor
 @Builder
 public class Question extends BaseEntity {
-
-    // =========================================
-    // Основная информация
-    // =========================================
-
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "topic_id", nullable = false)
     private Topic topic;
 
     @Column(name = "ege_number", nullable = false)
-    private Integer egeNumber; // Номер задания ЕГЭ (1-19)
+    private Integer egeNumber;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "difficulty", nullable = false, length = 20)
@@ -57,10 +52,6 @@ public class Question extends BaseEntity {
     @Column(name = "question_type", nullable = false, length = 30)
     @Builder.Default
     private QuestionType questionType = QuestionType.SHORT_ANSWER;
-
-    // =========================================
-    // Содержимое задачи (с поддержкой LaTeX)
-    // =========================================
 
     /**
      * Условие задачи
@@ -122,7 +113,6 @@ public class Question extends BaseEntity {
         if (imageUrl != null) {
             images.add(imageUrl);
         }
-        // В реальности additionalImages может быть JSON массивом
         return images;
     }
 
@@ -175,10 +165,6 @@ public class Question extends BaseEntity {
     @Column(name = "common_mistakes", columnDefinition = "TEXT")
     private String commonMistakes;
 
-    // =========================================
-    // Медиа-контент
-    // =========================================
-
     @Column(name = "image_url", length = 500)
     private String imageUrl;
 
@@ -199,10 +185,6 @@ public class Question extends BaseEntity {
      */
     @Column(name = "geogebra_id", length = 100)
     private String geogebraId;
-
-    // =========================================
-    // Метаданные и статистика
-    // =========================================
 
     @Column(name = "points", nullable = false)
     @Builder.Default
@@ -226,10 +208,6 @@ public class Question extends BaseEntity {
     @Column(name = "source_url", length = 500)
     private String sourceUrl;
 
-    // =========================================
-    // Авторство
-    // =========================================
-
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "author_id")
     private User author;
@@ -243,10 +221,6 @@ public class Question extends BaseEntity {
 
     @Column(name = "verified_at")
     private java.time.LocalDateTime verifiedAt;
-
-    // =========================================
-    // Статистика использования
-    // =========================================
 
     @Column(name = "times_shown", nullable = false)
     @Builder.Default
@@ -265,10 +239,6 @@ public class Question extends BaseEntity {
 
     @Column(name = "average_attempts")
     private Double averageAttempts;
-
-    // =========================================
-    // Теги и категоризация
-    // =========================================
 
     /**
      * Теги для поиска и фильтрации
@@ -290,10 +260,6 @@ public class Question extends BaseEntity {
     @Column(name = "prerequisites", columnDefinition = "TEXT")
     private String prerequisites;
 
-    // =========================================
-    // Версионирование
-    // =========================================
-
     @Column(name = "question_version", nullable = false)
     @Builder.Default
     private Integer questionVersion = 1;
@@ -304,10 +270,6 @@ public class Question extends BaseEntity {
     @Column(name = "is_latest_version", nullable = false)
     @Builder.Default
     private Boolean isLatestVersion = true;
-
-    // =========================================
-    // Состояние
-    // =========================================
 
     @Column(name = "is_active", nullable = false)
     @Builder.Default
@@ -320,10 +282,6 @@ public class Question extends BaseEntity {
     @Column(name = "review_notes", columnDefinition = "TEXT")
     private String reviewNotes;
 
-    // =========================================
-    // Связи
-    // =========================================
-
     @OneToMany(mappedBy = "question", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<Attempt> attempts = new ArrayList<>();
@@ -331,10 +289,6 @@ public class Question extends BaseEntity {
     @ManyToMany(mappedBy = "questions")
     @Builder.Default
     private List<Assignment> assignments = new ArrayList<>();
-
-    // =========================================
-    // Computed fields
-    // =========================================
 
     @Transient
     public double getSuccessRate() {
@@ -353,10 +307,6 @@ public class Question extends BaseEntity {
         };
     }
 
-    // =========================================
-    // Business logic
-    // =========================================
-
     /**
      * Проверяет правильность ответа
      * Поддерживает различные форматы записи
@@ -369,15 +319,11 @@ public class Question extends BaseEntity {
         String normalized = normalizeAnswer(userAnswer);
         String correctNormalized = normalizeAnswer(answer);
         
-        // Прямое сравнение
         if (normalized.equals(correctNormalized)) {
             return true;
         }
         
-        // Проверка альтернативных ответов
         if (alternativeAnswers != null && !alternativeAnswers.isBlank()) {
-            // Парсим JSON массив альтернативных ответов
-            // В реальности здесь был бы Jackson ObjectMapper
             String[] alternatives = alternativeAnswers
                 .replace("[", "")
                 .replace("]", "")
@@ -402,11 +348,11 @@ public class Question extends BaseEntity {
             .trim()
             .toLowerCase()
             .replaceAll("\\s+", "")
-            .replace(",", ".")        // 3,14 -> 3.14
-            .replace("−", "-")        // минус разные символы
+            .replace(",", ".")
+            .replace("−", "-")
             .replace("–", "-")
-            .replaceAll("\\.0+$", "") // 2.0 -> 2
-            .replaceAll("\\+$", "");  // убираем + в конце
+            .replaceAll("\\.0+$", "")
+            .replaceAll("\\+$", "");
     }
 
     /**
@@ -418,7 +364,6 @@ public class Question extends BaseEntity {
             timesCorrect++;
         }
         
-        // Обновляем среднее время
         if (averageTimeSeconds == null) {
             averageTimeSeconds = timeSeconds;
         } else {

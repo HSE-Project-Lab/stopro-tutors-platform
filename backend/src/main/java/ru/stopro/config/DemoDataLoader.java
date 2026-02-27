@@ -12,16 +12,13 @@ import ru.stopro.domain.entity.User;
 import ru.stopro.domain.enums.UserRole;
 import ru.stopro.repository.UserRepository;
 
-/**
- * Создаёт демо-пользователей при первом запуске,
- * чтобы «Войти как учитель» / «Войти как ученик» работали с бэкендом (создание групп и т.д.).
- */
 @Slf4j
 @Component
 @Order(1)
 @RequiredArgsConstructor
 public class DemoDataLoader implements ApplicationRunner {
 
+    public static final String DEMO_ADMIN_USERNAME = "demo_admin";
     public static final String DEMO_TEACHER_USERNAME = "demo_teacher";
     public static final String DEMO_STUDENT_USERNAME = "demo_student";
     public static final String DEMO_PASSWORD = "demo";
@@ -32,8 +29,24 @@ public class DemoDataLoader implements ApplicationRunner {
     @Override
     @Transactional
     public void run(ApplicationArguments args) {
+        createDemoAdmin();
         createDemoTeacher();
         createDemoStudent();
+    }
+
+    private void createDemoAdmin() {
+        if (userRepository.findByUsername(DEMO_ADMIN_USERNAME).isPresent()) {
+            return;
+        }
+        User demo = User.builder()
+                .username(DEMO_ADMIN_USERNAME)
+                .passwordHash(passwordEncoder.encode(DEMO_PASSWORD))
+                .role(UserRole.ADMIN)
+                .fullName("Демо Админ")
+                .dataConsentStatus(true)
+                .build();
+        userRepository.save(demo);
+        log.info("Создан демо-админ: {}", DEMO_ADMIN_USERNAME);
     }
 
     private void createDemoTeacher() {

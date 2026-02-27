@@ -12,7 +12,17 @@ import {
   Brain,
   ChevronLeft,
   ChevronRight,
+  ShieldAlert,
 } from 'lucide-react';
+import type { UserRole } from '@/types';
+
+const adminNavItems = [
+  { id: 'admin', label: 'Админ-панель', icon: ShieldAlert },
+  { id: 'tasks', label: 'База задач', icon: BookOpen },
+  { id: 'students', label: 'Ученики и группы', icon: Users },
+  { id: 'homework', label: 'Домашние задания', icon: ClipboardList },
+  { id: 'analytics', label: 'Аналитика и отчёты', icon: BarChart3 },
+];
 
 const teacherNavItems = [
   { id: 'dashboard', label: 'Дашборд', icon: LayoutDashboard },
@@ -30,11 +40,17 @@ const studentNavItems = [
   { id: 'analytics', label: 'Статистика', icon: BarChart3 },
 ];
 
+const getNavItemsByRole = (role?: UserRole) => {
+  if (role === 'ADMIN') return adminNavItems;
+  if (role === 'TEACHER') return teacherNavItems;
+  return studentNavItems;
+};
+
 export function Sidebar() {
   const { sidebarOpen, toggleSidebar, activeTab, setActiveTab } = useAppStore();
   const { user, logout } = useAuthStore();
 
-  const navItems = user?.role === 'TEACHER' ? teacherNavItems : studentNavItems;
+  const navItems = getNavItemsByRole(user?.role);
 
   return (
     <aside
@@ -65,7 +81,7 @@ export function Sidebar() {
             onClick={() => setActiveTab(item.id)}
             className={cn(
               'w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200',
-              activeTab === item.id
+              activeTab === item.id || (activeTab === 'dashboard' && item.id === 'admin')
                 ? 'bg-indigo-50 text-indigo-600'
                 : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
             )}

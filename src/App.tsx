@@ -10,6 +10,7 @@ import { StudentsPage } from '@/pages/StudentsPage';
 import { AnalyticsPage } from '@/pages/AnalyticsPage';
 import { HomeworkPage } from '@/pages/HomeworkPage';
 import { SettingsPage } from '@/pages/SettingsPage';
+import { AdminDashboard } from '@/pages/AdminDashboard';
 
 function AppContent() {
   const { user } = useAuthStore();
@@ -21,7 +22,10 @@ function AppContent() {
 
   const renderPage = () => {
     switch (activeTab) {
+      case 'admin':
+        return user.role === 'ADMIN' ? <AdminDashboard /> : <TeacherDashboard />;
       case 'dashboard':
+        if (user.role === 'ADMIN') return <AdminDashboard />;
         return user.role === 'TEACHER' ? <TeacherDashboard /> : <StudentDashboard />;
       case 'tasks':
       case 'practice':
@@ -37,6 +41,7 @@ function AppContent() {
       case 'settings':
         return <SettingsPage />;
       default:
+        if (user.role === 'ADMIN') return <AdminDashboard />;
         return user.role === 'TEACHER' ? <TeacherDashboard /> : <StudentDashboard />;
     }
   };

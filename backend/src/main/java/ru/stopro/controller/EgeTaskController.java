@@ -1,20 +1,19 @@
-// backend/src/main/java/ru/stopro/controller/EgeTaskController.java
-
 package ru.stopro.controller;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import ru.stopro.dto.egetask.EgeTaskCreateRequest;
 import ru.stopro.dto.egetask.EgeTaskDto;
 import ru.stopro.service.EgeTaskService;
 
 @RestController
-@RequestMapping("/api/ege-tasks")
+@RequestMapping("/api/v1/ege-tasks")
 @RequiredArgsConstructor
 public class EgeTaskController {
 
@@ -23,15 +22,13 @@ public class EgeTaskController {
     @GetMapping
     public ResponseEntity<Page<EgeTaskDto>> findAll(
             @RequestParam(required = false) Integer egeNumber,
-            @RequestParam(required = false) String topics,      // comma-separated
+            @RequestParam(required = false) String topics,
             @RequestParam(required = false) String difficulty,
             @RequestParam(required = false) String search,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size
     ) {
-        return ResponseEntity.ok(
-                egeTaskService.findFiltered(egeNumber, topics, difficulty, search, page, size)
-        );
+        return ResponseEntity.ok(egeTaskService.findFiltered(egeNumber, topics, difficulty, search, page, size));
     }
 
     @GetMapping("/{id}")
@@ -40,13 +37,16 @@ public class EgeTaskController {
     }
 
     @PostMapping
-    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<EgeTaskDto> create(@Valid @RequestBody EgeTaskCreateRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(egeTaskService.create(request));
     }
 
+    @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<EgeTaskDto> uploadTasks(@RequestParam("file") MultipartFile file) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(egeTaskService.uploadMarkdown(file));
+    }
+
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> delete(@PathVariable String id) {
         egeTaskService.delete(id);
         return ResponseEntity.noContent().build();

@@ -1,5 +1,3 @@
-// backend/src/main/java/ru/stopro/repository/EgeTaskRepository.java
-
 package ru.stopro.repository;
 
 import org.springframework.data.domain.Page;
@@ -16,17 +14,22 @@ public interface EgeTaskRepository extends JpaRepository<EgeTask, String> {
 
     @Query("""
         SELECT t FROM EgeTask t
-        WHERE (:egeNumber IS NULL OR t.egeNumber = :egeNumber)
-          AND (:topics IS NULL OR t.topic IN :topics)
-          AND (:difficulty IS NULL OR t.difficulty = :difficulty)
-          AND (:search IS NULL OR LOWER(t.content) LIKE LOWER(CONCAT('%', :search, '%')))
+        LEFT JOIN FETCH t.imageUrls
+        WHERE t.parent IS NULL
+          AND (:egeNumber IS NULL OR t.egeNumber = :egeNumber)
+          AND (:hasTopics = false OR t.topic IN :topics)
+          AND (:hasDifficulty = false OR t.difficulty = :difficulty)
+          AND (:hasSearch = false OR LOWER(t.content) LIKE LOWER(:search))
         ORDER BY t.egeNumber ASC, t.createdAt DESC
     """)
     Page<EgeTask> findFiltered(
         @Param("egeNumber") Integer egeNumber,
         @Param("topics") List<String> topics,
+        @Param("hasTopics") boolean hasTopics,
         @Param("difficulty") TaskDifficulty difficulty,
+        @Param("hasDifficulty") boolean hasDifficulty,
         @Param("search") String search,
+        @Param("hasSearch") boolean hasSearch,
         Pageable pageable
     );
 }

@@ -11,6 +11,7 @@ import java.util.List;
 @Builder
 public class EgeTaskDto {
     private String id;
+    private String parentId;
     private Integer egeNumber;
     private String topic;
     private TaskDifficulty difficulty;
@@ -18,6 +19,7 @@ public class EgeTaskDto {
     private String solution;
     private String answer;
     private List<String> imageUrls;
+    private List<EgeTaskDto> variants;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

@@ -1,12 +1,10 @@
-// src/pages/TasksPage.tsx
-
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Input } from '@/components/ui/Input';
 import { FilterDropdown } from '@/components/ui/FilterDropdown';
-import { LaTeX, LaTeXPreview } from '@/components/ui/LaTeX';
+import { LaTeX } from '@/components/ui/LaTeX';
 import { CreateTaskModal } from '@/components/tasks/CreateTaskModal';
 import { useAuthStore } from '@/store/authStore';
 import api from '@/lib/axios';
@@ -25,32 +23,38 @@ import {
 import type { EgeTask, EgeTaskCreateRequest, EgeTaskPage, TaskDifficulty } from '@/types';
 import { EGE_TOPICS, DIFFICULTY_LABELS } from '@/types';
 
-// ===== Опции для фильтров =====
-
 const NUMBER_OPTIONS = Array.from({ length: 12 }, (_, i) => ({
   value: String(i + 1),
   label: `Задание ${i + 1}`,
 }));
 
 const DIFFICULTY_OPTIONS = [
-  { value: 'EASY', label: 'Лёгкая', icon: '🟢' },
-  { value: 'MEDIUM', label: 'Средняя', icon: '🟡' },
-  { value: 'HARD', label: 'Сложная', icon: '🔴' },
+  { value: 'EASY', label: 'Лёгкая' },
+  { value: 'MEDIUM', label: 'Средняя' },
+  { value: 'HARD', label: 'Сложная' },
 ];
 
-const ALL_TOPIC_OPTIONS = Object.entries(EGE_TOPICS).flatMap(([number, topics]) =>
-  topics.map((topic) => ({
-    value: `${number}::${topic}`,
-    label: topic,
-    group: number,
-  }))
+const DIFFICULTY_CHIP_COLORS: Record<string, string> = {
+  EASY: 'bg-emerald-50 text-emerald-700',
+  MEDIUM: 'bg-amber-50 text-amber-700',
+  HARD: 'bg-red-50 text-red-700',
+};
+
+const ALL_UNIQUE_TOPICS = Array.from(new Set(Object.values(EGE_TOPICS).flat())).sort((a, b) =>
+  a.localeCompare(b)
 );
 
-function topicValueToName(value: string): string {
-  return value.split('::')[1] || value;
-}
+const getAvailableTopics = (numbers: string[]) => {
+  if (numbers.length === 0) return ALL_UNIQUE_TOPICS;
 
-// ===== Карточка задачи =====
+  const topicsPerNumber = numbers.map((num) => new Set(EGE_TOPICS[parseInt(num)] || []));
+  const intersection = topicsPerNumber.reduce(
+    (acc, currentSet) => new Set([...acc].filter((topic) => currentSet.has(topic)))
+  );
+
+  return Array.from(intersection).sort((a, b) => a.localeCompare(b));
+};
+
 function TaskCard({
   task,
   onClick,
@@ -87,11 +91,6 @@ function TaskCard({
             <Badge variant={difficultyVariant[task.difficulty]} size="sm">
               {DIFFICULTY_LABELS[task.difficulty]}
             </Badge>
-            {task.imageUrls && task.imageUrls.length > 0 && (
-              <Badge variant="info" size="sm">
-                📷 {task.imageUrls.length}
-              </Badge>
-            )}
           </div>
           <div className="text-slate-900 line-clamp-2">
             <LaTeX>{task.content}</LaTeX>
@@ -132,7 +131,6 @@ function TaskCard({
   );
 }
 
-// ===== Детальный просмотр =====
 function TaskDetail({
   task,
   onBack,
@@ -186,20 +184,6 @@ function TaskDetail({
           </div>
           <LaTeX className="text-lg text-slate-900 leading-relaxed">{task.content}</LaTeX>
         </div>
-
-        {task.imageUrls && task.imageUrls.length > 0 && (
-          <div className="mt-4 flex flex-wrap gap-3">
-            {task.imageUrls.map((url, i) => (
-              <a key={i} href={url} target="_blank" rel="noreferrer">
-                <img
-                  src={url}
-                  alt={`Иллюстрация ${i + 1}`}
-                  className="max-h-60 rounded-xl border border-slate-200 hover:border-indigo-300 transition-colors"
-                />
-              </a>
-            ))}
-          </div>
-        )}
 
         <div className="mt-8 space-y-4">
           <Input
@@ -258,7 +242,7 @@ function TaskDetail({
                     {showSolution ? 'Скрыть решение' : 'Показать решение'}
                   </button>
                   {showSolution && (
-                    <Card className="bg-slate-50">
+                    <Card className="bg-slate-50 mt-2">
                       <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-3">
                         Решение
                       </p>
@@ -288,11 +272,52 @@ function TaskDetail({
           </div>
         )}
       </Card>
+
+      {/* БЛОК С ВАРИАНТАМИ */}
+      {task.variants && task.variants.length > 0 && (
+        <div className="space-y-4 mt-8">
+          <h3 className="text-xl font-bold text-slate-900 pb-2 border-b border-slate-200">
+            Аналогичные задания ({task.variants.length})
+          </h3>
+          {task.variants.map((variant, idx) => (
+            <Card key={variant.id} className="bg-slate-50/50 border-slate-200">
+              <div className="flex items-center justify-between mb-3">
+                <Badge variant="outline" className="bg-white">
+                  Вариант {idx + 1}
+                </Badge>
+                {isAdmin && (
+                  <Button variant="ghost" size="sm" className="h-7 px-2 text-indigo-600">
+                    <Plus size={14} className="mr-1" /> В ДЗ
+                  </Button>
+                )}
+              </div>
+
+              <LaTeX className="text-slate-800 leading-relaxed">{variant.content}</LaTeX>
+
+              {isAdmin && (
+                <div className="mt-4 pt-3 border-t border-dashed border-slate-200">
+                  <p className="text-sm text-slate-600">
+                    🔑 Ответ:{' '}
+                    <span className="font-mono font-medium text-slate-900">{variant.answer}</span>
+                  </p>
+                  {variant.solution && (
+                    <div className="mt-2">
+                      <p className="text-xs font-medium text-slate-400 uppercase tracking-wide mb-1">
+                        Решение
+                      </p>
+                      <LaTeX className="text-sm text-slate-600">{variant.solution}</LaTeX>
+                    </div>
+                  )}
+                </div>
+              )}
+            </Card>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
 
-// ===== Пагинация =====
 function Pagination({
   page,
   totalPages,
@@ -350,51 +375,28 @@ function Pagination({
   );
 }
 
-// ===== ОСНОВНАЯ СТРАНИЦА =====
 export function TasksPage() {
   const { user } = useAuthStore();
   const isAdmin = user?.role === 'ADMIN';
 
-  // Данные
   const [tasks, setTasks] = useState<EgeTask[]>([]);
   const [totalElements, setTotalElements] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [page, setPage] = useState(0);
   const [loading, setLoading] = useState(true);
 
-  // Фильтры — все массивы для единообразия
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedNumbers, setSelectedNumbers] = useState<string[]>([]);
   const [selectedTopics, setSelectedTopics] = useState<string[]>([]);
   const [selectedDifficulties, setSelectedDifficulties] = useState<string[]>([]);
 
-  // UI
   const [selectedTask, setSelectedTask] = useState<EgeTask | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
 
-  const topicOptions = (() => {
-    if (selectedNumbers.length === 0) return ALL_TOPIC_OPTIONS;
-    if (selectedNumbers.length === 1) {
-      return ALL_TOPIC_OPTIONS.filter((o) => o.group === selectedNumbers[0]);
-    }
+  const topicOptions = useMemo(() => {
+    return getAvailableTopics(selectedNumbers).map((topic) => ({ value: topic, label: topic }));
+  }, [selectedNumbers]);
 
-    // Пересечение: только темы, которые встречаются у КАЖДОГО выбранного номера
-    const topicsByNumber = selectedNumbers.map(
-      (num) => new Set(EGE_TOPICS[parseInt(num)]?.map((t) => t) || [])
-    );
-
-    // Находим пересечение множеств
-    const intersection = topicsByNumber.reduce((acc, set) => {
-      return new Set([...acc].filter((topic) => set.has(topic)));
-    });
-
-    // Возвращаем опции только для пересекающихся тем (от всех выбранных номеров)
-    return ALL_TOPIC_OPTIONS.filter(
-      (o) => selectedNumbers.includes(o.group || '') && intersection.has(topicValueToName(o.value))
-    );
-  })();
-
-  // Загрузка задач
   const fetchTasks = useCallback(async () => {
     setLoading(true);
     try {
@@ -404,16 +406,13 @@ export function TasksPage() {
       if (selectedNumbers.length > 1) params.egeNumbers = selectedNumbers.join(',');
       if (selectedDifficulties.length === 1) params.difficulty = selectedDifficulties[0];
       if (selectedDifficulties.length > 1) params.difficulties = selectedDifficulties.join(',');
-      if (selectedTopics.length > 0) {
-        params.topics = selectedTopics.map(topicValueToName).join(',');
-      }
+      if (selectedTopics.length > 0) params.topics = selectedTopics.join(',');
 
-      const response = await api.get<EgeTaskPage>('/api/ege-tasks', { params });
+      const response = await api.get<EgeTaskPage>('/ege-tasks', { params });
       setTasks(response.data.content);
       setTotalElements(response.data.totalElements);
       setTotalPages(response.data.totalPages);
     } catch (error) {
-      console.error('Ошибка загрузки задач:', error);
       setTasks([]);
       setTotalElements(0);
       setTotalPages(0);
@@ -430,29 +429,34 @@ export function TasksPage() {
     setPage(0);
   }, [searchQuery, selectedNumbers, selectedTopics, selectedDifficulties]);
 
-  // При смене номеров — убираем невалидные темы
   useEffect(() => {
     if (selectedNumbers.length > 0) {
-      const validValues = ALL_TOPIC_OPTIONS.filter((o) =>
-        selectedNumbers.includes(o.group || '')
-      ).map((o) => o.value);
-      setSelectedTopics((prev) => prev.filter((t) => validValues.includes(t)));
+      const validTopics = new Set(getAvailableTopics(selectedNumbers));
+      setSelectedTopics((prev) => prev.filter((topic) => validTopics.has(topic)));
     }
   }, [selectedNumbers]);
 
+  const handleOpenTask = async (task: EgeTask) => {
+    setSelectedTask(task);
+    try {
+      const response = await api.get<EgeTask>(`/ege-tasks/${task.id}`);
+      setSelectedTask(response.data);
+    } catch (error) {
+      console.error('Ошибка загрузки вариантов:', error);
+    }
+  };
+
   const handleCreateTask = async (taskData: EgeTaskCreateRequest) => {
-    await api.post('/api/ege-tasks', taskData);
+    await api.post('/ege-tasks', taskData);
     fetchTasks();
   };
 
   const handleDeleteTask = async (taskId: string) => {
-    if (!confirm('Удалить эту задачу?')) return;
+    if (!confirm('Удалить эту задачу вместе со всеми её вариантами?')) return;
     try {
-      await api.delete(`/api/ege-tasks/${taskId}`);
+      await api.delete(`/ege-tasks/${taskId}`);
       fetchTasks();
-    } catch (error) {
-      console.error('Ошибка удаления:', error);
-    }
+    } catch (error) {}
   };
 
   const clearFilters = () => {
@@ -468,23 +472,22 @@ export function TasksPage() {
     selectedTopics.length > 0 ||
     selectedDifficulties.length > 0;
 
-  // ===== Детальный просмотр =====
   if (selectedTask) {
     return (
       <TaskDetail task={selectedTask} onBack={() => setSelectedTask(null)} isAdmin={isAdmin} />
     );
   }
 
-  // ===== Каталог =====
   return (
     <div className="space-y-6">
-      {/* Заголовок */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">База задач ЕГЭ</h1>
           <p className="text-slate-500 mt-1">
             Профильная математика · Задания 1–12
-            {totalElements > 0 && <span className="text-slate-400"> · {totalElements} задач</span>}
+            {totalElements > 0 && (
+              <span className="text-slate-400"> · {totalElements} прототипов</span>
+            )}
           </p>
         </div>
         {isAdmin && (
@@ -495,10 +498,8 @@ export function TasksPage() {
         )}
       </div>
 
-      {/* Фильтры */}
       <Card>
         <div className="flex flex-wrap items-center gap-3">
-          {/* Поиск */}
           <div className="flex-1 min-w-[200px]">
             <Input
               placeholder="Поиск по тексту задачи..."
@@ -508,7 +509,6 @@ export function TasksPage() {
             />
           </div>
 
-          {/* Номер задания */}
           <FilterDropdown
             options={NUMBER_OPTIONS}
             selected={selectedNumbers}
@@ -518,7 +518,6 @@ export function TasksPage() {
             className="w-auto"
           />
 
-          {/* Тема */}
           <FilterDropdown
             options={topicOptions}
             selected={selectedTopics}
@@ -529,7 +528,6 @@ export function TasksPage() {
             className="w-auto"
           />
 
-          {/* Сложность */}
           <FilterDropdown
             options={DIFFICULTY_OPTIONS}
             selected={selectedDifficulties}
@@ -539,7 +537,6 @@ export function TasksPage() {
             className="w-auto"
           />
 
-          {/* Сбросить */}
           {hasActiveFilters && (
             <Button variant="ghost" size="sm" onClick={clearFilters}>
               <X size={14} className="mr-1" />
@@ -548,7 +545,6 @@ export function TasksPage() {
           )}
         </div>
 
-        {/* Активные фильтры — чипы */}
         {hasActiveFilters && (
           <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t border-slate-100">
             {selectedNumbers.map((num) => (
@@ -569,7 +565,7 @@ export function TasksPage() {
                 className="inline-flex items-center gap-1 px-2.5 py-1 bg-violet-50 text-violet-700 rounded-full text-xs font-medium"
               >
                 <Tag size={11} />
-                {topicValueToName(topic)}
+                {topic}
                 <button
                   onClick={() => setSelectedTopics((prev) => prev.filter((t) => t !== topic))}
                 >
@@ -577,15 +573,16 @@ export function TasksPage() {
                 </button>
               </span>
             ))}
-            {selectedDifficulties.map((d) => (
+            {selectedDifficulties.map((difficulty) => (
               <span
-                key={`d-${d}`}
-                className="inline-flex items-center gap-1 px-2.5 py-1 bg-amber-50 text-amber-700 rounded-full text-xs font-medium"
+                key={`d-${difficulty}`}
+                className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${DIFFICULTY_CHIP_COLORS[difficulty]}`}
               >
-                {DIFFICULTY_OPTIONS.find((o) => o.value === d)?.icon}{' '}
-                {DIFFICULTY_LABELS[d as TaskDifficulty]}
+                {DIFFICULTY_LABELS[difficulty as TaskDifficulty]}
                 <button
-                  onClick={() => setSelectedDifficulties((prev) => prev.filter((x) => x !== d))}
+                  onClick={() =>
+                    setSelectedDifficulties((prev) => prev.filter((d) => d !== difficulty))
+                  }
                 >
                   <X size={12} />
                 </button>
@@ -595,7 +592,6 @@ export function TasksPage() {
         )}
       </Card>
 
-      {/* Список задач */}
       {loading ? (
         <div className="space-y-4">
           {Array.from({ length: 5 }).map((_, i) => (
@@ -622,18 +618,13 @@ export function TasksPage() {
           <p className="text-slate-500 mb-4">
             {hasActiveFilters
               ? 'Попробуйте изменить параметры фильтрации'
-              : 'Добавьте первую задачу, чтобы начать'}
+              : 'Зайдите в Админ-панель и загрузите файл .md'}
           </p>
-          {hasActiveFilters ? (
+          {hasActiveFilters && (
             <Button variant="outline" onClick={clearFilters}>
               Сбросить фильтры
             </Button>
-          ) : isAdmin ? (
-            <Button onClick={() => setShowCreateModal(true)}>
-              <Plus size={18} className="mr-2" />
-              Добавить задачу
-            </Button>
-          ) : null}
+          )}
         </Card>
       ) : (
         <div className="space-y-3">
@@ -641,7 +632,7 @@ export function TasksPage() {
             <TaskCard
               key={task.id}
               task={task}
-              onClick={() => setSelectedTask(task)}
+              onClick={() => handleOpenTask(task)}
               onDelete={() => handleDeleteTask(task.id)}
               isAdmin={isAdmin}
             />
@@ -650,7 +641,6 @@ export function TasksPage() {
       )}
 
       <Pagination page={page} totalPages={totalPages} onChange={setPage} />
-
       <CreateTaskModal
         isOpen={showCreateModal}
         onClose={() => setShowCreateModal(false)}

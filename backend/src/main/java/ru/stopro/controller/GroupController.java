@@ -23,14 +23,12 @@ import java.util.UUID;
 
 /**
  * Контроллер управления учебными группами.
- *
- * Доступен только пользователям с ролью TEACHER.
  */
 @Slf4j
 @RestController
 @RequestMapping("/api/v1/groups")
 @RequiredArgsConstructor
-@PreAuthorize("hasRole('TEACHER')")
+@PreAuthorize("hasAnyAuthority('TEACHER', 'ROLE_TEACHER', 'ADMIN', 'ROLE_ADMIN')")
 @Tag(name = "Groups", description = "API управления учебными группами")
 public class GroupController {
 
