@@ -19,6 +19,7 @@ import {
   Eye,
   X,
   Tag,
+  AlertTriangle,
 } from 'lucide-react';
 import type { EgeTask, EgeTaskCreateRequest, EgeTaskPage, TaskDifficulty } from '@/types';
 import { EGE_TOPICS, DIFFICULTY_LABELS } from '@/types';
@@ -185,6 +186,23 @@ function TaskDetail({
           <LaTeX className="text-lg text-slate-900 leading-relaxed">{task.content}</LaTeX>
         </div>
 
+        {task.imageUrls && task.imageUrls.length > 0 && (
+          <div className="mt-5 flex flex-wrap gap-4">
+            {task.imageUrls.map((url, i) => (
+              <img
+                key={i}
+                src={url}
+                alt={`Иллюстрация ${i + 1}`}
+                className="max-h-64 rounded-xl border border-slate-200 shadow-sm"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src =
+                    'https://placehold.co/400x200/f8fafc/94a3b8?text=Image+Not+Found';
+                }}
+              />
+            ))}
+          </div>
+        )}
+
         <div className="mt-8 space-y-4">
           <Input
             label="Ваш ответ"
@@ -273,7 +291,6 @@ function TaskDetail({
         )}
       </Card>
 
-      {/* БЛОК С ВАРИАНТАМИ */}
       {task.variants && task.variants.length > 0 && (
         <div className="space-y-4 mt-8">
           <h3 className="text-xl font-bold text-slate-900 pb-2 border-b border-slate-200">
@@ -293,6 +310,23 @@ function TaskDetail({
               </div>
 
               <LaTeX className="text-slate-800 leading-relaxed">{variant.content}</LaTeX>
+
+              {variant.imageUrls && variant.imageUrls.length > 0 && (
+                <div className="mt-4 flex flex-wrap gap-3">
+                  {variant.imageUrls.map((url, i) => (
+                    <img
+                      key={i}
+                      src={url}
+                      alt={`Иллюстрация варианта ${i + 1}`}
+                      className="max-h-48 rounded-lg border border-slate-200 shadow-sm"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src =
+                          'https://placehold.co/400x200/f8fafc/94a3b8?text=Image+Not+Found';
+                      }}
+                    />
+                  ))}
+                </div>
+              )}
 
               {isAdmin && (
                 <div className="mt-4 pt-3 border-t border-dashed border-slate-200">
@@ -392,6 +426,7 @@ export function TasksPage() {
 
   const [selectedTask, setSelectedTask] = useState<EgeTask | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [taskToDelete, setTaskToDelete] = useState<string | null>(null);
 
   const topicOptions = useMemo(() => {
     return getAvailableTopics(selectedNumbers).map((topic) => ({ value: topic, label: topic }));
@@ -451,10 +486,11 @@ export function TasksPage() {
     fetchTasks();
   };
 
-  const handleDeleteTask = async (taskId: string) => {
-    if (!confirm('Удалить эту задачу вместе со всеми её вариантами?')) return;
+  const confirmDeleteTask = async () => {
+    if (!taskToDelete) return;
     try {
-      await api.delete(`/ege-tasks/${taskId}`);
+      await api.delete(`/ege-tasks/${taskToDelete}`);
+      setTaskToDelete(null);
       fetchTasks();
     } catch (error) {}
   };
@@ -633,7 +669,7 @@ export function TasksPage() {
               key={task.id}
               task={task}
               onClick={() => handleOpenTask(task)}
-              onDelete={() => handleDeleteTask(task.id)}
+              onDelete={() => setTaskToDelete(task.id)}
               isAdmin={isAdmin}
             />
           ))}
@@ -641,11 +677,39 @@ export function TasksPage() {
       )}
 
       <Pagination page={page} totalPages={totalPages} onChange={setPage} />
+      
       <CreateTaskModal
         isOpen={showCreateModal}
         onClose={() => setShowCreateModal(false)}
         onSubmit={handleCreateTask}
       />
+
+      {taskToDelete && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-in fade-in duration-200">
+          <Card className="w-full max-w-md shadow-2xl animate-in zoom-in-95 duration-200">
+            <div className="flex flex-col items-center text-center">
+              <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-4 text-red-600">
+                <AlertTriangle size={32} />
+              </div>
+              <h3 className="text-xl font-bold text-slate-900 mb-2">Удалить задачу?</h3>
+              <p className="text-slate-500 mb-6">
+                Это действие необратимо. Задача и все её варианты будут навсегда удалены из базы.
+              </p>
+              <div className="flex w-full gap-3">
+                <Button variant="outline" className="flex-1" onClick={() => setTaskToDelete(null)}>
+                  Отмена
+                </Button>
+                <Button
+                  className="flex-1 bg-red-600 hover:bg-red-700 text-white"
+                  onClick={confirmDeleteTask}
+                >
+                  Удалить
+                </Button>
+              </div>
+            </div>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }

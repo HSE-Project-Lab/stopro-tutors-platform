@@ -1,12 +1,11 @@
-// src/components/tasks/CreateTaskModal.tsx
-
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { LaTeXPreview } from '@/components/ui/LaTeX';
-import { X, Eye, Upload, FileText, Plus, Trash2 } from 'lucide-react';
+import { X, Eye, Upload, FileText, Plus, Trash2, ImagePlus, UploadCloud } from 'lucide-react';
+import api from '@/lib/axios';
 import {
   EGE_TOPICS,
   DIFFICULTY_LABELS,
@@ -46,17 +45,19 @@ export function CreateTaskModal({ isOpen, onClose, onSubmit }: CreateTaskModalPr
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
 
-  // Поля формы
   const [egeNumber, setEgeNumber] = useState<number>(1);
   const [topic, setTopic] = useState('');
   const [difficulty, setDifficulty] = useState<TaskDifficulty>('MEDIUM');
   const [content, setContent] = useState('');
   const [solution, setSolution] = useState('');
   const [answer, setAnswer] = useState('');
+  
+  // Изображения
   const [imageUrls, setImageUrls] = useState<string[]>([]);
   const [newImageUrl, setNewImageUrl] = useState('');
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // LaTeX-импорт
   const [latexInput, setLatexInput] = useState('');
 
   const availableTopics = EGE_TOPICS[egeNumber] || [];
@@ -82,7 +83,6 @@ export function CreateTaskModal({ isOpen, onClose, onSubmit }: CreateTaskModalPr
   const parseLatexTemplate = () => {
     const lines = latexInput.split('\n');
 
-    // Парсим метаданные из комментариев
     for (const line of lines) {
       const numberMatch = line.match(/%\s*@number:\s*(\d+)/);
       const topicMatch = line.match(/%\s*@topic:\s*(.+)/);
@@ -96,7 +96,6 @@ export function CreateTaskModal({ isOpen, onClose, onSubmit }: CreateTaskModalPr
       }
     }
 
-    // Парсим блоки
     const taskMatch = latexInput.match(/\\begin\{task\}([\s\S]*?)\\end\{task\}/);
     const solutionMatch = latexInput.match(/\\begin\{solution\}([\s\S]*?)\\end\{solution\}/);
     const answerMatch = latexInput.match(/\\begin\{answer\}([\s\S]*?)\\end\{answer\}/);
@@ -140,19 +139,42 @@ export function CreateTaskModal({ isOpen, onClose, onSubmit }: CreateTaskModalPr
     setImageUrls((prev) => prev.filter((_, i) => i !== index));
   };
 
+    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploadingImage(true);
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const response = await api.post<{ url: string }>('/upload', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      setImageUrls((prev) => [...prev, response.data.url]);
+    } catch (error: any) {
+      const errorMsg = error.response?.data?.message || error.message || 'Неизвестная ошибка сервера';
+      alert(`Ошибка при загрузке: ${errorMsg}`);
+      console.error('Детали ошибки:', error);
+    } finally {
+      setIsUploadingImage(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
   const isValid = content.trim() && answer.trim() && topic;
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center pt-10 pb-10">
-      {/* Оверлей */}
-      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={handleClose} />
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
+      <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity" onClick={handleClose} />
 
-      {/* Модальное окно */}
-      <div className="relative w-full max-w-4xl max-h-[90vh] overflow-y-auto bg-white rounded-2xl shadow-2xl z-10">
+      {/* Модальное окно с правильной структурой (Header -> Scrollable Body -> Footer) */}
+      <div className="relative w-full max-w-4xl max-h-full flex flex-col bg-white rounded-2xl shadow-2xl z-10 overflow-hidden animate-in zoom-in-95 duration-200">
+        
         {/* Шапка */}
-        <div className="sticky top-0 bg-white border-b border-slate-100 px-8 py-5 rounded-t-2xl flex items-center justify-between z-10">
+        <div className="shrink-0 bg-white border-b border-slate-100 px-8 py-5 flex items-center justify-between z-20">
           <div>
             <h2 className="text-xl font-bold text-slate-900">Новая задача</h2>
             <p className="text-sm text-slate-500 mt-0.5">
@@ -167,9 +189,10 @@ export function CreateTaskModal({ isOpen, onClose, onSubmit }: CreateTaskModalPr
           </button>
         </div>
 
-        {/* Табы */}
-        <div className="px-8 pt-5">
-          <div className="flex gap-1 bg-slate-100 p-1 rounded-xl w-fit">
+        {/* Скроллируемая область с кастомным скроллбаром */}
+        <div className="flex-1 overflow-y-auto [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-slate-200 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-slate-300 px-8 py-6">
+          
+          <div className="flex gap-1 bg-slate-100 p-1 rounded-xl w-fit mb-6">
             <button
               onClick={() => setActiveTab('manual')}
               className={`px-4 py-2 text-sm font-medium rounded-lg transition-all ${
@@ -193,12 +216,8 @@ export function CreateTaskModal({ isOpen, onClose, onSubmit }: CreateTaskModalPr
               Импорт LaTeX
             </button>
           </div>
-        </div>
 
-        {/* Контент */}
-        <div className="px-8 py-6 space-y-6">
           {activeTab === 'latex' ? (
-            /* ===== ТАБ ИМПОРТА ===== */
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-2">
@@ -222,55 +241,48 @@ export function CreateTaskModal({ isOpen, onClose, onSubmit }: CreateTaskModalPr
               </div>
             </div>
           ) : (
-            /* ===== ТАБ РУЧНОГО ВВОДА ===== */
-            <div className="space-y-6">
-              {/* Метаданные */}
-              <div className="grid grid-cols-3 gap-4">
+            <div className="space-y-6 pb-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                    Номер задания
-                  </label>
                   <Select
+                    label="Номер задания"
                     options={Array.from({ length: 12 }, (_, i) => ({
                       value: String(i + 1),
                       label: `Задание ${i + 1}`,
                     }))}
                     value={String(egeNumber)}
-                    onChange={(e) => {
-                      setEgeNumber(parseInt(e.target.value));
-                      setTopic(''); // сброс темы при смене номера
+                    onChange={(val) => {
+                      setEgeNumber(parseInt(val));
+                      setTopic('');
                     }}
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1.5">Тема</label>
                   <Select
+                    label="Тема"
                     options={[
                       { value: '', label: 'Выберите тему...' },
                       ...availableTopics.map((t) => ({ value: t, label: t })),
                     ]}
                     value={topic}
-                    onChange={(e) => setTopic(e.target.value)}
+                    onChange={(val) => setTopic(val)}
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                    Сложность
-                  </label>
                   <Select
+                    label="Сложность"
                     options={Object.entries(DIFFICULTY_LABELS).map(([value, label]) => ({
                       value,
                       label,
                     }))}
                     value={difficulty}
-                    onChange={(e) => setDifficulty(e.target.value as TaskDifficulty)}
+                    onChange={(val) => setDifficulty(val as TaskDifficulty)}
                   />
                 </div>
               </div>
 
-              {/* Условие */}
               <div>
                 <div className="flex items-center justify-between mb-1.5">
                   <label className="text-sm font-medium text-slate-700">
@@ -295,7 +307,6 @@ export function CreateTaskModal({ isOpen, onClose, onSubmit }: CreateTaskModalPr
                 )}
               </div>
 
-              {/* Решение */}
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1.5">
                   Решение (необязательно)
@@ -311,7 +322,6 @@ export function CreateTaskModal({ isOpen, onClose, onSubmit }: CreateTaskModalPr
                 )}
               </div>
 
-              {/* Ответ */}
               <div>
                 <Input
                   label="Ответ *"
@@ -328,48 +338,83 @@ export function CreateTaskModal({ isOpen, onClose, onSubmit }: CreateTaskModalPr
                 )}
               </div>
 
-              {/* Изображения */}
+              {/* Улучшенный блок загрузки изображений */}
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                  Изображения (URL)
+                  Изображения к задаче
                 </label>
-                <div className="space-y-2">
+                <div className="space-y-3">
                   {imageUrls.map((url, index) => (
-                    <div key={index} className="flex items-center gap-2">
-                      <div className="flex-1 px-3 py-2 bg-slate-50 rounded-lg text-sm text-slate-600 truncate">
-                        {url}
+                    <div key={index} className="flex items-center gap-3 p-2 bg-slate-50 border border-slate-100 rounded-xl">
+                      <div className="w-12 h-12 shrink-0 bg-white rounded-lg border border-slate-200 overflow-hidden flex items-center justify-center">
+                        <img
+                          src={url}
+                          alt={`Изображение ${index + 1}`}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            // Если ссылка битая, показываем красивую заглушку, а не прячем блок
+                            (e.target as HTMLImageElement).src = 'https://placehold.co/100x100/f8fafc/94a3b8?text=Error';
+                          }}
+                        />
                       </div>
-                      <img
-                        src={url}
-                        alt={`Изображение ${index + 1}`}
-                        className="w-10 h-10 object-cover rounded-lg border"
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).style.display = 'none';
-                        }}
-                      />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm text-slate-600 truncate">{url}</p>
+                      </div>
                       <button
                         onClick={() => removeImageUrl(index)}
-                        className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                        className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors shrink-0"
                       >
-                        <Trash2 size={16} />
+                        <Trash2 size={18} />
                       </button>
                     </div>
                   ))}
-                  <div className="flex gap-2">
-                    <Input
-                      value={newImageUrl}
-                      onChange={(e) => setNewImageUrl(e.target.value)}
-                      placeholder="https://example.com/image.png"
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          e.preventDefault();
-                          addImageUrl();
-                        }
-                      }}
-                    />
-                    <Button variant="outline" onClick={addImageUrl} disabled={!newImageUrl.trim()}>
-                      <Plus size={16} />
-                    </Button>
+
+                  <div className="flex flex-col sm:flex-row gap-3 items-center">
+                    <div className="flex-1 flex gap-2 w-full">
+                      <div className="relative flex-1">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                          <ImagePlus size={16} className="text-slate-400" />
+                        </div>
+                        <input
+                          type="text"
+                          value={newImageUrl}
+                          onChange={(e) => setNewImageUrl(e.target.value)}
+                          placeholder="https://example.com/image.png"
+                          className="w-full h-[42px] pl-9 pr-4 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              addImageUrl();
+                            }
+                          }}
+                        />
+                      </div>
+                      <Button type="button" variant="outline" onClick={addImageUrl} disabled={!newImageUrl.trim()}>
+                        Добавить
+                      </Button>
+                    </div>
+
+                    <span className="text-slate-300 text-sm font-medium hidden sm:block">или</span>
+
+                    <div className="w-full sm:w-auto">
+                      <input
+                        type="file"
+                        ref={fileInputRef}
+                        className="hidden"
+                        accept="image/*"
+                        onChange={handleFileUpload}
+                      />
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        className="w-full"
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={isUploadingImage}
+                      >
+                        <UploadCloud size={16} className="mr-2" />
+                        {isUploadingImage ? 'Загрузка...' : 'Загрузить файл'}
+                      </Button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -377,8 +422,8 @@ export function CreateTaskModal({ isOpen, onClose, onSubmit }: CreateTaskModalPr
           )}
         </div>
 
-        {/* Футер */}
-        <div className="sticky bottom-0 bg-white border-t border-slate-100 px-8 py-4 rounded-b-2xl flex items-center justify-between">
+        {/* Подвал */}
+        <div className="shrink-0 bg-slate-50/80 border-t border-slate-100 px-8 py-4 flex items-center justify-between z-20">
           <p className="text-sm text-slate-400">
             Поля со <span className="text-red-400">*</span> обязательны
           </p>

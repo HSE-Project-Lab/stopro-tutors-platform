@@ -41,9 +41,14 @@ public class EgeTaskController {
         return ResponseEntity.status(HttpStatus.CREATED).body(egeTaskService.create(request));
     }
 
-    @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<EgeTaskDto> uploadTasks(@RequestParam("file") MultipartFile file) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(egeTaskService.uploadMarkdown(file));
+    @PostMapping(value = "/parse", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<EgeTaskDto> parseTasksPreview(@RequestParam("file") MultipartFile file) {
+        return ResponseEntity.ok(egeTaskService.parseMarkdownPreview(file));
+    }
+
+    @PostMapping("/batch")
+    public ResponseEntity<EgeTaskDto> saveBatch(@RequestBody EgeTaskDto request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(egeTaskService.saveBatch(request));
     }
 
     @DeleteMapping("/{id}")

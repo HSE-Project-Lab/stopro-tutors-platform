@@ -139,4 +139,43 @@ public class EgeTaskService {
 
         return dto;
     }
+
+        public EgeTaskDto parseMarkdownPreview(MultipartFile file) {
+        try {
+            String content = new String(file.getBytes(), StandardCharsets.UTF_8);
+            EgeTask prototype = markdownTaskParser.parseBatch(content);
+            return toDto(prototype, true);
+        } catch (Exception e) {
+            throw new RuntimeException("Ошибка парсинга Markdown: " + e.getMessage(), e);
+        }
+    }
+
+    @Transactional
+    public EgeTaskDto saveBatch(EgeTaskDto dto) {
+        EgeTask prototype = EgeTask.builder()
+                .egeNumber(dto.getEgeNumber())
+                .topic(dto.getTopic())
+                .difficulty(dto.getDifficulty())
+                .content(dto.getContent())
+                .solution(dto.getSolution())
+                .answer(dto.getAnswer())
+                .imageUrls(dto.getImageUrls() != null ? dto.getImageUrls() : new ArrayList<>())
+                .build();
+
+        if (dto.getVariants() != null && !dto.getVariants().isEmpty()) {
+            List<EgeTask> variants = dto.getVariants().stream().map(v -> EgeTask.builder()
+                    .egeNumber(v.getEgeNumber())
+                    .topic(v.getTopic())
+                    .difficulty(v.getDifficulty())
+                    .content(v.getContent())
+                    .solution(v.getSolution())
+                    .answer(v.getAnswer())
+                    .imageUrls(v.getImageUrls() != null ? v.getImageUrls() : new ArrayList<>())
+                    .parent(prototype)
+                    .build()).toList();
+            prototype.setVariants(variants);
+        }
+
+        return toDto(egeTaskRepository.save(prototype), true);
+    }
 }

@@ -51,6 +51,8 @@ services:
       REDIS_HOST: redis
       REDIS_PORT: "6379"
       AI_SERVICE_URL: http://ai-service:8000
+    volumes:
+      - ./uploads:/app/uploads:z
     healthcheck:
       test: ["CMD-SHELL", "wget -q --spider http://localhost:8080/actuator/health || exit 1"]
       interval: 15s

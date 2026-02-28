@@ -1,7 +1,9 @@
+import { useState } from 'react';
 import { useAuthStore } from '@/store/authStore';
 import { useAppStore } from '@/store/appStore';
 import { Layout } from '@/components/layout/Layout';
 import { LoginPage } from '@/pages/LoginPage';
+import { LandingPage } from '@/pages/LandingPage';
 import { StudentDashboard } from '@/pages/StudentDashboard';
 import { TeacherDashboard } from '@/pages/TeacherDashboard';
 import { TasksPage } from '@/pages/TasksPage';
@@ -15,9 +17,24 @@ import { AdminDashboard } from '@/pages/AdminDashboard';
 function AppContent() {
   const { user } = useAuthStore();
   const { activeTab } = useAppStore();
+  
+  const [showLogin, setShowLogin] = useState(false);
 
   if (!user) {
-    return <LoginPage />;
+    if (showLogin) {
+      return (
+        <div className="relative min-h-screen bg-slate-50">
+          <button 
+            onClick={() => setShowLogin(false)}
+            className="absolute top-6 left-6 text-slate-500 hover:text-slate-900 font-medium z-10 transition-colors"
+          >
+            ← На главную
+          </button>
+          <LoginPage />
+        </div>
+      );
+    }
+    return <LandingPage onLoginClick={() => setShowLogin(true)} />;
   }
 
   const renderPage = () => {
