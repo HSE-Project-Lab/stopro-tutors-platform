@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, ReactNode } from 'react';
-import { motion, useScroll, useTransform, AnimatePresence, useSpring } from 'framer-motion';
+import { motion, useScroll, useTransform, AnimatePresence } from 'framer-motion';
 import {
   Brain,
   CheckCircle,
@@ -54,6 +54,34 @@ function SpotlightCard({ children, className }: { children: ReactNode; className
   );
 }
 
+// ===== ДАННЫЕ ДЛЯ ШОУКЕЙСА =====
+const SHOWCASE_TABS = [
+  {
+    id: 'base',
+    title: 'База знаний и конструктор',
+    desc: 'Формируйте домашние задания из тысяч готовых прототипов ЕГЭ. Встроенная поддержка LaTeX и изображений.',
+    icon: Shield,
+    color: 'text-indigo-600',
+    bg: 'bg-indigo-100',
+  },
+  {
+    id: 'ai',
+    title: 'Умный анализ ответов',
+    desc: 'Платформа не просто сверяет ответ. ИИ читает рукописный ход решения ученика и находит логические ошибки.',
+    icon: ScanSearch,
+    color: 'text-purple-600',
+    bg: 'bg-purple-100',
+  },
+  {
+    id: 'analytics',
+    title: 'Абсолютный контроль',
+    desc: 'Детальная аналитика по каждому ученику. Система подскажет, какие темы нужно повторить перед экзаменом.',
+    icon: TrendingUp,
+    color: 'text-emerald-600',
+    bg: 'bg-emerald-100',
+  },
+];
+
 interface LandingPageProps {
   onLoginClick: () => void;
 }
@@ -81,23 +109,27 @@ export function LandingPage({ onLoginClick }: LandingPageProps) {
   const heroY = useTransform(scrollYProgress, [0, 0.2], [0, 150]);
   const heroOpacity = useTransform(scrollYProgress, [0, 0.15], [1, 0]);
 
-  // Плавный и быстрый Scrollytelling
-  const scrollyRef = useRef<HTMLDivElement>(null);
-  const { scrollYProgress: rawFeatureProgress } = useScroll({
-    target: scrollyRef,
-    offset: ['start start', 'end end'],
-  });
-  // Добавляем пружину для мягкости (убираем рывки от колесика мыши)
-  const featureProgress = useSpring(rawFeatureProgress, { stiffness: 400, damping: 40 });
+  // Логика авто-шоукейса
+  const [activeTab, setActiveTab] = useState(0);
+  const [progress, setProgress] = useState(0);
 
-  // Логика смены кадров (3 шага)
-  const step1 = useTransform(featureProgress, [0, 0.25, 0.35], [1, 1, 0]);
-  const step2 = useTransform(featureProgress, [0.25, 0.4, 0.6, 0.7], [0, 1, 1, 0]);
-  const step3 = useTransform(featureProgress, [0.6, 0.75, 1], [0, 1, 1]);
+  useEffect(() => {
+    const duration = 5000; // 5 секунд на вкладку
+    const interval = 50; // Обновление каждые 50мс
+    const step = (interval / duration) * 100;
 
-  const step1Y = useTransform(featureProgress, [0, 0.35], [0, -40]);
-  const step2Y = useTransform(featureProgress, [0.25, 0.4, 0.6, 0.7], [40, 0, 0, -40]);
-  const step3Y = useTransform(featureProgress, [0.6, 0.75], [40, 0]);
+    const timer = setInterval(() => {
+      setProgress((prev) => {
+        if (prev >= 100) {
+          setActiveTab((current) => (current + 1) % SHOWCASE_TABS.length);
+          return 0;
+        }
+        return prev + step;
+      });
+    }, interval);
+
+    return () => clearInterval(timer);
+  }, [activeTab]);
 
   return (
     <div className="bg-slate-50 min-h-screen text-slate-900 font-sans selection:bg-indigo-100 selection:text-indigo-900">
@@ -117,7 +149,7 @@ export function LandingPage({ onLoginClick }: LandingPageProps) {
             <span className="font-bold text-2xl tracking-tight text-slate-900">СТОПРО</span>
           </div>
           <div className="hidden md:flex items-center gap-8 font-medium text-slate-600">
-            <button onClick={() => scrollTo('workflow')} className="hover:text-indigo-600 transition-colors">Как это работает</button>
+            <button onClick={() => scrollTo('showcase')} className="hover:text-indigo-600 transition-colors">Платформа</button>
             <button onClick={() => scrollTo('bento')} className="hover:text-indigo-600 transition-colors">Возможности</button>
             <button onClick={() => scrollTo('pricing')} className="hover:text-indigo-600 transition-colors">Тарифы</button>
           </div>
@@ -132,7 +164,6 @@ export function LandingPage({ onLoginClick }: LandingPageProps) {
 
       {/* ГЛАВНЫЙ ЭКРАН */}
       <section className="relative min-h-[90vh] flex items-center justify-center pt-20 overflow-hidden bg-white">
-        {/* Нежные фоновые пятна */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <motion.div
             animate={{ scale: [1, 1.1, 1], rotate: [0, 45, 0] }}
@@ -222,67 +253,143 @@ export function LandingPage({ onLoginClick }: LandingPageProps) {
         </motion.div>
       </div>
 
-      {/* ПЛАВНЫЙ SCROLLYTELLING */}
-      <section id="workflow" ref={scrollyRef} className="relative h-[200vh] bg-slate-50">
-        <div className="sticky top-0 h-screen flex items-center overflow-hidden">
-          <div className="max-w-7xl mx-auto px-6 w-full grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
-            
-            {/* Текстовая часть */}
-            <div className="relative h-[400px]">
-              <motion.div style={{ opacity: step1, y: step1Y, pointerEvents: step1OpacityValue => step1OpacityValue > 0.5 ? 'auto' : 'none' }} className="absolute inset-0 flex flex-col justify-center">
-                <div className="w-16 h-16 rounded-2xl bg-indigo-100 text-indigo-600 flex items-center justify-center mb-6">
-                  <Shield size={32} />
-                </div>
-                <h2 className="text-4xl font-bold mb-4 text-slate-900">База знаний и конструктор</h2>
-                <p className="text-xl text-slate-600 leading-relaxed">Формируйте индивидуальные или групповые домашние задания из тысяч готовых прототипов ЕГЭ. Поддержка LaTeX и изображений из коробки.</p>
-              </motion.div>
+      {/* НОВЫЙ ИНТЕРАКТИВНЫЙ ШОУКЕЙС (ВМЕСТО SCROLLYTELLING) */}
+      <section id="showcase" className="py-32 bg-slate-50 relative overflow-hidden">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl md:text-5xl font-bold mb-4 text-slate-900">Как это работает</h2>
+            <p className="text-xl text-slate-500 max-w-2xl mx-auto">
+              Автоматизируйте весь цикл обучения: от создания задачи до анализа успеваемости.
+            </p>
+          </div>
 
-              <motion.div style={{ opacity: step2, y: step2Y, pointerEvents: step2OpacityValue => step2OpacityValue > 0.5 ? 'auto' : 'none' }} className="absolute inset-0 flex flex-col justify-center">
-                <div className="w-16 h-16 rounded-2xl bg-purple-100 text-purple-600 flex items-center justify-center mb-6">
-                  <ScanSearch size={32} />
-                </div>
-                <h2 className="text-4xl font-bold mb-4 text-slate-900">Умный анализ ответов</h2>
-                <p className="text-xl text-slate-600 leading-relaxed">Платформа не просто сверяет ответ. ИИ читает рукописный ход решения ученика, находит логические ошибки и подсвечивает проблемные зоны.</p>
-              </motion.div>
+          <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
+            {/* Левая часть: Вкладки */}
+            <div className="space-y-4">
+              {SHOWCASE_TABS.map((tab, idx) => {
+                const isActive = activeTab === idx;
+                return (
+                  <div
+                    key={tab.id}
+                    onClick={() => {
+                      setActiveTab(idx);
+                      setProgress(0);
+                    }}
+                    className={cn(
+                      "relative p-6 rounded-2xl cursor-pointer transition-all duration-300 border-2",
+                      isActive ? "bg-white border-indigo-100 shadow-md scale-[1.02]" : "bg-transparent border-transparent hover:bg-slate-100"
+                    )}
+                  >
+                    <div className="flex gap-4">
+                      <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center shrink-0", isActive ? tab.bg : "bg-slate-200 text-slate-500", isActive && tab.color)}>
+                        <tab.icon size={24} />
+                      </div>
+                      <div>
+                        <h3 className={cn("text-xl font-bold mb-2 transition-colors", isActive ? "text-slate-900" : "text-slate-500")}>
+                          {tab.title}
+                        </h3>
+                        <p className={cn("text-slate-600 transition-all duration-300 overflow-hidden", isActive ? "h-auto opacity-100" : "h-0 opacity-0")}>
+                          {tab.desc}
+                        </p>
+                      </div>
+                    </div>
 
-              <motion.div style={{ opacity: step3, y: step3Y, pointerEvents: step3OpacityValue => step3OpacityValue > 0.5 ? 'auto' : 'none' }} className="absolute inset-0 flex flex-col justify-center">
-                <div className="w-16 h-16 rounded-2xl bg-emerald-100 text-emerald-600 flex items-center justify-center mb-6">
-                  <TrendingUp size={32} />
-                </div>
-                <h2 className="text-4xl font-bold mb-4 text-slate-900">Абсолютный контроль</h2>
-                <p className="text-xl text-slate-600 leading-relaxed">Детальная аналитика по каждому ученику. СТОПРО подскажет, какие темы нужно повторить перед экзаменом, чтобы максимизировать балл.</p>
-              </motion.div>
+                    {/* Полоска прогресса снизу */}
+                    {isActive && (
+                      <div className="absolute bottom-0 left-0 h-1 bg-indigo-500 rounded-b-2xl transition-all duration-75 ease-linear" style={{ width: `${progress}%` }} />
+                    )}
+                  </div>
+                );
+              })}
             </div>
 
-            {/* Визуальная часть (Справа) */}
-            <div className="relative h-[500px] w-full hidden lg:block perspective-1000">
-              <motion.div style={{ opacity: step1 }} className="absolute inset-0 flex items-center justify-center p-8">
-                <img src="https://images.unsplash.com/photo-1633356122544-f134324a6cee?auto=format&fit=crop&q=80&w=800" className="rounded-3xl shadow-2xl shadow-indigo-100 border border-slate-200 object-cover h-full w-full" alt="Database" />
-              </motion.div>
-
-              <motion.div style={{ opacity: step2 }} className="absolute inset-0 flex items-center justify-center p-8">
-                <div className="relative w-full h-full bg-slate-900 rounded-3xl overflow-hidden shadow-2xl shadow-purple-200">
-                  <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.05)_1px,transparent_1px)] bg-[size:20px_20px]" />
+            {/* Правая часть: Анимированные визуализации */}
+            <div className="relative aspect-square md:aspect-[4/3] w-full bg-slate-100 rounded-[2.5rem] overflow-hidden shadow-2xl border border-slate-200 p-8 flex items-center justify-center">
+              <AnimatePresence mode="wait">
+                {activeTab === 0 && (
                   <motion.div
-                    animate={{ y: [0, 400, 0] }}
-                    transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
-                    className="absolute left-0 right-0 h-1 bg-purple-500 shadow-[0_0_30px_rgba(168,85,247,1)] z-10"
-                  />
-                  <div className="absolute inset-0 flex items-center justify-center font-mono text-purple-400/50 text-xl">
-                    SCANNING_HANDWRITING...
-                  </div>
-                </div>
-              </motion.div>
+                    key="tab0"
+                    initial={{ opacity: 0, y: 20, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -20, scale: 0.95 }}
+                    transition={{ duration: 0.4 }}
+                    className="w-full max-w-sm bg-white rounded-2xl shadow-xl border border-slate-200 p-6 font-mono text-sm flex flex-col gap-4"
+                  >
+                    <div className="flex gap-2 mb-2 border-b border-slate-100 pb-4">
+                      <div className="w-3 h-3 rounded-full bg-red-400" />
+                      <div className="w-3 h-3 rounded-full bg-amber-400" />
+                      <div className="w-3 h-3 rounded-full bg-emerald-400" />
+                    </div>
+                    <div className="text-indigo-500 font-bold">\begin{'{task}'}</div>
+                    <div className="pl-4 text-slate-700">Решите уравнение: $\log_2(x+3) = 3$</div>
+                    <div className="text-indigo-500 font-bold">\end{'{task}'}</div>
+                    <div className="mt-4 p-5 bg-indigo-50/50 rounded-xl border border-indigo-100 font-sans text-center">
+                      <span className="font-medium text-slate-900 text-lg">Решите уравнение: <span className="italic text-indigo-700">log₂ (x+3) = 3</span></span>
+                    </div>
+                  </motion.div>
+                )}
 
-              <motion.div style={{ opacity: step3 }} className="absolute inset-0 flex items-center justify-center p-8">
-                <img src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&q=80&w=800" className="rounded-3xl shadow-2xl shadow-emerald-100 border border-slate-200 object-cover h-full w-full" alt="Analytics" />
-              </motion.div>
+                {activeTab === 1 && (
+                  <motion.div
+                    key="tab1"
+                    initial={{ opacity: 0, y: 20, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -20, scale: 0.95 }}
+                    transition={{ duration: 0.4 }}
+                    className="relative w-full max-w-sm h-[300px] bg-slate-900 rounded-2xl overflow-hidden shadow-xl border border-slate-800"
+                  >
+                    <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.05)_1px,transparent_1px)] bg-[size:20px_20px]" />
+                    <motion.div
+                      animate={{ y: ["0%", "300%", "0%"] }}
+                      transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+                      className="absolute left-0 right-0 h-1 bg-purple-500 shadow-[0_0_20px_rgba(168,85,247,1)] z-10 top-0"
+                    />
+                    <div className="absolute inset-0 flex flex-col p-8 gap-4 justify-center">
+                      <div className="w-full h-6 bg-white/10 rounded-md" />
+                      <div className="w-3/4 h-6 bg-white/10 rounded-md" />
+                      <motion.div 
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ delay: 1 }}
+                        className="w-full p-3 border border-red-500/50 bg-red-500/10 rounded-lg flex items-center justify-between"
+                      >
+                        <span className="text-red-400 text-xs font-mono">x² = 16 ➔ x = 4</span>
+                        <span className="text-red-400 text-xs font-bold bg-red-500/20 px-2 py-1 rounded">Потерян корень -4</span>
+                      </motion.div>
+                      <div className="w-1/2 h-6 bg-white/10 rounded-md" />
+                    </div>
+                  </motion.div>
+                )}
+
+                {activeTab === 2 && (
+                  <motion.div
+                    key="tab2"
+                    initial={{ opacity: 0, y: 20, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -20, scale: 0.95 }}
+                    transition={{ duration: 0.4 }}
+                    className="w-full max-w-sm h-[300px] bg-white rounded-2xl shadow-xl border border-slate-200 p-8 flex items-end gap-3 justify-center relative"
+                  >
+                    <div className="absolute top-6 left-6 text-slate-500 font-medium">Прогресс группы</div>
+                    {[40, 70, 45, 90, 65, 100].map((h, i) => (
+                      <motion.div
+                        key={i}
+                        initial={{ height: 0 }}
+                        animate={{ height: `${h}%` }}
+                        transition={{ duration: 1, delay: i * 0.1, type: "spring" }}
+                        className={cn("w-10 rounded-t-lg", i === 5 ? "bg-indigo-500" : "bg-emerald-400")}
+                        style={{ opacity: 0.5 + (h / 200) }}
+                      />
+                    ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           </div>
         </div>
       </section>
 
-      {/* BENTO GRID (НОВЫЙ БЛОК) */}
+      {/* BENTO GRID */}
       <section id="bento" className="py-32 bg-white relative">
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center mb-16">
@@ -292,7 +399,7 @@ export function LandingPage({ onLoginClick }: LandingPageProps) {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 auto-rows-[280px]">
             {/* Большая карточка */}
-            <SpotlightCard className="md:col-span-2 md:row-span-2 p-10 bg-slate-50 flex flex-col justify-between group">
+            <SpotlightCard className="md:col-span-2 md:row-span-2 p-10 bg-slate-50 flex flex-col justify-between group cursor-default">
               <div>
                 <div className="w-14 h-14 rounded-2xl bg-white border border-slate-200 flex items-center justify-center mb-6 shadow-sm">
                   <FunctionSquare size={28} className="text-indigo-600" />
@@ -305,7 +412,7 @@ export function LandingPage({ onLoginClick }: LandingPageProps) {
               </div>
             </SpotlightCard>
 
-            <SpotlightCard className="p-8 bg-slate-50">
+            <SpotlightCard className="p-8 bg-slate-50 cursor-default">
               <div className="w-12 h-12 rounded-xl bg-white border border-slate-200 flex items-center justify-center mb-4 shadow-sm">
                 <BarChart size={24} className="text-emerald-600" />
               </div>
@@ -313,7 +420,7 @@ export function LandingPage({ onLoginClick }: LandingPageProps) {
               <p className="text-slate-600 text-sm">Процент решаемости по каждой теме ЕГЭ для точечной отработки.</p>
             </SpotlightCard>
 
-            <SpotlightCard className="p-8 bg-slate-50">
+            <SpotlightCard className="p-8 bg-slate-50 cursor-default">
               <div className="w-12 h-12 rounded-xl bg-white border border-slate-200 flex items-center justify-center mb-4 shadow-sm">
                 <Smartphone size={24} className="text-purple-600" />
               </div>
@@ -432,7 +539,6 @@ export function LandingPage({ onLoginClick }: LandingPageProps) {
               viewport={{ once: true }}
               className="relative p-10 rounded-[2.5rem] bg-slate-900 text-white flex flex-col overflow-hidden shadow-2xl shadow-indigo-900/20"
             >
-              {/* Светящийся блик на фоне */}
               <div className="absolute top-[-20%] right-[-20%] w-[50%] h-[50%] bg-indigo-500/30 blur-[80px] rounded-full" />
               
               <div className="absolute top-0 right-8 bg-indigo-500 text-white text-xs font-bold px-4 py-2 rounded-b-xl uppercase tracking-wider shadow-lg">
