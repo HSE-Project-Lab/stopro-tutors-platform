@@ -154,12 +154,18 @@ export function AdminDashboard() {
           <Card className="border-indigo-200 shadow-md shadow-indigo-100/50">
             <div className="flex items-center justify-between border-b border-slate-100 pb-4 mb-4">
               <div>
-                <Badge variant="outline" className="mb-2 bg-indigo-50 text-indigo-700 border-indigo-200">
+                <Badge
+                  variant="outline"
+                  className="mb-2 bg-indigo-50 text-indigo-700 border-indigo-200"
+                >
                   ПРОТОТИП
                 </Badge>
                 <div className="flex items-center gap-2 mt-1">
                   <Badge variant="default">Задание {previewData.egeNumber}</Badge>
-                  <Badge variant="default" className="bg-slate-100 text-slate-700 hover:bg-slate-200">
+                  <Badge
+                    variant="default"
+                    className="bg-slate-100 text-slate-700 hover:bg-slate-200"
+                  >
                     {previewData.topic}
                   </Badge>
                   <Badge variant={difficultyVariant[previewData.difficulty]}>
@@ -168,9 +174,9 @@ export function AdminDashboard() {
                 </div>
               </div>
             </div>
-            
+
             <LaTeX className="text-slate-800 leading-relaxed text-lg">{previewData.content}</LaTeX>
-            
+
             <div className="mt-4 pt-3 border-t border-dashed border-slate-200">
               {previewData.solution && (
                 <div className="mb-4 bg-slate-50 p-3 rounded-lg">
@@ -179,7 +185,8 @@ export function AdminDashboard() {
                 </div>
               )}
               <p className="text-sm text-slate-600">
-                🔑 Ответ: <span className="font-mono font-bold text-slate-900">{previewData.answer}</span>
+                🔑 Ответ:{' '}
+                <span className="font-mono font-bold text-slate-900">{previewData.answer}</span>
               </p>
             </div>
           </Card>
@@ -191,9 +198,11 @@ export function AdminDashboard() {
               </h3>
               {previewData.variants.map((variant, idx) => (
                 <Card key={idx} padding="sm" className="bg-white/50 border-slate-200">
-                  <Badge variant="outline" className="mb-3">Вариант {idx + 1}</Badge>
+                  <Badge variant="outline" className="mb-3">
+                    Вариант {idx + 1}
+                  </Badge>
                   <LaTeX className="text-slate-800 leading-relaxed">{variant.content}</LaTeX>
-                  
+
                   <div className="mt-3 pt-3 border-t border-dashed border-slate-200">
                     {variant.solution && (
                       <div className="mb-3 bg-slate-50/50 p-2 rounded-md">
@@ -202,7 +211,8 @@ export function AdminDashboard() {
                       </div>
                     )}
                     <p className="text-sm text-slate-600">
-                      🔑 Ответ: <span className="font-mono font-bold text-slate-900">{variant.answer}</span>
+                      🔑 Ответ:{' '}
+                      <span className="font-mono font-bold text-slate-900">{variant.answer}</span>
                     </p>
                   </div>
                 </Card>
@@ -218,7 +228,9 @@ export function AdminDashboard() {
             <CheckCircle size={32} />
           </div>
           <h3 className="text-lg font-bold text-emerald-800 mb-2">Успешно сохранено!</h3>
-          <p className="text-emerald-600 mb-6">Прототип и {previewData?.variants?.length || 0} вариантов добавлены в базу.</p>
+          <p className="text-emerald-600 mb-6">
+            Прототип и {previewData?.variants?.length || 0} вариантов добавлены в базу.
+          </p>
           <Button onClick={clearAll} variant="outline" className="bg-white">
             Загрузить ещё один файл
           </Button>

@@ -1,9 +1,19 @@
 package ru.stopro.service;
 
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.stream.Collectors;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
 import ru.stopro.domain.entity.Assignment;
 import ru.stopro.domain.entity.Question;
 import ru.stopro.domain.entity.StudyGroup;
@@ -16,274 +26,222 @@ import ru.stopro.repository.AssignmentRepository;
 import ru.stopro.repository.QuestionRepository;
 import ru.stopro.repository.StudyGroupRepository;
 
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-import java.util.stream.Collectors;
-
 @Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class AssignmentService {
 
-    private final AssignmentRepository assignmentRepository;
-    private final QuestionRepository questionRepository;
-    private final StudyGroupRepository studyGroupRepository;
+	private final AssignmentRepository assignmentRepository;
+	private final QuestionRepository questionRepository;
+	private final StudyGroupRepository studyGroupRepository;
 
-    /**
-     * Создать тест вручную из выбранных задач
-     */
-    @Transactional
-    public AssignmentDto create(UUID teacherId, AssignmentCreateRequest request) {
-        StudyGroup group = null;
-        if (request.getGroupId() != null) {
-            group = studyGroupRepository.findById(request.getGroupId()).orElse(null);
-        }
+	/**
+	 * Создать тест вручную из выбранных задач
+	 */
+	@Transactional
+	public AssignmentDto create(UUID teacherId, AssignmentCreateRequest request) {
+		StudyGroup group = null;
+		if (request.getGroupId() != null) {
+			group = studyGroupRepository.findById(request.getGroupId()).orElse(null);
+		}
 
-        List<Question> questions = questionRepository.findAllById(request.getQuestionIds());
+		List<Question> questions = questionRepository.findAllById(request.getQuestionIds());
 
-        Assignment assignment = Assignment.builder()
-                .title(request.getTitle())
-                .description(request.getDescription())
-                .createdById(teacherId)
-                .group(group)
-                .questions(questions)
-                .deadline(request.getDeadline())
-                .timeLimitMinutes(request.getTimeLimitMinutes())
-                .maxAttempts(request.getMaxAttempts())
-                .status(AssignmentStatus.DRAFT)
-                .showCorrectAnswers(request.isShowAnswersAfterCompletion())
-                .showSolutions(request.isShowSolutionsAfterCompletion())
-                .build();
+		Assignment assignment = Assignment.builder().title(request.getTitle()).description(request.getDescription())
+				.createdById(teacherId).group(group).questions(questions).deadline(request.getDeadline())
+				.timeLimitMinutes(request.getTimeLimitMinutes()).maxAttempts(request.getMaxAttempts())
+				.status(AssignmentStatus.DRAFT).showCorrectAnswers(request.isShowAnswersAfterCompletion())
+				.showSolutions(request.isShowSolutionsAfterCompletion()).build();
 
-        assignment = assignmentRepository.save(assignment);
-        log.info("Created assignment {} by teacher {}", assignment.getId(), teacherId);
+		assignment = assignmentRepository.save(assignment);
+		log.info("Created assignment {} by teacher {}", assignment.getId(), teacherId);
 
-        return mapToDto(assignment);
-    }
+		return mapToDto(assignment);
+	}
 
-    /**
-     * Автоматическая генерация теста по критериям
-     */
-    @Transactional
-    public AssignmentDto generate(UUID teacherId, GenerateAssignmentRequest request) {
-        log.info("Generating assignment for teacher {} with {} questions", 
-                teacherId, request.getQuestionCount());
+	/**
+	 * Автоматическая генерация теста по критериям
+	 */
+	@Transactional
+	public AssignmentDto generate(UUID teacherId, GenerateAssignmentRequest request) {
+		log.info("Generating assignment for teacher {} with {} questions", teacherId, request.getQuestionCount());
 
-        final List<Question> selectedQuestions = new ArrayList<>();
+		final List<Question> selectedQuestions = new ArrayList<>();
 
-        // 1. Фильтруем по номерам ЕГЭ
-        if (request.getEgeNumbers() != null && !request.getEgeNumbers().isEmpty()) {
-            for (Integer egeNumber : request.getEgeNumbers()) {
-                List<Question> byEge = questionRepository.findByEgeNumberAndIsDeletedFalse(egeNumber);
-                if (!byEge.isEmpty()) {
-                    selectedQuestions.add(byEge.get((int) (Math.random() * byEge.size())));
-                }
-            }
-        }
+		if (request.getEgeNumbers() != null && !request.getEgeNumbers().isEmpty()) {
+			for (Integer egeNumber : request.getEgeNumbers()) {
+				List<Question> byEge = questionRepository.findByEgeNumberAndIsDeletedFalse(egeNumber);
+				if (!byEge.isEmpty()) {
+					selectedQuestions.add(byEge.get((int) (Math.random() * byEge.size())));
+				}
+			}
+		}
 
-        // 2. Добавляем по сложности
-        if (request.getDifficultyDistribution() != null) {
-            for (Map.Entry<TaskDifficulty, Integer> entry : request.getDifficultyDistribution().entrySet()) {
-                TaskDifficulty difficulty = entry.getKey();
-                int count = entry.getValue();
-                
-                List<Question> byDifficulty = questionRepository
-                        .findByDifficultyAndIsDeletedFalse(difficulty)
-                        .stream()
-                        .filter(q -> !selectedQuestions.contains(q))
-                        .limit(count)
-                        .collect(Collectors.toList());
-                
-                selectedQuestions.addAll(byDifficulty);
-            }
-        }
+		if (request.getDifficultyDistribution() != null) {
+			for (Map.Entry<TaskDifficulty, Integer> entry : request.getDifficultyDistribution().entrySet()) {
+				TaskDifficulty difficulty = entry.getKey();
+				int count = entry.getValue();
 
-        // 3. Если не хватает - добираем случайные
-        if (selectedQuestions.size() < request.getQuestionCount()) {
-            int needed = request.getQuestionCount() - selectedQuestions.size();
-            List<Question> additional = questionRepository.findRandomQuestions(needed);
-            selectedQuestions.addAll(additional);
-        }
+				List<Question> byDifficulty = questionRepository.findByDifficultyAndIsDeletedFalse(difficulty).stream()
+						.filter(q -> !selectedQuestions.contains(q)).limit(count).collect(Collectors.toList());
 
-        // 4. Исключаем уже решённые
-        if (request.getExcludeQuestionIds() != null) {
-            selectedQuestions.removeIf(q -> request.getExcludeQuestionIds().contains(q.getId()));
-        }
+				selectedQuestions.addAll(byDifficulty);
+			}
+		}
 
-        // 5. Перемешиваем
-        if (request.isShuffleQuestions()) {
-            Collections.shuffle(selectedQuestions);
-        }
-        
-        // 6. Ограничиваем количество (берем первые N)
-        List<Question> finalQuestions = selectedQuestions.size() > request.getQuestionCount() 
-            ? selectedQuestions.subList(0, request.getQuestionCount())
-            : selectedQuestions;
+		if (selectedQuestions.size() < request.getQuestionCount()) {
+			int needed = request.getQuestionCount() - selectedQuestions.size();
+			List<Question> additional = questionRepository.findRandomQuestions(needed);
+			selectedQuestions.addAll(additional);
+		}
 
-        // Создаём assignment
-        StudyGroup group = studyGroupRepository.findById(request.getGroupId()).orElse(null);
+		if (request.getExcludeQuestionIds() != null) {
+			selectedQuestions.removeIf(q -> request.getExcludeQuestionIds().contains(q.getId()));
+		}
 
-        Assignment assignment = Assignment.builder()
-                .title(request.getTitle())
-                .description(request.getDescription())
-                .createdById(teacherId)
-                .group(group)
-                .questions(finalQuestions)
-                .deadline(request.getDeadline())
-                .timeLimitMinutes(request.getTimeLimitMinutes())
-                .maxAttempts(request.getMaxAttempts())
-                .status(AssignmentStatus.DRAFT)
-                .showCorrectAnswers(request.isShowAnswersAfterCompletion())
-                .showSolutions(request.isShowSolutionsAfterCompletion())
-                .build();
+		if (request.isShuffleQuestions()) {
+			Collections.shuffle(selectedQuestions);
+		}
 
-        assignment = assignmentRepository.save(assignment);
-        log.info("Generated assignment {} with {} questions", assignment.getId(), selectedQuestions.size());
+		List<Question> finalQuestions = selectedQuestions.size() > request.getQuestionCount()
+				? selectedQuestions.subList(0, request.getQuestionCount())
+				: selectedQuestions;
 
-        return mapToDto(assignment);
-    }
+		StudyGroup group = studyGroupRepository.findById(request.getGroupId()).orElse(null);
 
-    /**
-     * Получить тест по ID
-     */
-    public AssignmentDto getById(UUID assignmentId) {
-        Assignment assignment = assignmentRepository.findById(assignmentId)
-                .orElseThrow(() -> new RuntimeException("Assignment not found"));
-        return mapToDto(assignment);
-    }
+		Assignment assignment = Assignment.builder().title(request.getTitle()).description(request.getDescription())
+				.createdById(teacherId).group(group).questions(finalQuestions).deadline(request.getDeadline())
+				.timeLimitMinutes(request.getTimeLimitMinutes()).maxAttempts(request.getMaxAttempts())
+				.status(AssignmentStatus.DRAFT).showCorrectAnswers(request.isShowAnswersAfterCompletion())
+				.showSolutions(request.isShowSolutionsAfterCompletion()).build();
 
-    /**
-     * Получить тесты учителя
-     */
-    public List<AssignmentDto> getByTeacher(UUID teacherId) {
-        return assignmentRepository.findByCreatedByIdOrderByCreatedAtDesc(teacherId)
-                .stream()
-                .map(this::mapToDto)
-                .collect(Collectors.toList());
-    }
+		assignment = assignmentRepository.save(assignment);
+		log.info("Generated assignment {} with {} questions", assignment.getId(), selectedQuestions.size());
 
-    /**
-     * Получить тесты группы
-     */
-    public List<AssignmentDto> getByGroup(UUID groupId) {
-        return assignmentRepository.findByGroupIdOrderByDeadlineAsc(groupId)
-                .stream()
-                .map(this::mapToDto)
-                .collect(Collectors.toList());
-    }
+		return mapToDto(assignment);
+	}
 
-    /**
-     * Опубликовать тест
-     */
-    @Transactional
-    public AssignmentDto publish(UUID assignmentId) {
-        Assignment assignment = assignmentRepository.findById(assignmentId)
-                .orElseThrow(() -> new RuntimeException("Assignment not found"));
-        
-        assignment.setStatus(AssignmentStatus.ACTIVE);
-        assignment.setPublishedAt(LocalDateTime.now());
-        
-        assignment = assignmentRepository.save(assignment);
-        log.info("Published assignment {}", assignmentId);
-        
-        return mapToDto(assignment);
-    }
+	/**
+	 * Получить тест по ID
+	 */
+	public AssignmentDto getById(UUID assignmentId) {
+		Assignment assignment = assignmentRepository.findById(assignmentId)
+				.orElseThrow(() -> new RuntimeException("Assignment not found"));
+		return mapToDto(assignment);
+	}
 
-    /**
-     * Архивировать тест
-     */
-    @Transactional
-    public AssignmentDto archive(UUID assignmentId) {
-        Assignment assignment = assignmentRepository.findById(assignmentId)
-                .orElseThrow(() -> new RuntimeException("Assignment not found"));
-        
-        assignment.setStatus(AssignmentStatus.ARCHIVED);
-        assignment = assignmentRepository.save(assignment);
-        
-        return mapToDto(assignment);
-    }
+	/**
+	 * Получить тесты учителя
+	 */
+	public List<AssignmentDto> getByTeacher(UUID teacherId) {
+		return assignmentRepository.findByCreatedByIdOrderByCreatedAtDesc(teacherId).stream().map(this::mapToDto)
+				.collect(Collectors.toList());
+	}
 
-    /**
-     * Дублировать тест
-     */
-    @Transactional
-    public AssignmentDto duplicate(UUID assignmentId, UUID newGroupId, LocalDateTime newDeadline) {
-        Assignment original = assignmentRepository.findById(assignmentId)
-                .orElseThrow(() -> new RuntimeException("Assignment not found"));
-        
-        StudyGroup newGroup = newGroupId != null 
-                ? studyGroupRepository.findById(newGroupId).orElse(original.getGroup())
-                : original.getGroup();
+	/**
+	 * Получить тесты группы
+	 */
+	public List<AssignmentDto> getByGroup(UUID groupId) {
+		return assignmentRepository.findByGroupIdOrderByDeadlineAsc(groupId).stream().map(this::mapToDto)
+				.collect(Collectors.toList());
+	}
 
-        Assignment copy = Assignment.builder()
-                .title(original.getTitle() + " (копия)")
-                .description(original.getDescription())
-                .createdById(original.getCreatedById())
-                .group(newGroup)
-                .questions(new ArrayList<>(original.getQuestions()))
-                .deadline(newDeadline != null ? newDeadline : original.getDeadline().plusDays(7))
-                .timeLimitMinutes(original.getTimeLimitMinutes())
-                .maxAttempts(original.getMaxAttempts())
-                .status(AssignmentStatus.DRAFT)
-                .showCorrectAnswers(original.isShowAnswersAfterCompletion())
-                .showSolutions(original.isShowSolutionsAfterCompletion())
-                .build();
+	/**
+	 * Опубликовать тест
+	 */
+	@Transactional
+	public AssignmentDto publish(UUID assignmentId) {
+		Assignment assignment = assignmentRepository.findById(assignmentId)
+				.orElseThrow(() -> new RuntimeException("Assignment not found"));
 
-        copy = assignmentRepository.save(copy);
-        return mapToDto(copy);
-    }
+		assignment.setStatus(AssignmentStatus.ACTIVE);
+		assignment.setPublishedAt(LocalDateTime.now());
 
-    /**
-     * Продлить дедлайн
-     */
-    @Transactional
-    public AssignmentDto extendDeadline(UUID assignmentId, LocalDateTime newDeadline) {
-        Assignment assignment = assignmentRepository.findById(assignmentId)
-                .orElseThrow(() -> new RuntimeException("Assignment not found"));
-        
-        assignment.setDeadline(newDeadline);
-        assignment = assignmentRepository.save(assignment);
-        
-        log.info("Extended deadline for assignment {} to {}", assignmentId, newDeadline);
-        return mapToDto(assignment);
-    }
+		assignment = assignmentRepository.save(assignment);
+		log.info("Published assignment {}", assignmentId);
 
-    /**
-     * Получить статистику по тесту
-     */
-    public AssignmentDto getStatistics(UUID assignmentId) {
-        Assignment assignment = assignmentRepository.findById(assignmentId)
-                .orElseThrow(() -> new RuntimeException("Assignment not found"));
-        
-        // В реальности здесь считаем статистику из attemptRepository
-        AssignmentDto dto = mapToDto(assignment);
-        dto.setCompletedCount(10); // Заглушка
-        dto.setAverageScore(75.5); // Заглушка
-        
-        return dto;
-    }
+		return mapToDto(assignment);
+	}
 
-    private AssignmentDto mapToDto(Assignment assignment) {
-        return AssignmentDto.builder()
-                .id(assignment.getId())
-                .title(assignment.getTitle())
-                .description(assignment.getDescription())
-                .groupId(assignment.getGroup() != null ? assignment.getGroup().getId() : null)
-                .groupName(assignment.getGroup() != null ? assignment.getGroup().getName() : null)
-                .questionsCount(assignment.getQuestions() != null ? assignment.getQuestions().size() : 0)
-                .deadline(assignment.getDeadline())
-                .timeLimitMinutes(assignment.getTimeLimitMinutes())
-                .maxAttempts(assignment.getMaxAttempts())
-                .status(assignment.getStatus())
-                .showCorrectAnswers(assignment.isShowAnswersAfterCompletion())
-                .showSolutions(assignment.isShowSolutionsAfterCompletion())
-                .createdAt(assignment.getCreatedAt())
-                .publishedAt(assignment.getPublishedAt())
-                .build();
-    }
+	/**
+	 * Архивировать тест
+	 */
+	@Transactional
+	public AssignmentDto archive(UUID assignmentId) {
+		Assignment assignment = assignmentRepository.findById(assignmentId)
+				.orElseThrow(() -> new RuntimeException("Assignment not found"));
+
+		assignment.setStatus(AssignmentStatus.ARCHIVED);
+		assignment = assignmentRepository.save(assignment);
+
+		return mapToDto(assignment);
+	}
+
+	/**
+	 * Дублировать тест
+	 */
+	@Transactional
+	public AssignmentDto duplicate(UUID assignmentId, UUID newGroupId, LocalDateTime newDeadline) {
+		Assignment original = assignmentRepository.findById(assignmentId)
+				.orElseThrow(() -> new RuntimeException("Assignment not found"));
+
+		StudyGroup newGroup = newGroupId != null
+				? studyGroupRepository.findById(newGroupId).orElse(original.getGroup())
+				: original.getGroup();
+
+		Assignment copy = Assignment.builder().title(original.getTitle() + " (копия)")
+				.description(original.getDescription()).createdById(original.getCreatedById()).group(newGroup)
+				.questions(new ArrayList<>(original.getQuestions()))
+				.deadline(newDeadline != null ? newDeadline : original.getDeadline().plusDays(7))
+				.timeLimitMinutes(original.getTimeLimitMinutes()).maxAttempts(original.getMaxAttempts())
+				.status(AssignmentStatus.DRAFT).showCorrectAnswers(original.isShowAnswersAfterCompletion())
+				.showSolutions(original.isShowSolutionsAfterCompletion()).build();
+
+		copy = assignmentRepository.save(copy);
+		return mapToDto(copy);
+	}
+
+	/**
+	 * Продлить дедлайн
+	 */
+	@Transactional
+	public AssignmentDto extendDeadline(UUID assignmentId, LocalDateTime newDeadline) {
+		Assignment assignment = assignmentRepository.findById(assignmentId)
+				.orElseThrow(() -> new RuntimeException("Assignment not found"));
+
+		assignment.setDeadline(newDeadline);
+		assignment = assignmentRepository.save(assignment);
+
+		log.info("Extended deadline for assignment {} to {}", assignmentId, newDeadline);
+		return mapToDto(assignment);
+	}
+
+	/**
+	 * Получить статистику по тесту
+	 */
+	public AssignmentDto getStatistics(UUID assignmentId) {
+		Assignment assignment = assignmentRepository.findById(assignmentId)
+				.orElseThrow(() -> new RuntimeException("Assignment not found"));
+
+		// TODO: В реальности здесь считаем статистику из attemptRepository
+		AssignmentDto dto = mapToDto(assignment);
+		dto.setCompletedCount(10);
+		dto.setAverageScore(75.5);
+
+		return dto;
+	}
+
+	private AssignmentDto mapToDto(Assignment assignment) {
+		return AssignmentDto.builder().id(assignment.getId()).title(assignment.getTitle())
+				.description(assignment.getDescription())
+				.groupId(assignment.getGroup() != null ? assignment.getGroup().getId() : null)
+				.groupName(assignment.getGroup() != null ? assignment.getGroup().getName() : null)
+				.questionsCount(assignment.getQuestions() != null ? assignment.getQuestions().size() : 0)
+				.deadline(assignment.getDeadline()).timeLimitMinutes(assignment.getTimeLimitMinutes())
+				.maxAttempts(assignment.getMaxAttempts()).status(assignment.getStatus())
+				.showCorrectAnswers(assignment.isShowAnswersAfterCompletion())
+				.showSolutions(assignment.isShowSolutionsAfterCompletion()).createdAt(assignment.getCreatedAt())
+				.publishedAt(assignment.getPublishedAt()).build();
+	}
 }

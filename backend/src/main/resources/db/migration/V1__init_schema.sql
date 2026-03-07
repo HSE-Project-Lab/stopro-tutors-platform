@@ -1,14 +1,5 @@
--- =============================================
--- СТОПРО — V1: Инициализация схемы БД
--- Flyway migration
--- =============================================
-
--- Расширение для UUID
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
--- =============================================
--- 1. USERS — пользователи (ученики, учителя, админы)
--- =============================================
 CREATE TABLE users (
     id            UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     username      VARCHAR(100)  NOT NULL,
@@ -28,9 +19,6 @@ CREATE TABLE users (
 CREATE UNIQUE INDEX idx_user_username ON users (username);
 CREATE INDEX idx_user_role            ON users (role);
 
--- =============================================
--- 2. STUDY_GROUPS — учебные группы
--- =============================================
 CREATE TABLE study_groups (
     id          UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     name        VARCHAR(255) NOT NULL,
@@ -49,9 +37,6 @@ CREATE TABLE study_groups (
 CREATE INDEX idx_group_teacher     ON study_groups (teacher_id);
 CREATE UNIQUE INDEX idx_group_invite_code ON study_groups (invite_code);
 
--- =============================================
--- 3. GROUP_STUDENTS — связка групп и учеников (M:N)
--- =============================================
 CREATE TABLE group_students (
     group_id   UUID NOT NULL,
     student_id UUID NOT NULL,
@@ -67,9 +52,6 @@ CREATE TABLE group_students (
 CREATE INDEX idx_gs_group   ON group_students (group_id);
 CREATE INDEX idx_gs_student ON group_students (student_id);
 
--- =============================================
--- 4. TOPICS — темы/разделы ЕГЭ
--- =============================================
 CREATE TABLE topics (
     id         UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     name       VARCHAR(255) NOT NULL,
@@ -87,9 +69,6 @@ CREATE TABLE topics (
 CREATE INDEX idx_topic_parent     ON topics (parent_id);
 CREATE INDEX idx_topic_ege_number ON topics (ege_number);
 
--- =============================================
--- 5. QUESTIONS — банк задач
--- =============================================
 CREATE TABLE questions (
     id             UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     topic_id       UUID         NOT NULL,
@@ -127,9 +106,6 @@ CREATE INDEX idx_question_type       ON questions (question_type);
 CREATE INDEX idx_question_active     ON questions (is_active, is_deleted);
 CREATE INDEX idx_question_author     ON questions (author_id);
 
--- =============================================
--- 6. ASSIGNMENTS — назначенные тесты / ДЗ
--- =============================================
 CREATE TABLE assignments (
     id                       UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     title                    VARCHAR(255) NOT NULL,
@@ -141,19 +117,16 @@ CREATE TABLE assignments (
     created_by_id            UUID,
     group_id                 UUID         NOT NULL,
 
-    -- Временные настройки
     start_date               TIMESTAMP,
     deadline                 TIMESTAMP    NOT NULL,
     soft_deadline            TIMESTAMP,
     late_penalty_percent     INTEGER      NOT NULL DEFAULT 0,
     time_limit_minutes       INTEGER,
 
-    -- Попытки
     max_attempts             INTEGER      DEFAULT 1,
     use_best_attempt         BOOLEAN      NOT NULL DEFAULT TRUE,
     cooldown_minutes         INTEGER      NOT NULL DEFAULT 0,
 
-    -- Отображение
     show_correct_answers     BOOLEAN      NOT NULL DEFAULT TRUE,
     show_answers_mode        VARCHAR(30)  DEFAULT 'AFTER_DEADLINE',
     show_solutions           BOOLEAN      NOT NULL DEFAULT TRUE,
@@ -161,24 +134,20 @@ CREATE TABLE assignments (
     shuffle_questions        BOOLEAN      NOT NULL DEFAULT FALSE,
     shuffle_answers          BOOLEAN      NOT NULL DEFAULT FALSE,
 
-    -- Оценивание
     passing_score_percent    INTEGER      DEFAULT 60,
     total_points             INTEGER      NOT NULL DEFAULT 0,
     weight                   DOUBLE PRECISION DEFAULT 1.0,
 
-    -- Уведомления
     send_deadline_reminder   BOOLEAN      NOT NULL DEFAULT TRUE,
     reminder_hours_before    INTEGER      DEFAULT 24,
     notify_teacher_on_complete BOOLEAN    NOT NULL DEFAULT FALSE,
 
-    -- Статистика
     views_count              INTEGER      NOT NULL DEFAULT 0,
     started_count            INTEGER      NOT NULL DEFAULT 0,
     completed_count          INTEGER      NOT NULL DEFAULT 0,
     average_score            DOUBLE PRECISION,
     average_time_minutes     INTEGER,
 
-    -- Метаданные
     published_at             TIMESTAMP,
     archived_at              TIMESTAMP,
     template_id              UUID,
@@ -202,9 +171,6 @@ CREATE INDEX idx_assignment_deadline ON assignments (deadline);
 CREATE INDEX idx_assignment_type     ON assignments (assignment_type);
 CREATE INDEX idx_assignment_dates    ON assignments (start_date, deadline);
 
--- =============================================
--- 7. ASSIGNMENT_QUESTIONS — связка заданий и вопросов (M:N)
--- =============================================
 CREATE TABLE assignment_questions (
     assignment_id  UUID    NOT NULL,
     question_id    UUID    NOT NULL,
@@ -221,9 +187,6 @@ CREATE TABLE assignment_questions (
 CREATE INDEX idx_aq_assignment ON assignment_questions (assignment_id);
 CREATE INDEX idx_aq_question   ON assignment_questions (question_id);
 
--- =============================================
--- 8. ATTEMPTS — попытки прохождения
--- =============================================
 CREATE TABLE attempts (
     id                UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     student_id        UUID         NOT NULL,

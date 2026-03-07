@@ -19,9 +19,6 @@ import type { UserRole } from '@/types';
 const adminNavItems = [
   { id: 'admin', label: 'Админ-панель', icon: ShieldAlert },
   { id: 'tasks', label: 'База задач', icon: BookOpen },
-  { id: 'students', label: 'Ученики и группы', icon: Users },
-  { id: 'homework', label: 'Домашние задания', icon: ClipboardList },
-  { id: 'analytics', label: 'Аналитика и отчёты', icon: BarChart3 },
 ];
 
 const teacherNavItems = [

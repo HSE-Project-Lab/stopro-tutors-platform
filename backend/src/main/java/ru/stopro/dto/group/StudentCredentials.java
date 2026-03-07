@@ -6,8 +6,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * Сгенерированные учётные данные одного ученика.
- * Возвращается учителю для распечатки / раздачи.
+ * Сгенерированные учётные данные одного ученика. Возвращается учителю для
+ * распечатки / раздачи.
  */
 @Data
 @NoArgsConstructor
@@ -15,12 +15,12 @@ import lombok.NoArgsConstructor;
 @Builder
 public class StudentCredentials {
 
-    /** ФИО ученика */
-    private String fullName;
+	/** ФИО ученика */
+	private String fullName;
 
-    /** Сгенерированный логин */
-    private String username;
+	/** Сгенерированный логин */
+	private String username;
 
-    /** Чистый (не хешированный) временный пароль */
-    private String password;
+	/** Чистый (не хешированный) временный пароль */
+	private String password;
 }

@@ -14,7 +14,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class CreateGroupRequest {
 
-    @NotBlank(message = "Название группы обязательно")
-    @Size(min = 2, max = 255, message = "Название от 2 до 255 символов")
-    private String name;
+	@NotBlank(message = "Название группы обязательно")
+	@Size(min = 2, max = 255, message = "Название от 2 до 255 символов")
+	private String name;
 }

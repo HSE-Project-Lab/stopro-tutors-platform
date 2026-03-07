@@ -1,8 +1,3 @@
--- =============================================
--- СТОПРО — V3: Добавление недостающих колонок в questions
--- (приведение схемы в соответствие с сущностью Question)
--- =============================================
-
 ALTER TABLE questions
     ADD COLUMN IF NOT EXISTS alternative_answers   TEXT,
     ADD COLUMN IF NOT EXISTS step_by_step_solution TEXT,
@@ -31,10 +26,8 @@ ALTER TABLE questions
     ADD COLUMN IF NOT EXISTS is_premium            BOOLEAN NOT NULL DEFAULT FALSE,
     ADD COLUMN IF NOT EXISTS review_notes          TEXT;
 
--- Расширяем source для enum TaskSource (до 50 символов)
 ALTER TABLE questions ALTER COLUMN source TYPE VARCHAR(50);
 
--- Внешний ключ для parent_question_id (самоссылка)
 DO $$
 BEGIN
     IF NOT EXISTS (

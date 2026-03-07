@@ -1,8 +1,3 @@
--- =============================================
--- СТОПРО — V2: Добавление недостающих колонок в attempts
--- (приведение схемы в соответствие с сущностью Attempt)
--- =============================================
-
 ALTER TABLE attempts
     ADD COLUMN IF NOT EXISTS partial_score       DOUBLE PRECISION,
     ADD COLUMN IF NOT EXISTS points_earned      INTEGER NOT NULL DEFAULT 0,
@@ -43,7 +38,6 @@ ALTER TABLE attempts
     ADD COLUMN IF NOT EXISTS suspicious_reason VARCHAR(500),
     ADD COLUMN IF NOT EXISTS parent_attempt_id  UUID;
 
--- Внешний ключ для parent_attempt_id (самоссылка)
 DO $$
 BEGIN
     IF NOT EXISTS (

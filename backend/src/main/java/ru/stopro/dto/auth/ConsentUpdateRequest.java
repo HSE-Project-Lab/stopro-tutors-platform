@@ -14,19 +14,19 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class ConsentUpdateRequest {
 
-    /**
-     * Согласие на обработку персональных данных
-     * ВАЖНО: Отзыв приводит к деактивации аккаунта!
-     */
-    private Boolean dataProcessingConsent;
+	/**
+	 * Согласие на обработку персональных данных ВАЖНО: Отзыв приводит к деактивации
+	 * аккаунта!
+	 */
+	private Boolean dataProcessingConsent;
 
-    /**
-     * Согласие на получение маркетинговых рассылок
-     */
-    private Boolean marketingConsent;
+	/**
+	 * Согласие на получение маркетинговых рассылок
+	 */
+	private Boolean marketingConsent;
 
-    /**
-     * Согласие на использование cookies
-     */
-    private Boolean cookiesConsent;
+	/**
+	 * Согласие на использование cookies
+	 */
+	private Boolean cookiesConsent;
 }

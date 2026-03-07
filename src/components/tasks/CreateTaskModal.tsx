@@ -51,7 +51,7 @@ export function CreateTaskModal({ isOpen, onClose, onSubmit }: CreateTaskModalPr
   const [content, setContent] = useState('');
   const [solution, setSolution] = useState('');
   const [answer, setAnswer] = useState('');
-  
+
   // Изображения
   const [imageUrls, setImageUrls] = useState<string[]>([]);
   const [newImageUrl, setNewImageUrl] = useState('');
@@ -139,7 +139,7 @@ export function CreateTaskModal({ isOpen, onClose, onSubmit }: CreateTaskModalPr
     setImageUrls((prev) => prev.filter((_, i) => i !== index));
   };
 
-    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -153,7 +153,8 @@ export function CreateTaskModal({ isOpen, onClose, onSubmit }: CreateTaskModalPr
       });
       setImageUrls((prev) => [...prev, response.data.url]);
     } catch (error: any) {
-      const errorMsg = error.response?.data?.message || error.message || 'Неизвестная ошибка сервера';
+      const errorMsg =
+        error.response?.data?.message || error.message || 'Неизвестная ошибка сервера';
       alert(`Ошибка при загрузке: ${errorMsg}`);
       console.error('Детали ошибки:', error);
     } finally {
@@ -168,11 +169,13 @@ export function CreateTaskModal({ isOpen, onClose, onSubmit }: CreateTaskModalPr
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
-      <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity" onClick={handleClose} />
+      <div
+        className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity"
+        onClick={handleClose}
+      />
 
       {/* Модальное окно с правильной структурой (Header -> Scrollable Body -> Footer) */}
       <div className="relative w-full max-w-4xl max-h-full flex flex-col bg-white rounded-2xl shadow-2xl z-10 overflow-hidden animate-in zoom-in-95 duration-200">
-        
         {/* Шапка */}
         <div className="shrink-0 bg-white border-b border-slate-100 px-8 py-5 flex items-center justify-between z-20">
           <div>
@@ -191,7 +194,6 @@ export function CreateTaskModal({ isOpen, onClose, onSubmit }: CreateTaskModalPr
 
         {/* Скроллируемая область с кастомным скроллбаром */}
         <div className="flex-1 overflow-y-auto [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-slate-200 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-slate-300 px-8 py-6">
-          
           <div className="flex gap-1 bg-slate-100 p-1 rounded-xl w-fit mb-6">
             <button
               onClick={() => setActiveTab('manual')}
@@ -345,7 +347,10 @@ export function CreateTaskModal({ isOpen, onClose, onSubmit }: CreateTaskModalPr
                 </label>
                 <div className="space-y-3">
                   {imageUrls.map((url, index) => (
-                    <div key={index} className="flex items-center gap-3 p-2 bg-slate-50 border border-slate-100 rounded-xl">
+                    <div
+                      key={index}
+                      className="flex items-center gap-3 p-2 bg-slate-50 border border-slate-100 rounded-xl"
+                    >
                       <div className="w-12 h-12 shrink-0 bg-white rounded-lg border border-slate-200 overflow-hidden flex items-center justify-center">
                         <img
                           src={url}
@@ -353,7 +358,8 @@ export function CreateTaskModal({ isOpen, onClose, onSubmit }: CreateTaskModalPr
                           className="w-full h-full object-cover"
                           onError={(e) => {
                             // Если ссылка битая, показываем красивую заглушку, а не прячем блок
-                            (e.target as HTMLImageElement).src = 'https://placehold.co/100x100/f8fafc/94a3b8?text=Error';
+                            (e.target as HTMLImageElement).src =
+                              'https://placehold.co/100x100/f8fafc/94a3b8?text=Error';
                           }}
                         />
                       </div>
@@ -389,7 +395,12 @@ export function CreateTaskModal({ isOpen, onClose, onSubmit }: CreateTaskModalPr
                           }}
                         />
                       </div>
-                      <Button type="button" variant="outline" onClick={addImageUrl} disabled={!newImageUrl.trim()}>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={addImageUrl}
+                        disabled={!newImageUrl.trim()}
+                      >
                         Добавить
                       </Button>
                     </div>

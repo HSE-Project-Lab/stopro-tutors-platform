@@ -1,4 +1,3 @@
--- Ученик может быть привязан к учителю без группы (репетиторство)
 ALTER TABLE users
     ADD COLUMN IF NOT EXISTS teacher_id UUID;
 

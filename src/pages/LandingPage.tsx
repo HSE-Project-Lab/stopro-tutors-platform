@@ -13,7 +13,7 @@ import {
   FunctionSquare,
   BarChart,
   Smartphone,
-  Zap
+  Zap,
 } from 'lucide-react';
 import { cn } from '@/utils/cn';
 
@@ -38,7 +38,7 @@ function SpotlightCard({ children, className }: { children: ReactNode; className
       onMouseEnter={() => setOpacity(1)}
       onMouseLeave={() => setOpacity(0)}
       className={cn(
-        "relative overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-sm transition-shadow hover:shadow-md",
+        'relative overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-sm transition-shadow hover:shadow-md',
         className
       )}
     >
@@ -133,7 +133,6 @@ export function LandingPage({ onLoginClick }: LandingPageProps) {
 
   return (
     <div className="bg-slate-50 min-h-screen text-slate-900 font-sans selection:bg-indigo-100 selection:text-indigo-900">
-      
       {/* НАВИГАЦИЯ */}
       <motion.nav
         initial={{ y: -100 }}
@@ -149,9 +148,24 @@ export function LandingPage({ onLoginClick }: LandingPageProps) {
             <span className="font-bold text-2xl tracking-tight text-slate-900">СТОПРО</span>
           </div>
           <div className="hidden md:flex items-center gap-8 font-medium text-slate-600">
-            <button onClick={() => scrollTo('showcase')} className="hover:text-indigo-600 transition-colors">Платформа</button>
-            <button onClick={() => scrollTo('bento')} className="hover:text-indigo-600 transition-colors">Возможности</button>
-            <button onClick={() => scrollTo('pricing')} className="hover:text-indigo-600 transition-colors">Тарифы</button>
+            <button
+              onClick={() => scrollTo('showcase')}
+              className="hover:text-indigo-600 transition-colors"
+            >
+              Платформа
+            </button>
+            <button
+              onClick={() => scrollTo('bento')}
+              className="hover:text-indigo-600 transition-colors"
+            >
+              Возможности
+            </button>
+            <button
+              onClick={() => scrollTo('pricing')}
+              className="hover:text-indigo-600 transition-colors"
+            >
+              Тарифы
+            </button>
           </div>
           <button
             onClick={onLoginClick}
@@ -167,12 +181,12 @@ export function LandingPage({ onLoginClick }: LandingPageProps) {
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <motion.div
             animate={{ scale: [1, 1.1, 1], rotate: [0, 45, 0] }}
-            transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+            transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}
             className="absolute top-[-10%] left-[-10%] w-[50vw] h-[50vw] rounded-full bg-indigo-100/50 blur-[100px]"
           />
           <motion.div
             animate={{ scale: [1, 1.2, 1], rotate: [0, -45, 0] }}
-            transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
+            transition={{ duration: 25, repeat: Infinity, ease: 'linear' }}
             className="absolute bottom-[-10%] right-[-10%] w-[60vw] h-[60vw] rounded-full bg-purple-100/50 blur-[100px]"
           />
         </div>
@@ -200,7 +214,7 @@ export function LandingPage({ onLoginClick }: LandingPageProps) {
                   initial={{ y: 20, opacity: 0, filter: 'blur(8px)' }}
                   animate={{ y: 0, opacity: 1, filter: 'blur(0px)' }}
                   exit={{ y: -20, opacity: 0, filter: 'blur(8px)' }}
-                  transition={{ duration: 0.4, ease: "easeOut" }}
+                  transition={{ duration: 0.4, ease: 'easeOut' }}
                   className="inline-block min-w-[280px] text-left ml-4"
                 >
                   {WORDS[wordIndex]}
@@ -215,7 +229,8 @@ export function LandingPage({ onLoginClick }: LandingPageProps) {
             transition={{ duration: 0.8, delay: 0.4 }}
             className="text-xl md:text-2xl text-slate-600 mb-12 max-w-3xl leading-relaxed"
           >
-            Единая экосистема для репетиторов. Создавайте интерактивные задания, управляйте группами и экономьте часы на проверке благодаря AI.
+            Единая экосистема для репетиторов. Создавайте интерактивные задания, управляйте группами
+            и экономьте часы на проверке благодаря AI.
           </motion.p>
 
           <motion.div
@@ -236,18 +251,24 @@ export function LandingPage({ onLoginClick }: LandingPageProps) {
       {/* БЕГУЩАЯ СТРОКА (MARQUEE) */}
       <div className="bg-indigo-600 text-white py-4 overflow-hidden flex whitespace-nowrap">
         <motion.div
-          animate={{ x: ["0%", "-50%"] }}
-          transition={{ duration: 20, ease: "linear", repeat: Infinity }}
+          animate={{ x: ['0%', '-50%'] }}
+          transition={{ duration: 20, ease: 'linear', repeat: Infinity }}
           className="flex gap-8 text-lg font-medium tracking-wide"
         >
           {[...Array(2)].map((_, i) => (
             <div key={i} className="flex gap-8 items-center">
-              <span>Профильная математика</span><span className="text-indigo-300">•</span>
-              <span>Распознавание рукописного текста</span><span className="text-indigo-300">•</span>
-              <span>Проверка оформления</span><span className="text-indigo-300">•</span>
-              <span>Генерация вариантов</span><span className="text-indigo-300">•</span>
-              <span>Умная аналитика</span><span className="text-indigo-300">•</span>
-              <span>LaTeX Конструктор</span><span className="text-indigo-300">•</span>
+              <span>Профильная математика</span>
+              <span className="text-indigo-300">•</span>
+              <span>Распознавание рукописного текста</span>
+              <span className="text-indigo-300">•</span>
+              <span>Проверка оформления</span>
+              <span className="text-indigo-300">•</span>
+              <span>Генерация вариантов</span>
+              <span className="text-indigo-300">•</span>
+              <span>Умная аналитика</span>
+              <span className="text-indigo-300">•</span>
+              <span>LaTeX Конструктор</span>
+              <span className="text-indigo-300">•</span>
             </div>
           ))}
         </motion.div>
@@ -276,19 +297,37 @@ export function LandingPage({ onLoginClick }: LandingPageProps) {
                       setProgress(0);
                     }}
                     className={cn(
-                      "relative p-6 rounded-2xl cursor-pointer transition-all duration-300 border-2",
-                      isActive ? "bg-white border-indigo-100 shadow-md scale-[1.02]" : "bg-transparent border-transparent hover:bg-slate-100"
+                      'relative p-6 rounded-2xl cursor-pointer transition-all duration-300 border-2',
+                      isActive
+                        ? 'bg-white border-indigo-100 shadow-md scale-[1.02]'
+                        : 'bg-transparent border-transparent hover:bg-slate-100'
                     )}
                   >
                     <div className="flex gap-4">
-                      <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center shrink-0", isActive ? tab.bg : "bg-slate-200 text-slate-500", isActive && tab.color)}>
+                      <div
+                        className={cn(
+                          'w-12 h-12 rounded-xl flex items-center justify-center shrink-0',
+                          isActive ? tab.bg : 'bg-slate-200 text-slate-500',
+                          isActive && tab.color
+                        )}
+                      >
                         <tab.icon size={24} />
                       </div>
                       <div>
-                        <h3 className={cn("text-xl font-bold mb-2 transition-colors", isActive ? "text-slate-900" : "text-slate-500")}>
+                        <h3
+                          className={cn(
+                            'text-xl font-bold mb-2 transition-colors',
+                            isActive ? 'text-slate-900' : 'text-slate-500'
+                          )}
+                        >
                           {tab.title}
                         </h3>
-                        <p className={cn("text-slate-600 transition-all duration-300 overflow-hidden", isActive ? "h-auto opacity-100" : "h-0 opacity-0")}>
+                        <p
+                          className={cn(
+                            'text-slate-600 transition-all duration-300 overflow-hidden',
+                            isActive ? 'h-auto opacity-100' : 'h-0 opacity-0'
+                          )}
+                        >
                           {tab.desc}
                         </p>
                       </div>
@@ -296,7 +335,10 @@ export function LandingPage({ onLoginClick }: LandingPageProps) {
 
                     {/* Полоска прогресса снизу */}
                     {isActive && (
-                      <div className="absolute bottom-0 left-0 h-1 bg-indigo-500 rounded-b-2xl transition-all duration-75 ease-linear" style={{ width: `${progress}%` }} />
+                      <div
+                        className="absolute bottom-0 left-0 h-1 bg-indigo-500 rounded-b-2xl transition-all duration-75 ease-linear"
+                        style={{ width: `${progress}%` }}
+                      />
                     )}
                   </div>
                 );
@@ -324,7 +366,10 @@ export function LandingPage({ onLoginClick }: LandingPageProps) {
                     <div className="pl-4 text-slate-700">Решите уравнение: $\log_2(x+3) = 3$</div>
                     <div className="text-indigo-500 font-bold">\end{'{task}'}</div>
                     <div className="mt-4 p-5 bg-indigo-50/50 rounded-xl border border-indigo-100 font-sans text-center">
-                      <span className="font-medium text-slate-900 text-lg">Решите уравнение: <span className="italic text-indigo-700">log₂ (x+3) = 3</span></span>
+                      <span className="font-medium text-slate-900 text-lg">
+                        Решите уравнение:{' '}
+                        <span className="italic text-indigo-700">log₂ (x+3) = 3</span>
+                      </span>
                     </div>
                   </motion.div>
                 )}
@@ -340,21 +385,23 @@ export function LandingPage({ onLoginClick }: LandingPageProps) {
                   >
                     <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.05)_1px,transparent_1px)] bg-[size:20px_20px]" />
                     <motion.div
-                      animate={{ y: ["0%", "300%", "0%"] }}
-                      transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+                      animate={{ y: ['0%', '300%', '0%'] }}
+                      transition={{ duration: 3, repeat: Infinity, ease: 'linear' }}
                       className="absolute left-0 right-0 h-1 bg-purple-500 shadow-[0_0_20px_rgba(168,85,247,1)] z-10 top-0"
                     />
                     <div className="absolute inset-0 flex flex-col p-8 gap-4 justify-center">
                       <div className="w-full h-6 bg-white/10 rounded-md" />
                       <div className="w-3/4 h-6 bg-white/10 rounded-md" />
-                      <motion.div 
+                      <motion.div
                         initial={{ opacity: 0, scale: 0.9 }}
                         animate={{ opacity: 1, scale: 1 }}
                         transition={{ delay: 1 }}
                         className="w-full p-3 border border-red-500/50 bg-red-500/10 rounded-lg flex items-center justify-between"
                       >
                         <span className="text-red-400 text-xs font-mono">x² = 16 ➔ x = 4</span>
-                        <span className="text-red-400 text-xs font-bold bg-red-500/20 px-2 py-1 rounded">Потерян корень -4</span>
+                        <span className="text-red-400 text-xs font-bold bg-red-500/20 px-2 py-1 rounded">
+                          Потерян корень -4
+                        </span>
                       </motion.div>
                       <div className="w-1/2 h-6 bg-white/10 rounded-md" />
                     </div>
@@ -370,15 +417,20 @@ export function LandingPage({ onLoginClick }: LandingPageProps) {
                     transition={{ duration: 0.4 }}
                     className="w-full max-w-sm h-[300px] bg-white rounded-2xl shadow-xl border border-slate-200 p-8 flex items-end gap-3 justify-center relative"
                   >
-                    <div className="absolute top-6 left-6 text-slate-500 font-medium">Прогресс группы</div>
+                    <div className="absolute top-6 left-6 text-slate-500 font-medium">
+                      Прогресс группы
+                    </div>
                     {[40, 70, 45, 90, 65, 100].map((h, i) => (
                       <motion.div
                         key={i}
                         initial={{ height: 0 }}
                         animate={{ height: `${h}%` }}
-                        transition={{ duration: 1, delay: i * 0.1, type: "spring" }}
-                        className={cn("w-10 rounded-t-lg", i === 5 ? "bg-indigo-500" : "bg-emerald-400")}
-                        style={{ opacity: 0.5 + (h / 200) }}
+                        transition={{ duration: 1, delay: i * 0.1, type: 'spring' }}
+                        className={cn(
+                          'w-10 rounded-t-lg',
+                          i === 5 ? 'bg-indigo-500' : 'bg-emerald-400'
+                        )}
+                        style={{ opacity: 0.5 + h / 200 }}
                       />
                     ))}
                   </motion.div>
@@ -393,8 +445,12 @@ export function LandingPage({ onLoginClick }: LandingPageProps) {
       <section id="bento" className="py-32 bg-white relative">
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-bold mb-4 text-slate-900">Всё для идеального урока</h2>
-            <p className="text-lg text-slate-500">Мощные инструменты, упакованные в простой интерфейс.</p>
+            <h2 className="text-4xl md:text-5xl font-bold mb-4 text-slate-900">
+              Всё для идеального урока
+            </h2>
+            <p className="text-lg text-slate-500">
+              Мощные инструменты, упакованные в простой интерфейс.
+            </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 auto-rows-[280px]">
@@ -405,7 +461,10 @@ export function LandingPage({ onLoginClick }: LandingPageProps) {
                   <FunctionSquare size={28} className="text-indigo-600" />
                 </div>
                 <h3 className="text-3xl font-bold text-slate-900 mb-4">Нативный LaTeX Редактор</h3>
-                <p className="text-lg text-slate-600 max-w-md">Вставляйте формулы, графики и системы уравнений. Платформа моментально рендерит их в красивый математический текст.</p>
+                <p className="text-lg text-slate-600 max-w-md">
+                  Вставляйте формулы, графики и системы уравнений. Платформа моментально рендерит их
+                  в красивый математический текст.
+                </p>
               </div>
               <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm font-mono text-sm text-slate-600 group-hover:border-indigo-300 transition-colors">
                 Решите уравнение: <span className="text-indigo-600">\log_2(x+3) = 3</span>
@@ -417,7 +476,9 @@ export function LandingPage({ onLoginClick }: LandingPageProps) {
                 <BarChart size={24} className="text-emerald-600" />
               </div>
               <h3 className="text-xl font-bold text-slate-900 mb-2">Глубокая статистика</h3>
-              <p className="text-slate-600 text-sm">Процент решаемости по каждой теме ЕГЭ для точечной отработки.</p>
+              <p className="text-slate-600 text-sm">
+                Процент решаемости по каждой теме ЕГЭ для точечной отработки.
+              </p>
             </SpotlightCard>
 
             <SpotlightCard className="p-8 bg-slate-50 cursor-default">
@@ -425,7 +486,9 @@ export function LandingPage({ onLoginClick }: LandingPageProps) {
                 <Smartphone size={24} className="text-purple-600" />
               </div>
               <h3 className="text-xl font-bold text-slate-900 mb-2">Мобильный формат</h3>
-              <p className="text-slate-600 text-sm">Ученикам удобно решать задачи прямо со смартфона по дороге в школу.</p>
+              <p className="text-slate-600 text-sm">
+                Ученикам удобно решать задачи прямо со смартфона по дороге в школу.
+              </p>
             </SpotlightCard>
           </div>
         </div>
@@ -435,7 +498,9 @@ export function LandingPage({ onLoginClick }: LandingPageProps) {
       <section className="py-32 bg-slate-50 border-t border-slate-200">
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center mb-20">
-            <h2 className="text-4xl md:text-5xl font-bold mb-6 text-slate-900">Проверено на практике</h2>
+            <h2 className="text-4xl md:text-5xl font-bold mb-6 text-slate-900">
+              Проверено на практике
+            </h2>
             <p className="text-xl text-slate-500 max-w-2xl mx-auto">
               Опыт тех, кто уже перешел на новый формат преподавания.
             </p>
@@ -474,11 +539,17 @@ export function LandingPage({ onLoginClick }: LandingPageProps) {
                         <Play size={24} className="ml-1" />
                       </div>
                     </motion.div>
-                    <img src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=800" alt="Video cover" className="w-full h-full object-cover opacity-80 group-hover:opacity-60 transition-opacity" />
+                    <img
+                      src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=800"
+                      alt="Video cover"
+                      className="w-full h-full object-cover opacity-80 group-hover:opacity-60 transition-opacity"
+                    />
                   </div>
                 )}
                 <div className="flex gap-1 mb-6 text-amber-400">
-                  {[...Array(5)].map((_, j) => <Star key={j} size={20} fill="currentColor" />)}
+                  {[...Array(5)].map((_, j) => (
+                    <Star key={j} size={20} fill="currentColor" />
+                  ))}
                 </div>
                 <p className="text-xl text-slate-700 mb-8 leading-relaxed">«{review.text}»</p>
                 <div className="flex items-center gap-4">
@@ -500,7 +571,9 @@ export function LandingPage({ onLoginClick }: LandingPageProps) {
       <section id="pricing" className="py-32 bg-white relative">
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center mb-20">
-            <h2 className="text-4xl md:text-5xl font-bold mb-6 text-slate-900">Инвестиция в ваше время</h2>
+            <h2 className="text-4xl md:text-5xl font-bold mb-6 text-slate-900">
+              Инвестиция в ваше время
+            </h2>
             <p className="text-xl text-slate-500 max-w-2xl mx-auto">
               Один дополнительный ученик окупает подписку на год.
             </p>
@@ -520,14 +593,19 @@ export function LandingPage({ onLoginClick }: LandingPageProps) {
                 0 ₽ <span className="text-xl text-slate-500 font-medium">/ мес</span>
               </div>
               <ul className="space-y-5 mb-12 flex-1">
-                {['До 5 учеников', 'Конструктор ДЗ', 'База задач ЕГЭ', 'Ручная проверка'].map((feature, i) => (
-                  <li key={i} className="flex items-center gap-4 text-slate-700 text-lg">
-                    <CheckCircle size={24} className="text-slate-300" />
-                    {feature}
-                  </li>
-                ))}
+                {['До 5 учеников', 'Конструктор ДЗ', 'База задач ЕГЭ', 'Ручная проверка'].map(
+                  (feature, i) => (
+                    <li key={i} className="flex items-center gap-4 text-slate-700 text-lg">
+                      <CheckCircle size={24} className="text-slate-300" />
+                      {feature}
+                    </li>
+                  )
+                )}
               </ul>
-              <button onClick={onLoginClick} className="w-full py-4 rounded-full font-bold text-slate-700 bg-white border border-slate-200 hover:bg-slate-100 transition-colors shadow-sm">
+              <button
+                onClick={onLoginClick}
+                className="w-full py-4 rounded-full font-bold text-slate-700 bg-white border border-slate-200 hover:bg-slate-100 transition-colors shadow-sm"
+              >
                 Создать аккаунт
               </button>
             </motion.div>
@@ -540,11 +618,11 @@ export function LandingPage({ onLoginClick }: LandingPageProps) {
               className="relative p-10 rounded-[2.5rem] bg-slate-900 text-white flex flex-col overflow-hidden shadow-2xl shadow-indigo-900/20"
             >
               <div className="absolute top-[-20%] right-[-20%] w-[50%] h-[50%] bg-indigo-500/30 blur-[80px] rounded-full" />
-              
+
               <div className="absolute top-0 right-8 bg-indigo-500 text-white text-xs font-bold px-4 py-2 rounded-b-xl uppercase tracking-wider shadow-lg">
                 Популярный
               </div>
-              
+
               <h3 className="text-2xl font-bold mb-2 flex items-center gap-3">
                 <Zap className="text-amber-400 fill-amber-400" /> Premium
               </h3>
@@ -553,14 +631,23 @@ export function LandingPage({ onLoginClick }: LandingPageProps) {
                 990 ₽ <span className="text-xl text-slate-400 font-medium">/ мес</span>
               </div>
               <ul className="space-y-5 mb-12 flex-1 relative z-10">
-                {['Безлимитные ученики', 'ИИ-проверка ДЗ по фото', 'Генерация развернутых решений', 'Глубокая аналитика', 'Приоритетная поддержка'].map((feature, i) => (
+                {[
+                  'Безлимитные ученики',
+                  'ИИ-проверка ДЗ по фото',
+                  'Генерация развернутых решений',
+                  'Глубокая аналитика',
+                  'Приоритетная поддержка',
+                ].map((feature, i) => (
                   <li key={i} className="flex items-center gap-4 text-slate-200 text-lg">
                     <CheckCircle size={24} className="text-indigo-400" />
                     {feature}
                   </li>
                 ))}
               </ul>
-              <button onClick={onLoginClick} className="relative z-10 w-full py-4 rounded-full font-bold text-white bg-indigo-600 hover:bg-indigo-500 transition-colors shadow-lg shadow-indigo-600/30">
+              <button
+                onClick={onLoginClick}
+                className="relative z-10 w-full py-4 rounded-full font-bold text-white bg-indigo-600 hover:bg-indigo-500 transition-colors shadow-lg shadow-indigo-600/30"
+              >
                 Попробовать Premium
               </button>
             </motion.div>
@@ -572,7 +659,9 @@ export function LandingPage({ onLoginClick }: LandingPageProps) {
       <footer className="py-12 border-t border-slate-200 text-slate-500 text-center relative z-10 bg-slate-50">
         <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-3 text-slate-900">
-            <div className="w-8 h-8 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-lg flex items-center justify-center font-bold text-white">С</div>
+            <div className="w-8 h-8 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-lg flex items-center justify-center font-bold text-white">
+              С
+            </div>
             <span className="font-bold text-xl tracking-tight">СТОПРО</span>
           </div>
           <p>© {new Date().getFullYear()} Все права защищены.</p>

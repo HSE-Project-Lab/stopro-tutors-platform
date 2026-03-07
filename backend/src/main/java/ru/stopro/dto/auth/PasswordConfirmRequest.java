@@ -5,6 +5,6 @@ import lombok.Data;
 
 @Data
 public class PasswordConfirmRequest {
-    @NotBlank(message = "Password confirmation is required")
-    private String password;
+	@NotBlank(message = "Password confirmation is required")
+	private String password;
 }

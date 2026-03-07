@@ -17,14 +17,14 @@ import { AdminDashboard } from '@/pages/AdminDashboard';
 function AppContent() {
   const { user } = useAuthStore();
   const { activeTab } = useAppStore();
-  
+
   const [showLogin, setShowLogin] = useState(false);
 
   if (!user) {
     if (showLogin) {
       return (
         <div className="relative min-h-screen bg-slate-50">
-          <button 
+          <button
             onClick={() => setShowLogin(false)}
             className="absolute top-6 left-6 text-slate-500 hover:text-slate-900 font-medium z-10 transition-colors"
           >

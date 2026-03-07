@@ -20,7 +20,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @EnableScheduling
 public class StoproApplication {
 
-    public static void main(String[] args) {
-        SpringApplication.run(StoproApplication.class, args);
-    }
+	public static void main(String[] args) {
+		SpringApplication.run(StoproApplication.class, args);
+	}
 }

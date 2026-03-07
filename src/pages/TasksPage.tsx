@@ -677,7 +677,7 @@ export function TasksPage() {
       )}
 
       <Pagination page={page} totalPages={totalPages} onChange={setPage} />
-      
+
       <CreateTaskModal
         isOpen={showCreateModal}
         onClose={() => setShowCreateModal(false)}

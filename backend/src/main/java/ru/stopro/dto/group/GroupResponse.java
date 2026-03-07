@@ -14,9 +14,9 @@ import lombok.NoArgsConstructor;
 @Builder
 public class GroupResponse {
 
-    private String id;
-    private String name;
-    private String teacherId;
-    private String inviteCode;
-    private int studentsCount;
+	private String id;
+	private String name;
+	private String teacherId;
+	private String inviteCode;
+	private int studentsCount;
 }
