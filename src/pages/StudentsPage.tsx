@@ -20,8 +20,10 @@ import {
   X,
   ChevronRight,
 } from 'lucide-react';
-import type { User as Student, StudyGroup as Group } from '@/types';
+import { AnimatedToast } from '@/components/ui/AnimatedToast';
+import type { Student, StudyGroup as Group } from '@/types';
 import api from '@/lib/axios';
+import { AnimatePresence } from 'framer-motion';
 
 // ===== Reusable Modal =====
 function Modal({ children, onClose }: { children: React.ReactNode; onClose: () => void }) {
@@ -71,67 +73,19 @@ function Modal({ children, onClose }: { children: React.ReactNode; onClose: () =
   );
 }
 
-function AnimatedToast({
-  children,
-  duration = 5000,
-  onDone,
-}: {
-  children: React.ReactNode;
-  duration?: number;
-  onDone?: () => void;
-}) {
-  const [phase, setPhase] = useState<'enter' | 'visible' | 'exit'>('enter');
-
-  useEffect(() => {
-    // Enter animation
-    const enterTimer = window.setTimeout(() => setPhase('visible'), 10);
-
-    // Start exit animation before removal
-    const exitTimer = window.setTimeout(() => setPhase('exit'), duration - 300);
-
-    // Actually remove
-    const removeTimer = window.setTimeout(() => {
-      onDone?.();
-    }, duration);
-
-    return () => {
-      clearTimeout(enterTimer);
-      clearTimeout(exitTimer);
-      clearTimeout(removeTimer);
-    };
-  }, [duration, onDone]);
-
-  return (
-    <div
-      className={`transform transition-all duration-300 ${
-        phase === 'enter'
-          ? 'opacity-0 translate-y-3'
-          : phase === 'exit'
-            ? 'opacity-0 translate-y-3'
-            : 'opacity-100 translate-y-0'
-      }`}
-    >
-      {children}
-    </div>
-  );
-}
-
 export function StudentsPage() {
   const [activeTab, setActiveTab] = useState<'students' | 'groups'>('students');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedGroup, setSelectedGroup] = useState('');
 
-  // Modals
   const [showAddStudentModal, setShowAddStudentModal] = useState(false);
   const [showAddGroupModal, setShowAddGroupModal] = useState(false);
   const [showEditGroupModal, setShowEditGroupModal] = useState(false);
   const [showEditStudentModal, setShowEditStudentModal] = useState(false);
 
-  // Detail views
   const [showStudentDetail, setShowStudentDetail] = useState<Student | null>(null);
   const [showGroupDetail, setShowGroupDetail] = useState<Group | null>(null);
 
-  // Editing
   const [editingGroup, setEditingGroup] = useState<Group | null>(null);
   const [editGroupName, setEditGroupName] = useState('');
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
@@ -143,12 +97,10 @@ export function StudentsPage() {
     targetScore: '70',
   });
 
-  // Deletion
   const [showDeleteGroupModal, setShowDeleteGroupModal] = useState<Group | null>(null);
   const [studentToRemove, setStudentToRemove] = useState<Student | null>(null);
   const [studentToDelete, setStudentToDelete] = useState<Student | null>(null);
 
-  // Undo state
   const [lastRemoval, setLastRemoval] = useState<{
     studentId: string;
     groupId: string | null;
@@ -167,16 +119,13 @@ export function StudentsPage() {
   } | null>(null);
   const pendingDeleteTimerRef = useRef<number | null>(null);
 
-  // Add student modal state
   const [selectedExistingStudentId, setSelectedExistingStudentId] = useState<string>('');
   const [addMode, setAddMode] = useState<'new' | 'existing'>('new');
   const [addOriginGroupId, setAddOriginGroupId] = useState<string>('');
 
-  // Data
   const [students, setStudents] = useState<Student[]>([]);
   const [groups, setGroups] = useState<Group[]>([]);
 
-  // Form states
   const [newStudent, setNewStudent] = useState({
     firstName: '',
     lastName: '',
@@ -186,7 +135,6 @@ export function StudentsPage() {
   });
   const [newGroup, setNewGroup] = useState({ name: '' });
 
-  // ===== Data fetching =====
   useEffect(() => {
     const fetchStudents = async () => {
       try {
@@ -211,7 +159,6 @@ export function StudentsPage() {
     fetchGroups();
   }, [activeTab]);
 
-  // Cleanup timers
   useEffect(() => {
     return () => {
       if (undoTimerRef.current) clearTimeout(undoTimerRef.current);
@@ -220,7 +167,6 @@ export function StudentsPage() {
     };
   }, []);
 
-  // ===== Helpers =====
   const refreshData = async () => {
     try {
       const [sResp, gResp] = await Promise.all([
@@ -249,9 +195,6 @@ export function StudentsPage() {
       .join('');
   };
 
-  // ===== Handlers =====
-
-  // -- Remove student from group --
   const handleConfirmRemove = async () => {
     if (!studentToRemove) return;
     const sid = studentToRemove.id;
@@ -291,14 +234,13 @@ export function StudentsPage() {
     }
   };
 
-  // -- Delete student --
   const confirmDeleteStudent = async () => {
     if (!studentToDelete) return;
     const s = studentToDelete;
     setStudents((prev) => prev.filter((p) => p.id !== s.id));
     setPendingStudentDeletion({ student: s });
     setStudentToDelete(null);
-    // Also close detail view if we're deleting the currently viewed student
+
     if (showStudentDetail?.id === s.id) setShowStudentDetail(null);
 
     if (pendingDeleteTimerRef.current) clearTimeout(pendingDeleteTimerRef.current);
@@ -324,7 +266,6 @@ export function StudentsPage() {
     setPendingStudentDeletion(null);
   };
 
-  // -- Group CRUD --
   const openEditGroup = (group: Group) => {
     setEditingGroup(group);
     setEditGroupName(group.name);
@@ -339,7 +280,7 @@ export function StudentsPage() {
       const resp = await api.put(`/groups/${editingGroup.id}`, { name });
       const updated = resp.data;
       setGroups((prev) => prev.map((g) => (g.id === updated.id ? updated : g)));
-      // Update detail view if open
+
       if (showGroupDetail?.id === updated.id) setShowGroupDetail(updated);
       setShowEditGroupModal(false);
       setEditingGroup(null);
@@ -395,7 +336,6 @@ export function StudentsPage() {
     }
   };
 
-  // -- Edit student --
   const openEditStudent = (student: Student) => {
     const nameParts = (student.fullName || '').split(' ');
     setEditingStudent(student);
@@ -422,7 +362,7 @@ export function StudentsPage() {
         targetScore: parseInt(editStudentForm.targetScore) || 70,
       });
       await refreshData();
-      // Update detail view
+
       const updated = (await api.get('/teacher/students')).data.find(
         (s: Student) => s.id === editingStudent.id
       );
@@ -437,7 +377,6 @@ export function StudentsPage() {
     }
   };
 
-  // -- Add student --
   const handleAddStudent = async () => {
     try {
       const targetGroupId = addOriginGroupId || newStudent.groupId || '';
@@ -471,7 +410,6 @@ export function StudentsPage() {
     }
   };
 
-  // -- Add group --
   const handleAddGroup = async () => {
     const name = newGroup.name?.trim() || '';
     if (name.length < 2) {
@@ -503,7 +441,6 @@ export function StudentsPage() {
     }
   };
 
-  // ===== Filtering =====
   const filteredStudents = students.filter((student) => {
     const fullName = (student.fullName || '').toLowerCase();
     if (searchQuery && !fullName.includes(searchQuery.toLowerCase())) return false;
@@ -516,82 +453,43 @@ export function StudentsPage() {
     return true;
   });
 
-  // ===== Toasts (shared across all views) =====
   const renderToasts = () => (
-    <>
+    <AnimatePresence>
       {lastRemoval && (
-        <div className="fixed right-6 bottom-6 z-50">
-          <AnimatedToast duration={5000} onDone={() => setLastRemoval(null)}>
-            <div className="bg-white rounded-lg shadow-lg px-4 py-3 flex items-center gap-4 border">
-              <div className="flex-1">
-                <div className="text-sm text-slate-800">
-                  Ученик &quot;{lastRemoval.name}&quot; удалён из группы
-                </div>
-                <div className="text-xs text-slate-500">
-                  Можно отменить в течение нескольких секунд
-                </div>
-              </div>
-              <Button variant="ghost" size="sm" onClick={handleUndoRemoval}>
-                Отменить
-              </Button>
-            </div>
-          </AnimatedToast>
-        </div>
+        <AnimatedToast
+          key={`removal-${lastRemoval.studentId}`}
+          message={`Ученик "${lastRemoval.name}" удалён из группы`}
+          type="info"
+          onClose={() => setLastRemoval(null)}
+          duration={5000}
+          action={{ label: 'Отменить', onClick: handleUndoRemoval }}
+        />
       )}
+
       {lastGroupDeletion && (
-        <div className="fixed right-6 bottom-6 z-50">
-          <AnimatedToast>
-            <div className="bg-white rounded-lg shadow-lg px-4 py-3 flex items-center gap-4 border">
-              <div className="flex-1">
-                <div className="text-sm text-slate-800">
-                  Группа &quot;{lastGroupDeletion.group.name}&quot; удалена
-                </div>
-                <div className="text-xs text-slate-500">
-                  Можно отменить в течение нескольких секунд
-                </div>
-              </div>
-              <Button variant="ghost" size="sm" onClick={handleUndoDeleteGroup}>
-                Отменить
-              </Button>
-            </div>
-          </AnimatedToast>
-        </div>
+        <AnimatedToast
+          key={`groupdel-${lastGroupDeletion.group.id}`}
+          message={`Группа "${lastGroupDeletion.group.name}" удалена`}
+          type="info"
+          onClose={() => setLastGroupDeletion(null)}
+          duration={5000}
+          action={{ label: 'Отменить', onClick: handleUndoDeleteGroup }}
+        />
       )}
+
       {pendingStudentDeletion && (
-        <div className="fixed right-6 bottom-6 z-50">
-          <AnimatedToast>
-            <div className="bg-white rounded-lg shadow-lg px-4 py-3 flex items-center gap-4 border">
-              <div className="flex-1">
-                <div className="text-sm text-slate-800">
-                  Ученик &quot;
-                  {pendingStudentDeletion.student.fullName ||
-                    pendingStudentDeletion.student.username}
-                  &quot; удалён
-                </div>
-                <div className="text-xs text-slate-500">
-                  Можно отменить в течение нескольких секунд
-                </div>
-              </div>
-              <Button variant="ghost" size="sm" onClick={handleUndoStudentDelete}>
-                Отменить
-              </Button>
-            </div>
-          </AnimatedToast>
-        </div>
+        <AnimatedToast
+          key={`pendingdel-${pendingStudentDeletion.student.id}`}
+          message={`Ученик "${pendingStudentDeletion.student.fullName || pendingStudentDeletion.student.username}" удалён`}
+          type="info"
+          onClose={() => setPendingStudentDeletion(null)}
+          duration={5000}
+          action={{ label: 'Отменить', onClick: handleUndoStudentDelete }}
+        />
       )}
-      {lastRemoval && (
-        <div className="fixed right-6 bottom-6 z-50">
-          <AnimatedToast duration={5000} onDone={() => setLastRemoval(null)}>
-            <div className="bg-white rounded-lg shadow-lg px-4 py-3 flex items-center gap-4 border">
-              {/* ... содержимое ... */}
-            </div>
-          </AnimatedToast>
-        </div>
-      )}
-    </>
+    </AnimatePresence>
   );
 
-  // ===== Shared modals (render regardless of current view) =====
   const renderModals = () => (
     <>
       {/* Remove student from group */}
@@ -999,7 +897,6 @@ export function StudentsPage() {
     </>
   );
 
-  // ===== Student Detail View =====
   if (showStudentDetail) {
     const progress = getStudentProgress(showStudentDetail.id);
     const group = groups.find((g) => g.id === showStudentDetail.groupId);
@@ -1097,7 +994,6 @@ export function StudentsPage() {
     );
   }
 
-  // ===== Group Detail View =====
   if (showGroupDetail) {
     const groupStudents = students.filter((s) => s.groupId === showGroupDetail.id);
 
@@ -1196,7 +1092,6 @@ export function StudentsPage() {
     );
   }
 
-  // ===== Main List View =====
   return (
     <>
       <div className="space-y-6">

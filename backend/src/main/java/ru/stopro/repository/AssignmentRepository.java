@@ -79,27 +79,25 @@ public interface AssignmentRepository extends JpaRepository<Assignment, UUID> {
 	List<Assignment> findUpcomingDeadlinesForGroup(@Param("groupId") UUID groupId, Pageable pageable);
 
 	/**
-	 * Активные задания для ученика (через группу)
+	 * Активные задания для ученика (через группу ИЛИ лично)
 	 */
-	@Query("SELECT a FROM Assignment a " + "JOIN a.group g " + "JOIN g.students s "
-			+ "WHERE s.id = :studentId AND a.status = 'PUBLISHED' "
+	@Query("SELECT DISTINCT a FROM Assignment a " + "LEFT JOIN a.group g " + "LEFT JOIN g.students s "
+			+ "WHERE (s.id = :studentId OR a.student.id = :studentId) " + "AND a.status = 'PUBLISHED' "
 			+ "AND (a.startDate IS NULL OR a.startDate <= CURRENT_TIMESTAMP) " + "AND a.deadline > CURRENT_TIMESTAMP "
 			+ "AND a.isDeleted = false " + "ORDER BY a.deadline ASC")
 	List<Assignment> findActiveForStudent(@Param("studentId") UUID studentId);
 
-	/**
-	 * Все задания ученика с пагинацией
-	 */
-	@Query("SELECT a FROM Assignment a " + "JOIN a.group g " + "JOIN g.students s "
-			+ "WHERE s.id = :studentId AND a.isDeleted = false " + "ORDER BY a.deadline DESC")
+	@Query("SELECT DISTINCT a FROM Assignment a " + "LEFT JOIN a.group g " + "LEFT JOIN g.students s "
+			+ "WHERE (s.id = :studentId OR a.student.id = :studentId) " + "AND a.isDeleted = false "
+			+ "ORDER BY a.deadline DESC")
 	Page<Assignment> findAllForStudent(@Param("studentId") UUID studentId, Pageable pageable);
 
 	/**
 	 * Задания ученика с невыполненными попытками
 	 */
-	@Query("SELECT a FROM Assignment a " + "JOIN a.group g " + "JOIN g.students s " + "WHERE s.id = :studentId "
-			+ "AND a.status = 'PUBLISHED' " + "AND a.isDeleted = false " + "AND NOT EXISTS ("
-			+ "  SELECT att FROM Attempt att "
+	@Query("SELECT DISTINCT a FROM Assignment a " + "LEFT JOIN a.group g " + "LEFT JOIN g.students s "
+			+ "WHERE (s.id = :studentId OR a.student.id = :studentId) " + "AND a.status = 'PUBLISHED' "
+			+ "AND a.isDeleted = false " + "AND NOT EXISTS (" + "  SELECT att FROM Attempt att "
 			+ "  WHERE att.assignment = a AND att.student.id = :studentId AND att.status = 'COMPLETED'" + ") "
 			+ "ORDER BY a.deadline ASC")
 	List<Assignment> findPendingForStudent(@Param("studentId") UUID studentId);
@@ -138,8 +136,8 @@ public interface AssignmentRepository extends JpaRepository<Assignment, UUID> {
 	 */
 	@Query("SELECT a FROM Assignment a WHERE a.teacher.id = :teacherId " + "AND a.isDeleted = false "
 			+ "AND (:status IS NULL OR a.status = :status) " + "AND (:type IS NULL OR a.assignmentType = :type) "
-			+ "AND (:groupId IS NULL OR a.group.id = :groupId) " + "AND (:fromDate IS NULL OR a.deadline >= :fromDate) "
-			+ "AND (:toDate IS NULL OR a.deadline <= :toDate)")
+			+ "AND (:groupId IS NULL OR (a.group IS NOT NULL AND a.group.id = :groupId)) "
+			+ "AND (:fromDate IS NULL OR a.deadline >= :fromDate) " + "AND (:toDate IS NULL OR a.deadline <= :toDate)")
 	Page<Assignment> findWithFilters(@Param("teacherId") UUID teacherId, @Param("status") AssignmentStatus status,
 			@Param("type") AssignmentType type, @Param("groupId") UUID groupId,
 			@Param("fromDate") LocalDateTime fromDate, @Param("toDate") LocalDateTime toDate, Pageable pageable);

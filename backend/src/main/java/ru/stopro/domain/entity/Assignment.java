@@ -8,6 +8,8 @@ import java.util.UUID;
 import jakarta.persistence.*;
 import lombok.*;
 
+import ru.stopro.domain.entity.EgeTask;
+import ru.stopro.domain.entity.User;
 import ru.stopro.domain.enums.AssignmentStatus;
 import ru.stopro.domain.enums.AssignmentType;
 
@@ -64,17 +66,30 @@ public class Assignment extends BaseEntity {
 	private UUID createdById;
 
 	@ManyToOne(fetch = FetchType.LAZY)
-	@JoinColumn(name = "group_id", nullable = false)
+	@JoinColumn(name = "group_id")
 	private StudyGroup group;
+
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "student_id")
+	private User student;
 
 	/**
 	 * Вопросы в задании Используем связующую таблицу для хранения порядка
 	 */
-	@ManyToMany
+	@ManyToMany(fetch = FetchType.EAGER)
 	@JoinTable(name = "assignment_questions", joinColumns = @JoinColumn(name = "assignment_id"), inverseJoinColumns = @JoinColumn(name = "question_id"))
 	@OrderColumn(name = "question_order")
 	@Builder.Default
 	private List<Question> questions = new ArrayList<>();
+
+	/**
+	 * Задачи ЕГЭ, добавленные учителем через конструктор ДЗ
+	 */
+	@ManyToMany(fetch = FetchType.EAGER)
+	@JoinTable(name = "assignment_ege_tasks", joinColumns = @JoinColumn(name = "assignment_id"), inverseJoinColumns = @JoinColumn(name = "ege_task_id"))
+	@OrderColumn(name = "task_order")
+	@Builder.Default
+	private List<EgeTask> egeTasks = new ArrayList<>();
 
 	/**
 	 * Попытки прохождения
@@ -92,7 +107,7 @@ public class Assignment extends BaseEntity {
 	/**
 	 * Дедлайн выполнения
 	 */
-	@Column(name = "deadline", nullable = false)
+	@Column(name = "deadline")
 	private LocalDateTime deadline;
 
 	/**
@@ -282,7 +297,8 @@ public class Assignment extends BaseEntity {
 
 	@Transient
 	public int getQuestionsCount() {
-		return questions.size();
+		int count = (questions != null ? questions.size() : 0) + (egeTasks != null ? egeTasks.size() : 0);
+		return count;
 	}
 
 	@Transient
@@ -294,17 +310,19 @@ public class Assignment extends BaseEntity {
 		if (startDate != null && now.isBefore(startDate)) {
 			return false;
 		}
-		return !now.isAfter(deadline);
+		return deadline == null || !now.isAfter(deadline);
 	}
 
 	@Transient
 	public boolean isOverdue() {
+		if (deadline == null)
+			return false;
 		return LocalDateTime.now().isAfter(deadline);
 	}
 
 	@Transient
 	public boolean isInSoftDeadlinePeriod() {
-		if (softDeadline == null) {
+		if (softDeadline == null || deadline == null) {
 			return false;
 		}
 		LocalDateTime now = LocalDateTime.now();
@@ -313,17 +331,26 @@ public class Assignment extends BaseEntity {
 
 	@Transient
 	public long getDaysUntilDeadline() {
+		if (deadline == null)
+			return 0;
 		return java.time.temporal.ChronoUnit.DAYS.between(LocalDateTime.now(), deadline);
 	}
 
 	@Transient
 	public long getHoursUntilDeadline() {
+		if (deadline == null)
+			return 0;
 		return java.time.temporal.ChronoUnit.HOURS.between(LocalDateTime.now(), deadline);
 	}
 
 	@Transient
 	public double getCompletionRate() {
-		int totalStudents = group.getStudentsCount();
+		int totalStudents = 1;
+
+		if (group != null) {
+			totalStudents = group.getStudentsCount();
+		}
+
 		if (totalStudents == 0) {
 			return 0.0;
 		}

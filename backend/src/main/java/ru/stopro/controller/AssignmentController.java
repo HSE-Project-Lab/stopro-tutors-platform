@@ -16,6 +16,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -108,12 +109,21 @@ public class AssignmentController {
 	/**
 	 * Получить тесты группы
 	 */
-	@Operation(summary = "Тесты группы", description = "Возвращает все тесты для указанной группы")
+	@Operation(summary = "Получить тесты группы", description = "Возвращает все тесты для указанной группы")
 	@GetMapping("/group/{groupId}")
 	@PreAuthorize("hasRole('TEACHER')")
 	public ResponseEntity<List<AssignmentDto>> getGroupAssignments(@PathVariable UUID groupId) {
 		List<AssignmentDto> assignments = assignmentService.getByGroup(groupId);
 		return ResponseEntity.ok(assignments);
+	}
+
+	@Operation(summary = "Опубликовать из шаблона", description = "Создает активное задание на базе шаблона")
+	@PostMapping("/{id}/publish-from-template")
+	@PreAuthorize("hasRole('TEACHER')")
+	public ResponseEntity<AssignmentDto> publishFromTemplate(@PathVariable UUID id,
+			@RequestBody ru.stopro.dto.assignment.PublishTemplateRequest request) {
+		AssignmentDto assignment = assignmentService.publishFromTemplate(id, request);
+		return ResponseEntity.ok(assignment);
 	}
 
 	/**
@@ -172,5 +182,25 @@ public class AssignmentController {
 	public ResponseEntity<AssignmentDto> getStatistics(@PathVariable UUID id) {
 		AssignmentDto stats = assignmentService.getStatistics(id);
 		return ResponseEntity.ok(stats);
+	}
+
+	/**
+	 * Обновить тест (название, дедлайн, задачи)
+	 */
+	@Operation(summary = "Обновить ДЗ", description = "Изменяет название, дедлайн и список задач")
+	@PutMapping("/{id}")
+	@PreAuthorize("hasRole('TEACHER')")
+	public ResponseEntity<AssignmentDto> updateAssignment(@PathVariable UUID id,
+			@Valid @RequestBody AssignmentCreateRequest request) {
+		AssignmentDto assignment = assignmentService.update(id, request);
+		return ResponseEntity.ok(assignment);
+	}
+
+	@Operation(summary = "Удалить ДЗ", description = "Полностью удаляет задание из базы")
+	@DeleteMapping("/{id}")
+	@PreAuthorize("hasRole('TEACHER')")
+	public ResponseEntity<Void> deleteAssignment(@PathVariable UUID id) {
+		assignmentService.delete(id);
+		return ResponseEntity.noContent().build();
 	}
 }

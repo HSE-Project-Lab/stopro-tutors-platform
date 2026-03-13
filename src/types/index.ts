@@ -9,6 +9,9 @@ export interface User {
   email: string;
   firstName: string;
   lastName: string;
+  // optional convenience fields used in UI
+  fullName?: string;
+  username?: string;
   role: UserRole;
   avatarUrl?: string;
 }

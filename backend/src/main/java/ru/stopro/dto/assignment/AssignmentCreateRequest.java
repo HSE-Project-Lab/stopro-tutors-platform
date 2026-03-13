@@ -10,9 +10,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-/**
- * DTO для создания задания вручную
- */
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 @Data
 @Builder
 @NoArgsConstructor
@@ -24,18 +23,19 @@ public class AssignmentCreateRequest {
 	private String title;
 
 	private String description;
-
 	private String instructions;
 
-	@NotNull(message = "Группа обязательна")
 	private UUID groupId;
+	private UUID studentId;
 
 	@NotEmpty(message = "Выберите хотя бы одну задачу")
-	private List<UUID> questionIds;
+	private List<String> questionIds;
 
-	@NotNull(message = "Дедлайн обязателен")
-	@Future(message = "Дедлайн должен быть в будущем")
 	private LocalDateTime deadline;
+
+	@Builder.Default
+	@JsonProperty("isTemplate")
+	private boolean isTemplate = false;
 
 	@Min(value = 5, message = "Минимум 5 минут")
 	@Max(value = 300, message = "Максимум 300 минут")

@@ -55,7 +55,7 @@ public class EgeTask {
 	@Column(nullable = false)
 	private String answer;
 
-	@ElementCollection
+	@ElementCollection(fetch = FetchType.EAGER)
 	@CollectionTable(name = "ege_task_images", joinColumns = @JoinColumn(name = "task_id"))
 	@Column(name = "image_url")
 	@Builder.Default

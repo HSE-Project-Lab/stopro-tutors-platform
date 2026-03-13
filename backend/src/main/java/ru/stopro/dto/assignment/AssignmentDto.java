@@ -12,6 +12,7 @@ import lombok.NoArgsConstructor;
 import ru.stopro.domain.entity.Assignment;
 import ru.stopro.domain.enums.AssignmentStatus;
 import ru.stopro.domain.enums.AssignmentType;
+import ru.stopro.dto.egetask.EgeTaskDto;
 import ru.stopro.dto.question.QuestionDto;
 
 /**
@@ -22,6 +23,9 @@ import ru.stopro.dto.question.QuestionDto;
 @NoArgsConstructor
 @AllArgsConstructor
 public class AssignmentDto {
+
+	private UUID studentId;
+	private String studentName;
 
 	private UUID id;
 	private UUID teacherId;
@@ -65,9 +69,12 @@ public class AssignmentDto {
 	private Long hoursUntilDeadline;
 
 	private List<QuestionDto> questions;
+	private List<EgeTaskDto> egeTasks;
 
 	private LocalDateTime createdAt;
 	private LocalDateTime publishedAt;
+
+	private Boolean isTemplate;
 
 	/**
 	 * Конвертация из Entity
@@ -96,7 +103,7 @@ public class AssignmentDto {
 				.completionRate(assignment.getCompletionRate()).isAvailable(assignment.isAvailable())
 				.isOverdue(assignment.isOverdue()).daysUntilDeadline(assignment.getDaysUntilDeadline())
 				.hoursUntilDeadline(assignment.getHoursUntilDeadline()).createdAt(assignment.getCreatedAt())
-				.publishedAt(assignment.getPublishedAt());
+				.publishedAt(assignment.getPublishedAt()).isTemplate(assignment.getIsTemplate());
 
 		if (assignment.getTeacher() != null) {
 			builder.teacherId(assignment.getTeacher().getId());
@@ -108,8 +115,22 @@ public class AssignmentDto {
 			builder.groupName(assignment.getGroup().getName());
 		}
 
+		if (assignment.getStudent() != null) {
+			builder.studentId(assignment.getStudent().getId());
+			builder.studentName(assignment.getStudent().getFullName());
+		}
+
 		if (includeQuestions && assignment.getQuestions() != null) {
 			builder.questions(assignment.getQuestions().stream().map(QuestionDto::fromEntityForStudent).toList());
+		}
+
+		if (assignment.getEgeTasks() != null && !assignment.getEgeTasks().isEmpty()) {
+			builder.egeTasks(assignment.getEgeTasks().stream()
+					.map(t -> EgeTaskDto.builder().id(t.getId()).egeNumber(t.getEgeNumber()).topic(t.getTopic())
+							.difficulty(t.getDifficulty()).content(t.getContent()).solution(t.getSolution())
+							.answer(t.getAnswer()).imageUrls(t.getImageUrls()).createdAt(t.getCreatedAt())
+							.updatedAt(t.getUpdatedAt()).build())
+					.toList());
 		}
 
 		return builder.build();
