@@ -7,6 +7,7 @@ import { FilterDropdown } from '@/components/ui/FilterDropdown';
 import { LaTeX } from '@/components/ui/LaTeX';
 import { CreateTaskModal } from '@/components/tasks/CreateTaskModal';
 import { useAuthStore } from '@/store/authStore';
+import { useAppStore } from '@/store/appStore';
 import api from '@/lib/axios';
 import {
   Search,
@@ -23,6 +24,8 @@ import {
 } from 'lucide-react';
 import type { EgeTask, EgeTaskCreateRequest, EgeTaskPage, TaskDifficulty } from '@/types';
 import { EGE_TOPICS, DIFFICULTY_LABELS } from '@/types';
+
+const DAILY_CHALLENGE_COMPLETED_STORAGE_KEY = 'dailyChallengeCompletedDate';
 
 const NUMBER_OPTIONS = Array.from({ length: 12 }, (_, i) => ({
   value: String(i + 1),
@@ -79,7 +82,7 @@ function TaskCard({
       onClick={onClick}
     >
       <div className="flex items-start gap-4">
-        <div className="w-12 h-12 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-600 font-bold text-lg shrink-0">
+        <div className="task-number-chip w-12 h-12 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-600 font-bold text-lg shrink-0">
           {task.egeNumber}
         </div>
 
@@ -136,18 +139,27 @@ function TaskDetail({
   task,
   onBack,
   isAdmin,
+  onCorrectSolve,
 }: {
   task: EgeTask;
   onBack: () => void;
   isAdmin: boolean;
+  onCorrectSolve?: () => void;
 }) {
   const [userAnswer, setUserAnswer] = useState('');
   const [showResult, setShowResult] = useState(false);
   const [showSolution, setShowSolution] = useState(false);
+  const [completionReported, setCompletionReported] = useState(false);
 
   const isCorrect = userAnswer.trim() === task.answer.trim();
 
-  const handleCheck = () => setShowResult(true);
+  const handleCheck = () => {
+    setShowResult(true);
+    if (!completionReported && isCorrect) {
+      onCorrectSolve?.();
+      setCompletionReported(true);
+    }
+  };
   const handleRetry = () => {
     setUserAnswer('');
     setShowResult(false);
@@ -161,9 +173,9 @@ function TaskDetail({
   };
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6">
+    <div className="app-task-detail max-w-3xl mx-auto space-y-6">
       <div className="flex items-center justify-between">
-        <Button variant="ghost" onClick={onBack}>
+        <Button variant="ghost" onClick={onBack} className="task-back-button">
           <ChevronLeft size={18} className="mr-1" />
           Назад к списку
         </Button>
@@ -297,9 +309,12 @@ function TaskDetail({
             Аналогичные задания ({task.variants.length})
           </h3>
           {task.variants.map((variant, idx) => (
-            <Card key={variant.id} className="bg-slate-50/50 border-slate-200">
+            <Card
+              key={variant.id}
+              className="analogous-variant-card bg-slate-50/50 border-slate-200"
+            >
               <div className="flex items-center justify-between mb-3">
-                <Badge variant="outline" className="bg-white">
+                <Badge variant="info" className="bg-white">
                   Вариант {idx + 1}
                 </Badge>
                 {isAdmin && (
@@ -411,6 +426,12 @@ function Pagination({
 
 export function TasksPage() {
   const { user } = useAuthStore();
+  const {
+    practiceFocusEgeNumber,
+    setPracticeFocusEgeNumber,
+    practiceDailyChallengeTaskId,
+    setPracticeDailyChallengeTaskId,
+  } = useAppStore();
   const isAdmin = user?.role === 'ADMIN';
 
   const [tasks, setTasks] = useState<EgeTask[]>([]);
@@ -471,6 +492,17 @@ export function TasksPage() {
     }
   }, [selectedNumbers]);
 
+  useEffect(() => {
+    if (!practiceFocusEgeNumber) {
+      return;
+    }
+
+    setSelectedNumbers([String(practiceFocusEgeNumber)]);
+    setSelectedTopics([]);
+    setPage(0);
+    setPracticeFocusEgeNumber(null);
+  }, [practiceFocusEgeNumber, setPracticeFocusEgeNumber]);
+
   const handleOpenTask = async (task: EgeTask) => {
     setSelectedTask(task);
     try {
@@ -510,12 +542,39 @@ export function TasksPage() {
 
   if (selectedTask) {
     return (
-      <TaskDetail task={selectedTask} onBack={() => setSelectedTask(null)} isAdmin={isAdmin} />
+      <TaskDetail
+        task={selectedTask}
+        onBack={() => setSelectedTask(null)}
+        isAdmin={isAdmin}
+        onCorrectSolve={() => {
+          if (user?.role !== 'STUDENT') {
+            return;
+          }
+
+          if (!practiceDailyChallengeTaskId || practiceDailyChallengeTaskId !== selectedTask.id) {
+            return;
+          }
+
+          if (typeof window !== 'undefined') {
+            localStorage.setItem(
+              DAILY_CHALLENGE_COMPLETED_STORAGE_KEY,
+              new Date().toISOString().slice(0, 10)
+            );
+          }
+
+          void api
+            .post('/student/daily-challenge/complete', {
+              challengeTaskId: selectedTask.id,
+              egeNumber: selectedTask.egeNumber,
+            })
+            .finally(() => setPracticeDailyChallengeTaskId(null));
+        }}
+      />
     );
   }
 
   return (
-    <div className="space-y-6">
+    <div className="app-tasks-page space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">База задач ЕГЭ</h1>

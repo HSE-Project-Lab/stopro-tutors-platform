@@ -24,7 +24,6 @@ export function MultiSelect({
   const containerRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
-  // Закрытие по клику вне
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
@@ -36,7 +35,6 @@ export function MultiSelect({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Фокус на поиск при открытии
   useEffect(() => {
     if (isOpen && searchInputRef.current) {
       searchInputRef.current.focus();
@@ -47,7 +45,6 @@ export function MultiSelect({
     opt.label.toLowerCase().includes(search.toLowerCase())
   );
 
-  // Группировка по group (номер задания)
   const grouped = filteredOptions.reduce<Record<string, typeof options>>((acc, opt) => {
     const key = opt.group || '';
     if (!acc[key]) acc[key] = [];
@@ -76,12 +73,12 @@ export function MultiSelect({
   const selectedLabels = selected.map((v) => options.find((o) => o.value === v)?.label || v);
 
   return (
-    <div ref={containerRef} className={cn('relative', className)}>
-      {/* Триггер */}
+    <div ref={containerRef} className={cn('app-multiselect relative', className)}>
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
         className={cn(
+          'app-multiselect-trigger',
           'w-full min-h-[42px] px-3 py-2 bg-white border rounded-xl text-left',
           'focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent',
           'transition-all duration-200 flex items-center gap-2 flex-wrap',
@@ -125,10 +122,8 @@ export function MultiSelect({
         </div>
       </button>
 
-      {/* Выпадающий список */}
       {isOpen && (
-        <div className="absolute z-50 mt-1 w-full bg-white border border-slate-200 rounded-xl shadow-lg max-h-72 overflow-hidden">
-          {/* Поиск */}
+        <div className="app-multiselect-dropdown absolute z-50 mt-1 w-full bg-white border border-slate-200 rounded-xl shadow-lg max-h-72 overflow-hidden">
           {searchable && (
             <div className="p-2 border-b border-slate-100">
               <div className="relative">
@@ -147,7 +142,6 @@ export function MultiSelect({
             </div>
           )}
 
-          {/* Опции */}
           <div className="overflow-y-auto max-h-56 p-1">
             {Object.keys(grouped).length === 0 ? (
               <p className="text-sm text-slate-400 text-center py-4">Ничего не найдено</p>
@@ -199,7 +193,6 @@ export function MultiSelect({
             )}
           </div>
 
-          {/* Быстрые действия */}
           {selected.length > 0 && (
             <div className="p-2 border-t border-slate-100 flex justify-between items-center">
               <span className="text-xs text-slate-500">Выбрано: {selected.length}</span>

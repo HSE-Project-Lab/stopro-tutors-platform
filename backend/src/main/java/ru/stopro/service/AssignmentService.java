@@ -3,8 +3,10 @@ package ru.stopro.service;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -15,18 +17,25 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import ru.stopro.domain.entity.Assignment;
+import ru.stopro.domain.entity.Attempt;
 import ru.stopro.domain.entity.EgeTask;
 import ru.stopro.domain.entity.Question;
+import ru.stopro.domain.entity.StudentAssignmentAnswerResult;
+import ru.stopro.domain.entity.StudentAssignmentSubmission;
 import ru.stopro.domain.entity.StudyGroup;
 import ru.stopro.domain.entity.User;
 import ru.stopro.domain.enums.AssignmentStatus;
+import ru.stopro.domain.enums.AttemptStatus;
 import ru.stopro.domain.enums.TaskDifficulty;
 import ru.stopro.dto.assignment.AssignmentCreateRequest;
 import ru.stopro.dto.assignment.AssignmentDto;
+import ru.stopro.dto.assignment.AssignmentSubmissionResultDto;
 import ru.stopro.dto.assignment.GenerateAssignmentRequest;
 import ru.stopro.repository.AssignmentRepository;
+import ru.stopro.repository.AttemptRepository;
 import ru.stopro.repository.EgeTaskRepository;
 import ru.stopro.repository.QuestionRepository;
+import ru.stopro.repository.StudentAssignmentSubmissionRepository;
 import ru.stopro.repository.StudyGroupRepository;
 import ru.stopro.repository.UserRepository;
 
@@ -37,10 +46,12 @@ import ru.stopro.repository.UserRepository;
 public class AssignmentService {
 
 	private final AssignmentRepository assignmentRepository;
+	private final AttemptRepository attemptRepository;
 	private final QuestionRepository questionRepository;
 	private final EgeTaskRepository egeTaskRepository;
 	private final StudyGroupRepository studyGroupRepository;
 	private final UserRepository userRepository;
+	private final StudentAssignmentSubmissionRepository studentAssignmentSubmissionRepository;
 
 	@Transactional
 	public AssignmentDto create(UUID teacherId, AssignmentCreateRequest request) {
@@ -161,6 +172,16 @@ public class AssignmentService {
 				.collect(Collectors.toList());
 	}
 
+	public List<AssignmentDto> getActiveForStudent(UUID studentId) {
+		return assignmentRepository.findActiveForStudent(studentId).stream().map(a -> mapToDto(a, false))
+				.collect(Collectors.toList());
+	}
+
+	public List<AssignmentDto> getCompletedForStudent(UUID studentId) {
+		return assignmentRepository.findCompletedAssignedForStudent(studentId).stream().map(a -> mapToDto(a, false))
+				.collect(Collectors.toList());
+	}
+
 	@Transactional
 	public AssignmentDto update(UUID assignmentId, AssignmentCreateRequest request) {
 		Assignment assignment = assignmentRepository.findById(assignmentId)
@@ -179,13 +200,10 @@ public class AssignmentService {
 			assignment.setStudent(student);
 			assignment.setGroup(null);
 		} else if (!request.isTemplate()) {
-			// If it's not a template, and we didn't specify a group or student, clear
-			// associations for safety
 			assignment.setGroup(null);
 			assignment.setStudent(null);
 		}
 
-		// Update template flag (DTO uses primitive boolean accessor)
 		assignment.setIsTemplate(request.isTemplate());
 
 		if (request.getQuestionIds() != null) {
@@ -252,13 +270,210 @@ public class AssignmentService {
 		Assignment assignment = assignmentRepository.findById(assignmentId)
 				.orElseThrow(() -> new RuntimeException("Assignment not found"));
 
-		assignment.setStatus(AssignmentStatus.ACTIVE);
+		assignment.setStatus(AssignmentStatus.PUBLISHED);
 		assignment.setPublishedAt(LocalDateTime.now());
 
 		assignment = assignmentRepository.save(assignment);
 		log.info("Published assignment {}", assignmentId);
 
 		return mapToDto(assignment, false);
+	}
+
+	@Transactional
+	public AssignmentSubmissionResultDto completeByStudent(UUID assignmentId, UUID studentId,
+			Map<String, String> submittedAnswers) {
+		Assignment assignment = assignmentRepository.findById(assignmentId)
+				.orElseThrow(() -> new RuntimeException("Assignment not found"));
+
+		User student = userRepository.findById(studentId).orElseThrow(() -> new RuntimeException("Student not found"));
+
+		boolean allowed = false;
+		if (assignment.getStudent() != null && assignment.getStudent().getId().equals(studentId)) {
+			allowed = true;
+		}
+		if (!allowed && assignment.getGroup() != null && assignment.getGroup().getStudents() != null) {
+			allowed = assignment.getGroup().getStudents().stream().anyMatch(s -> s.getId().equals(studentId));
+		}
+
+		if (!allowed) {
+			throw new RuntimeException("Это задание не назначено текущему ученику");
+		}
+
+		if (Boolean.TRUE.equals(assignment.getIsTemplate())) {
+			throw new RuntimeException("Нельзя сдать шаблон");
+		}
+
+		Map<String, String> answers = submittedAnswers != null ? submittedAnswers : new HashMap<>();
+		List<AssignmentSubmissionResultDto.QuestionResult> results = new ArrayList<>();
+		LocalDateTime now = LocalDateTime.now();
+		int totalQuestions = 0;
+		int answeredQuestions = 0;
+		int correctAnswers = 0;
+
+		if (assignment.getQuestions() != null && !assignment.getQuestions().isEmpty()) {
+			int index = 1;
+			for (Question question : assignment.getQuestions()) {
+				String key = question.getId().toString();
+				String rawAnswer = answers.get(key);
+				String userAnswer = rawAnswer != null ? rawAnswer.trim() : "";
+				boolean hasAnswer = !userAnswer.isBlank();
+				boolean isCorrect = hasAnswer && question.checkAnswer(userAnswer);
+
+				if (hasAnswer) {
+					answeredQuestions++;
+				}
+				if (isCorrect) {
+					correctAnswers++;
+				}
+				totalQuestions++;
+
+				Attempt attempt = Attempt.builder().student(student).assignment(assignment).question(question)
+						.userAnswer(userAnswer).normalizedAnswer(normalizeAnswer(userAnswer)).isCorrect(isCorrect)
+						.pointsEarned(isCorrect ? defaultPoints(question.getPoints()) : 0)
+						.maxPoints(defaultPoints(question.getPoints())).startedAt(now).answeredAt(now).checkedAt(now)
+						.status(AttemptStatus.CHECKED).isManuallyChecked(false).build();
+				attemptRepository.save(attempt);
+
+				results.add(AssignmentSubmissionResultDto.QuestionResult.builder().questionId(key).index(index)
+						.egeNumber(question.getEgeNumber())
+						.topicName(question.getTopic() != null ? question.getTopic().getName() : null)
+						.content(question.getContent()).userAnswer(userAnswer).isCorrect(isCorrect)
+						.correctAnswer(question.getAnswer()).solution(question.getSolution()).build());
+				index++;
+			}
+		} else {
+			int index = 1;
+			for (EgeTask task : assignment.getEgeTasks()) {
+				String key = task.getId();
+				String rawAnswer = answers.get(key);
+				String userAnswer = rawAnswer != null ? rawAnswer.trim() : "";
+				boolean hasAnswer = !userAnswer.isBlank();
+				boolean isCorrect = hasAnswer && isShortAnswerCorrect(userAnswer, task.getAnswer());
+
+				if (hasAnswer) {
+					answeredQuestions++;
+				}
+				if (isCorrect) {
+					correctAnswers++;
+				}
+				totalQuestions++;
+
+				results.add(AssignmentSubmissionResultDto.QuestionResult.builder().questionId(key).index(index)
+						.egeNumber(task.getEgeNumber()).topicName(task.getTopic()).content(task.getContent())
+						.userAnswer(userAnswer).isCorrect(isCorrect).correctAnswer(task.getAnswer())
+						.solution(task.getSolution()).build());
+				index++;
+			}
+		}
+
+		if (assignment.getStatus() == AssignmentStatus.COMPLETED) {
+			var existingSubmission = studentAssignmentSubmissionRepository
+					.findTopByAssignment_IdAndStudent_IdAndIsDeletedFalseOrderBySubmittedAtDesc(assignmentId,
+							studentId);
+			if (existingSubmission.isPresent()) {
+				return toSubmissionResultDto(existingSubmission.get());
+			}
+
+			int scorePercentFallback = totalQuestions > 0
+					? (int) Math.round(correctAnswers * 100.0 / totalQuestions)
+					: 0;
+			return AssignmentSubmissionResultDto.builder().assignmentId(assignment.getId())
+					.assignmentTitle(assignment.getTitle()).status(assignment.getStatus().name()).submittedAt(now)
+					.totalQuestions(totalQuestions).answeredQuestions(answeredQuestions).correctAnswers(correctAnswers)
+					.scorePercent(scorePercentFallback).questionResults(results).build();
+		}
+
+		assignment.setCompletedCount((assignment.getCompletedCount() != null ? assignment.getCompletedCount() : 0) + 1);
+		assignment.setStatus(AssignmentStatus.COMPLETED);
+		int scorePercent = totalQuestions > 0 ? (int) Math.round(correctAnswers * 100.0 / totalQuestions) : 0;
+		double currentAverage = assignment.getAverageScore() != null ? assignment.getAverageScore() : scorePercent;
+		if (assignment.getAverageScore() != null && assignment.getCompletedCount() != null
+				&& assignment.getCompletedCount() > 1) {
+			currentAverage = ((assignment.getAverageScore() * (assignment.getCompletedCount() - 1)) + scorePercent)
+					/ assignment.getCompletedCount();
+		}
+		assignment.setAverageScore(currentAverage);
+		assignment = assignmentRepository.save(assignment);
+
+		StudentAssignmentSubmission submission = StudentAssignmentSubmission.builder().assignment(assignment)
+				.student(student).submittedAt(now).totalQuestions(totalQuestions).answeredQuestions(answeredQuestions)
+				.correctAnswers(correctAnswers).scorePercent(scorePercent).build();
+
+		List<StudentAssignmentAnswerResult> answerEntities = results.stream()
+				.map(result -> StudentAssignmentAnswerResult.builder().submission(submission)
+						.questionRefId(result.getQuestionId()).questionIndex(result.getIndex())
+						.egeNumber(result.getEgeNumber()).topicName(result.getTopicName()).content(result.getContent())
+						.userAnswer(result.getUserAnswer()).isCorrect(Boolean.TRUE.equals(result.getIsCorrect()))
+						.correctAnswer(result.getCorrectAnswer()).solution(result.getSolution()).build())
+				.collect(Collectors.toList());
+		submission.setAnswers(answerEntities);
+		studentAssignmentSubmissionRepository.save(submission);
+
+		log.info("Student {} completed assignment {}", student.getId(), assignmentId);
+		return AssignmentSubmissionResultDto.builder().assignmentId(assignment.getId())
+				.assignmentTitle(assignment.getTitle()).status(assignment.getStatus().name()).submittedAt(now)
+				.totalQuestions(totalQuestions).answeredQuestions(answeredQuestions).correctAnswers(correctAnswers)
+				.scorePercent(scorePercent).questionResults(results).build();
+	}
+
+	public AssignmentSubmissionResultDto getStudentSubmissionResult(UUID assignmentId, UUID studentId) {
+		StudentAssignmentSubmission submission = studentAssignmentSubmissionRepository
+				.findTopByAssignment_IdAndStudent_IdAndIsDeletedFalseOrderBySubmittedAtDesc(assignmentId, studentId)
+				.orElseThrow(() -> new RuntimeException("Результат сдачи не найден"));
+
+		return toSubmissionResultDto(submission);
+	}
+
+	private boolean isShortAnswerCorrect(String userAnswer, String correctAnswer) {
+		if (correctAnswer == null) {
+			return false;
+		}
+
+		String normalizedUser = normalizeAnswer(userAnswer);
+		String normalizedCorrect = normalizeAnswer(correctAnswer);
+
+		if (Objects.equals(normalizedUser, normalizedCorrect)) {
+			return true;
+		}
+
+		try {
+			double user = Double.parseDouble(normalizedUser);
+			double correct = Double.parseDouble(normalizedCorrect);
+			return Math.abs(user - correct) < 0.001;
+		} catch (NumberFormatException ignored) {
+			return false;
+		}
+	}
+
+	private String normalizeAnswer(String answer) {
+		if (answer == null) {
+			return "";
+		}
+
+		return answer.trim().toLowerCase().replaceAll("\\s+", "").replace(",", ".").replace("−", "-").replace("–", "-")
+				.replaceAll("\\.0+$", "").replaceAll("\\+$", "");
+	}
+
+	private int defaultPoints(Integer points) {
+		return points != null && points > 0 ? points : 1;
+	}
+
+	private AssignmentSubmissionResultDto toSubmissionResultDto(StudentAssignmentSubmission submission) {
+		List<AssignmentSubmissionResultDto.QuestionResult> questionResults = submission.getAnswers().stream()
+				.sorted(java.util.Comparator.comparing(StudentAssignmentAnswerResult::getQuestionIndex))
+				.map(answer -> AssignmentSubmissionResultDto.QuestionResult.builder()
+						.questionId(answer.getQuestionRefId()).index(answer.getQuestionIndex())
+						.egeNumber(answer.getEgeNumber()).topicName(answer.getTopicName()).content(answer.getContent())
+						.userAnswer(answer.getUserAnswer()).isCorrect(answer.getIsCorrect())
+						.correctAnswer(answer.getCorrectAnswer()).solution(answer.getSolution()).build())
+				.collect(Collectors.toList());
+
+		return AssignmentSubmissionResultDto.builder().assignmentId(submission.getAssignment().getId())
+				.assignmentTitle(submission.getAssignment().getTitle())
+				.status(submission.getAssignment().getStatus().name()).submittedAt(submission.getSubmittedAt())
+				.totalQuestions(submission.getTotalQuestions()).answeredQuestions(submission.getAnsweredQuestions())
+				.correctAnswers(submission.getCorrectAnswers()).scorePercent(submission.getScorePercent())
+				.questionResults(questionResults).build();
 	}
 
 	@Transactional

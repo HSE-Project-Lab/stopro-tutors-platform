@@ -1,5 +1,6 @@
 package ru.stopro.service;
 
+import java.security.SecureRandom;
 import java.util.*;
 
 import lombok.RequiredArgsConstructor;
@@ -11,6 +12,8 @@ import org.springframework.transaction.annotation.Transactional;
 import ru.stopro.domain.entity.StudyGroup;
 import ru.stopro.domain.entity.User;
 import ru.stopro.domain.enums.UserRole;
+import ru.stopro.dto.student.StudentCreateResponse;
+import ru.stopro.dto.student.StudentCredentialsDto;
 import ru.stopro.dto.student.StudentDto;
 import ru.stopro.repository.StudyGroupRepository;
 import ru.stopro.repository.UserRepository;
@@ -23,7 +26,9 @@ public class TeacherService {
 	private final StudyGroupRepository studyGroupRepository;
 	private final PasswordEncoder passwordEncoder;
 
-	private static final String DEMO_PASSWORD = "demo";
+	private static final SecureRandom RANDOM = new SecureRandom();
+	private static final String PASSWORD_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789";
+	private static final int PASSWORD_LENGTH = 8;
 
 	@Transactional(readOnly = true)
 	public List<StudentDto> getStudentsByTeacherId(UUID teacherUserId) {
@@ -51,14 +56,15 @@ public class TeacherService {
 
 	/** Создаёт ученика (группа опциональна). */
 	@Transactional
-	public StudentDto addStudent(UUID teacherUserId, StudentDto dto) {
+	public StudentCreateResponse addStudent(UUID teacherUserId, StudentDto dto) {
 		User teacher = userRepository.findById(teacherUserId)
 				.orElseThrow(() -> new RuntimeException("Учитель не найден"));
 		String fullName = (dto.getFullName() != null && !dto.getFullName().isBlank())
 				? dto.getFullName().trim()
 				: "Ученик";
 		String username = generateUniqueUsername(fullName);
-		User student = User.builder().username(username).passwordHash(passwordEncoder.encode(DEMO_PASSWORD))
+		String rawPassword = generatePassword();
+		User student = User.builder().username(username).passwordHash(passwordEncoder.encode(rawPassword))
 				.role(UserRole.STUDENT).fullName(fullName).teacher(teacher).dataConsentStatus(false).build();
 		userRepository.save(student);
 		UUID groupId = dto.getGroupId();
@@ -71,7 +77,9 @@ public class TeacherService {
 			group.getStudents().add(student);
 			studyGroupRepository.save(group);
 		}
-		return StudentDto.fromEntity(student, groupId);
+		return StudentCreateResponse.builder().student(StudentDto.fromEntity(student, groupId)).credentials(
+				StudentCredentialsDto.builder().fullName(fullName).username(username).password(rawPassword).build())
+				.build();
 	}
 
 	@Transactional
@@ -152,5 +160,13 @@ public class TeacherService {
 			username = base + "_" + suffix++;
 		} while (userRepository.existsByUsername(username) && suffix < 100000);
 		return username;
+	}
+
+	private String generatePassword() {
+		StringBuilder sb = new StringBuilder(PASSWORD_LENGTH);
+		for (int i = 0; i < PASSWORD_LENGTH; i++) {
+			sb.append(PASSWORD_CHARS.charAt(RANDOM.nextInt(PASSWORD_CHARS.length())));
+		}
+		return sb.toString();
 	}
 }

@@ -52,16 +52,16 @@ export function Select({
   };
 
   return (
-    <div className={cn('w-full', className)}>
+    <div className={cn('app-select w-full', className)}>
       {label && <label className="block text-sm font-medium text-slate-700 mb-1.5">{label}</label>}
 
       <div ref={containerRef} className="relative">
-        {/* Кнопка-триггер */}
         <button
           type="button"
           onClick={() => !disabled && setIsOpen(!isOpen)}
           disabled={disabled}
           className={cn(
+            'app-select-trigger',
             'w-full h-[42px] px-4 bg-white border rounded-xl text-sm text-left',
             'focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent',
             'transition-all duration-200 flex items-center justify-between gap-2',
@@ -87,9 +87,8 @@ export function Select({
           />
         </button>
 
-        {/* Выпадающий список */}
         {isOpen && (
-          <div className="absolute z-50 mt-1.5 w-full bg-white border border-slate-200 rounded-xl shadow-lg overflow-hidden">
+          <div className="app-select-dropdown absolute z-50 mt-1.5 w-full bg-white border border-slate-200 rounded-xl shadow-lg overflow-hidden">
             <div className="overflow-y-auto max-h-56 p-1">
               {options.map((opt) => {
                 const isSelected = opt.value === value;

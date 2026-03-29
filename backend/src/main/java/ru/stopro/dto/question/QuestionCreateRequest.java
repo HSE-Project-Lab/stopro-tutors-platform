@@ -77,7 +77,6 @@ public class QuestionCreateRequest {
 	 * Получить варианты ответов (для совместимости)
 	 */
 	public List<String> getAnswerOptions() {
-		// В реальности это может быть отдельное поле
 		return java.util.Collections.emptyList();
 	}
 
@@ -99,7 +98,6 @@ public class QuestionCreateRequest {
 	 * Является ли вопрос публичным (для совместимости)
 	 */
 	public Boolean isPublic() {
-		// В реальности это может быть отдельное поле
 		return true;
 	}
 
@@ -171,7 +169,7 @@ public class QuestionCreateRequest {
 	@NoArgsConstructor
 	@AllArgsConstructor
 	public static class CommonMistake {
-		private String type; // SIGN_ERROR, CALCULATION, CONCEPT, FORMULA
+		private String type;
 		private String description;
 		private String example;
 	}

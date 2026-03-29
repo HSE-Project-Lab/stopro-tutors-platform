@@ -14,8 +14,8 @@ interface ToastProps {
   type: ToastType;
   onClose: () => void;
   duration?: number;
-  children?: React.ReactNode; // optional custom content
-  action?: ToastAction; // optional action button
+  children?: React.ReactNode;
+  action?: ToastAction;
 }
 
 export function AnimatedToast({

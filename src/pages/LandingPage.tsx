@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef, ReactNode } from 'react';
 import { motion, useScroll, useTransform, AnimatePresence } from 'framer-motion';
 import {
-  Brain,
   CheckCircle,
   Play,
   Star,
@@ -19,7 +18,6 @@ import { cn } from '@/utils/cn';
 
 const WORDS = ['время', 'нервы', 'силы', 'рутину'];
 
-// ===== КОМПОНЕНТ "ФОНАРИК" ДЛЯ BENTO GRID =====
 function SpotlightCard({ children, className }: { children: ReactNode; className?: string }) {
   const divRef = useRef<HTMLDivElement>(null);
   const [position, setPosition] = useState({ x: 0, y: 0 });
@@ -54,7 +52,6 @@ function SpotlightCard({ children, className }: { children: ReactNode; className
   );
 }
 
-// ===== ДАННЫЕ ДЛЯ ШОУКЕЙСА =====
 const SHOWCASE_TABS = [
   {
     id: 'base',
@@ -87,7 +84,6 @@ interface LandingPageProps {
 }
 
 export function LandingPage({ onLoginClick }: LandingPageProps) {
-  // Анимация слов
   const [wordIndex, setWordIndex] = useState(0);
   useEffect(() => {
     const interval = setInterval(() => {
@@ -96,7 +92,6 @@ export function LandingPage({ onLoginClick }: LandingPageProps) {
     return () => clearInterval(interval);
   }, []);
 
-  // Плавная навигация
   const scrollTo = (id: string) => {
     const el = document.getElementById(id);
     if (el) {
@@ -104,18 +99,16 @@ export function LandingPage({ onLoginClick }: LandingPageProps) {
     }
   };
 
-  // Параллакс главного экрана
   const { scrollYProgress } = useScroll();
   const heroY = useTransform(scrollYProgress, [0, 0.2], [0, 150]);
   const heroOpacity = useTransform(scrollYProgress, [0, 0.15], [1, 0]);
 
-  // Логика авто-шоукейса
   const [activeTab, setActiveTab] = useState(0);
   const [progress, setProgress] = useState(0);
 
   useEffect(() => {
-    const duration = 5000; // 5 секунд на вкладку
-    const interval = 50; // Обновление каждые 50мс
+    const duration = 5000;
+    const interval = 50;
     const step = (interval / duration) * 100;
 
     const timer = setInterval(() => {
@@ -133,7 +126,6 @@ export function LandingPage({ onLoginClick }: LandingPageProps) {
 
   return (
     <div className="bg-slate-50 min-h-screen text-slate-900 font-sans selection:bg-indigo-100 selection:text-indigo-900">
-      {/* НАВИГАЦИЯ */}
       <motion.nav
         initial={{ y: -100 }}
         animate={{ y: 0 }}
@@ -176,7 +168,6 @@ export function LandingPage({ onLoginClick }: LandingPageProps) {
         </div>
       </motion.nav>
 
-      {/* ГЛАВНЫЙ ЭКРАН */}
       <section className="relative min-h-[90vh] flex items-center justify-center pt-20 overflow-hidden bg-white">
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <motion.div
@@ -248,7 +239,6 @@ export function LandingPage({ onLoginClick }: LandingPageProps) {
         </motion.div>
       </section>
 
-      {/* БЕГУЩАЯ СТРОКА (MARQUEE) */}
       <div className="bg-indigo-600 text-white py-4 overflow-hidden flex whitespace-nowrap">
         <motion.div
           animate={{ x: ['0%', '-50%'] }}
@@ -267,14 +257,13 @@ export function LandingPage({ onLoginClick }: LandingPageProps) {
               <span className="text-indigo-300">•</span>
               <span>Умная аналитика</span>
               <span className="text-indigo-300">•</span>
-              <span>LaTeX Конструктор</span>
+              <span>CRM таблицы</span>
               <span className="text-indigo-300">•</span>
             </div>
           ))}
         </motion.div>
       </div>
 
-      {/* НОВЫЙ ИНТЕРАКТИВНЫЙ ШОУКЕЙС (ВМЕСТО SCROLLYTELLING) */}
       <section id="showcase" className="py-32 bg-slate-50 relative overflow-hidden">
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center mb-16">
@@ -285,7 +274,6 @@ export function LandingPage({ onLoginClick }: LandingPageProps) {
           </div>
 
           <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
-            {/* Левая часть: Вкладки */}
             <div className="space-y-4">
               {SHOWCASE_TABS.map((tab, idx) => {
                 const isActive = activeTab === idx;
@@ -333,7 +321,6 @@ export function LandingPage({ onLoginClick }: LandingPageProps) {
                       </div>
                     </div>
 
-                    {/* Полоска прогресса снизу */}
                     {isActive && (
                       <div
                         className="absolute bottom-0 left-0 h-1 bg-indigo-500 rounded-b-2xl transition-all duration-75 ease-linear"
@@ -345,7 +332,6 @@ export function LandingPage({ onLoginClick }: LandingPageProps) {
               })}
             </div>
 
-            {/* Правая часть: Анимированные визуализации */}
             <div className="relative aspect-square md:aspect-[4/3] w-full bg-slate-100 rounded-[2.5rem] overflow-hidden shadow-2xl border border-slate-200 p-8 flex items-center justify-center">
               <AnimatePresence mode="wait">
                 {activeTab === 0 && (
@@ -363,10 +349,12 @@ export function LandingPage({ onLoginClick }: LandingPageProps) {
                       <div className="w-3 h-3 rounded-full bg-emerald-400" />
                     </div>
                     <div className="text-indigo-500 font-bold">\begin{'{task}'}</div>
-                    <div className="pl-4 text-slate-700">Решите уравнение: $\log_2(x+3) = 3$</div>
+                    <div className="pl-4 text-slate-700 whitespace-nowrap">
+                      Решите уравнение: $\log_2(x+3) = 3$
+                    </div>
                     <div className="text-indigo-500 font-bold">\end{'{task}'}</div>
                     <div className="mt-4 p-5 bg-indigo-50/50 rounded-xl border border-indigo-100 font-sans text-center">
-                      <span className="font-medium text-slate-900 text-lg">
+                      <span className="font-medium text-slate-900 text-lg whitespace-nowrap">
                         Решите уравнение:{' '}
                         <span className="italic text-indigo-700">log₂ (x+3) = 3</span>
                       </span>
@@ -441,7 +429,6 @@ export function LandingPage({ onLoginClick }: LandingPageProps) {
         </div>
       </section>
 
-      {/* BENTO GRID */}
       <section id="bento" className="py-32 bg-white relative">
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center mb-16">
@@ -454,20 +441,36 @@ export function LandingPage({ onLoginClick }: LandingPageProps) {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 auto-rows-[280px]">
-            {/* Большая карточка */}
             <SpotlightCard className="md:col-span-2 md:row-span-2 p-10 bg-slate-50 flex flex-col justify-between group cursor-default">
               <div>
                 <div className="w-14 h-14 rounded-2xl bg-white border border-slate-200 flex items-center justify-center mb-6 shadow-sm">
                   <FunctionSquare size={28} className="text-indigo-600" />
                 </div>
-                <h3 className="text-3xl font-bold text-slate-900 mb-4">Нативный LaTeX Редактор</h3>
+                <h3 className="text-3xl font-bold text-slate-900 mb-4">
+                  Удобная CRM для репетитора
+                </h3>
                 <p className="text-lg text-slate-600 max-w-md">
-                  Вставляйте формулы, графики и системы уравнений. Платформа моментально рендерит их
-                  в красивый математический текст.
+                  Все ученики, группы, дедлайны и прогресс — в одной системе. Быстро находите
+                  нужного ученика, отслеживайте динамику и держите обучение под контролем без
+                  сторонних таблиц и хаоса.
                 </p>
               </div>
-              <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm font-mono text-sm text-slate-600 group-hover:border-indigo-300 transition-colors">
-                Решите уравнение: <span className="text-indigo-600">\log_2(x+3) = 3</span>
+              <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm text-sm text-slate-700 group-hover:border-indigo-300 transition-colors space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="font-semibold text-slate-900">
+                    Группа: ЕГЭ Профиль · 11 класс
+                  </span>
+                  <span className="text-xs px-2 py-1 rounded-full bg-emerald-100 text-emerald-700">
+                    8/10 сдали
+                  </span>
+                </div>
+                <div className="text-slate-600">
+                  Ближайший дедлайн:{' '}
+                  <span className="font-medium text-slate-900">31 марта, 20:00</span>
+                </div>
+                <div className="text-slate-600">
+                  Требуют внимания: <span className="font-medium text-indigo-700">3 ученика</span>
+                </div>
               </div>
             </SpotlightCard>
 
@@ -494,7 +497,6 @@ export function LandingPage({ onLoginClick }: LandingPageProps) {
         </div>
       </section>
 
-      {/* ОТЗЫВЫ */}
       <section className="py-32 bg-slate-50 border-t border-slate-200">
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center mb-20">
@@ -567,7 +569,6 @@ export function LandingPage({ onLoginClick }: LandingPageProps) {
         </div>
       </section>
 
-      {/* ТАРИФЫ */}
       <section id="pricing" className="py-32 bg-white relative">
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center mb-20">
@@ -580,7 +581,6 @@ export function LandingPage({ onLoginClick }: LandingPageProps) {
           </div>
 
           <div className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto">
-            {/* Базовый тариф */}
             <motion.div
               initial={{ opacity: 0, x: -30 }}
               whileInView={{ opacity: 1, x: 0 }}
@@ -610,7 +610,6 @@ export function LandingPage({ onLoginClick }: LandingPageProps) {
               </button>
             </motion.div>
 
-            {/* Premium тариф */}
             <motion.div
               initial={{ opacity: 0, x: 30 }}
               whileInView={{ opacity: 1, x: 0 }}
@@ -655,7 +654,6 @@ export function LandingPage({ onLoginClick }: LandingPageProps) {
         </div>
       </section>
 
-      {/* ФУТЕР */}
       <footer className="py-12 border-t border-slate-200 text-slate-500 text-center relative z-10 bg-slate-50">
         <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-3 text-slate-900">

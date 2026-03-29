@@ -1,5 +1,3 @@
-// src/pages/StudentsPage.tsx
-
 import { useState, useEffect, useRef } from 'react';
 import { Card, CardHeader } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -17,6 +15,8 @@ import {
   Settings,
   Edit,
   Trash,
+  Copy,
+  Check,
   X,
   ChevronRight,
 } from 'lucide-react';
@@ -25,12 +25,10 @@ import type { Student, StudyGroup as Group } from '@/types';
 import api from '@/lib/axios';
 import { AnimatePresence } from 'framer-motion';
 
-// ===== Reusable Modal =====
 function Modal({ children, onClose }: { children: React.ReactNode; onClose: () => void }) {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    // Delay to trigger enter animation
     const t = requestAnimationFrame(() => setVisible(true));
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
@@ -71,6 +69,15 @@ function Modal({ children, onClose }: { children: React.ReactNode; onClose: () =
       </div>
     </div>
   );
+}
+
+interface StudentCreateResponse {
+  student: Student;
+  credentials?: {
+    fullName: string;
+    username: string;
+    password: string;
+  };
 }
 
 export function StudentsPage() {
@@ -134,6 +141,12 @@ export function StudentsPage() {
     targetScore: '70',
   });
   const [newGroup, setNewGroup] = useState({ name: '' });
+  const [createdCredentials, setCreatedCredentials] = useState<{
+    fullName: string;
+    username: string;
+    password: string;
+  } | null>(null);
+  const [credentialsCopied, setCredentialsCopied] = useState(false);
 
   useEffect(() => {
     const fetchStudents = async () => {
@@ -389,13 +402,14 @@ export function StudentsPage() {
         const fullName = `${newStudent.firstName.trim()} ${newStudent.lastName.trim()}`;
         if (!fullName.trim()) return alert('Укажите имя и фамилию');
 
-        if (targetGroupId) {
-          const response = await api.post(`/groups/${targetGroupId}/students`, {
-            studentNames: [fullName],
-          });
-          alert(`Создан пользователь: ${JSON.stringify(response.data.credentials, null, 2)}`);
-        } else {
-          await api.post('/teacher/students', { fullName, groupId: null });
+        const response = await api.post<StudentCreateResponse>('/teacher/students', {
+          fullName,
+          groupId: targetGroupId || null,
+        });
+
+        if (response.data?.credentials) {
+          setCreatedCredentials(response.data.credentials);
+          setCredentialsCopied(false);
         }
       }
 
@@ -407,6 +421,18 @@ export function StudentsPage() {
     } catch (e) {
       console.error('Error adding/assigning student', e);
       alert('Ошибка при добавлении/назначении');
+    }
+  };
+
+  const handleCopyCredentials = async () => {
+    if (!createdCredentials) return;
+    const text = `Логин: ${createdCredentials.username}\nПароль: ${createdCredentials.password}`;
+    try {
+      await navigator.clipboard.writeText(text);
+      setCredentialsCopied(true);
+      window.setTimeout(() => setCredentialsCopied(false), 1800);
+    } catch {
+      alert('Не удалось скопировать. Скопируйте данные вручную.');
     }
   };
 
@@ -492,7 +518,6 @@ export function StudentsPage() {
 
   const renderModals = () => (
     <>
-      {/* Remove student from group */}
       {studentToRemove && (
         <Modal onClose={() => setStudentToRemove(null)}>
           <div className="p-6 border-b border-slate-100 flex items-center justify-between">
@@ -521,7 +546,6 @@ export function StudentsPage() {
         </Modal>
       )}
 
-      {/* Delete student */}
       {studentToDelete && (
         <Modal onClose={() => setStudentToDelete(null)}>
           <div className="p-6 border-b border-slate-100 flex items-center justify-between">
@@ -550,7 +574,6 @@ export function StudentsPage() {
         </Modal>
       )}
 
-      {/* Delete group */}
       {showDeleteGroupModal && (
         <Modal onClose={() => setShowDeleteGroupModal(null)}>
           <div className="p-6 border-b border-slate-100 flex items-center justify-between">
@@ -582,7 +605,6 @@ export function StudentsPage() {
         </Modal>
       )}
 
-      {/* Edit group */}
       {showEditGroupModal && editingGroup && (
         <Modal
           onClose={() => {
@@ -627,7 +649,6 @@ export function StudentsPage() {
         </Modal>
       )}
 
-      {/* Edit student */}
       {showEditStudentModal && editingStudent && (
         <Modal
           onClose={() => {
@@ -713,7 +734,6 @@ export function StudentsPage() {
         </Modal>
       )}
 
-      {/* Add student */}
       {showAddStudentModal && (
         <Modal
           onClose={() => {
@@ -860,7 +880,6 @@ export function StudentsPage() {
         </Modal>
       )}
 
-      {/* Add group */}
       {showAddGroupModal && (
         <Modal onClose={() => setShowAddGroupModal(false)}>
           <div className="p-6 border-b border-slate-100 flex items-center justify-between">
@@ -890,6 +909,75 @@ export function StudentsPage() {
             </Button>
             <Button className="flex-1" onClick={handleAddGroup} disabled={!newGroup.name}>
               Создать группу
+            </Button>
+          </div>
+        </Modal>
+      )}
+
+      {createdCredentials && (
+        <Modal
+          onClose={() => {
+            setCreatedCredentials(null);
+            setCredentialsCopied(false);
+          }}
+        >
+          <div className="p-6 border-b border-slate-100 flex items-center justify-between">
+            <h2 className="text-xl font-bold text-slate-900">Данные ученика для входа</h2>
+            <button
+              onClick={() => {
+                setCreatedCredentials(null);
+                setCredentialsCopied(false);
+              }}
+              className="p-2 hover:bg-slate-100 rounded-lg"
+            >
+              <X size={20} className="text-slate-500" />
+            </button>
+          </div>
+
+          <div className="p-6 space-y-4">
+            <div className="rounded-xl border border-indigo-100 bg-indigo-50 p-4 space-y-3">
+              <div>
+                <p className="text-xs uppercase tracking-wide text-slate-500">Ученик</p>
+                <p className="font-semibold text-slate-900">{createdCredentials.fullName}</p>
+              </div>
+
+              <div className="grid grid-cols-1 gap-3">
+                <div className="rounded-lg bg-white border border-slate-200 p-3">
+                  <p className="text-xs text-slate-500 mb-1">Логин</p>
+                  <p className="font-mono text-slate-900 break-all">
+                    {createdCredentials.username}
+                  </p>
+                </div>
+                <div className="rounded-lg bg-white border border-slate-200 p-3">
+                  <p className="text-xs text-slate-500 mb-1">Пароль</p>
+                  <p className="font-mono text-slate-900 break-all">
+                    {createdCredentials.password}
+                  </p>
+                </div>
+              </div>
+            </div>
+            <p className="text-xs text-slate-500">
+              Сохраните эти данные сейчас — позже пароль в открытом виде не показывается.
+            </p>
+          </div>
+
+          <div className="p-6 border-t border-slate-100 flex gap-3">
+            <Button variant="outline" className="flex-1" onClick={handleCopyCredentials}>
+              {credentialsCopied ? (
+                <Check size={16} className="mr-2" />
+              ) : (
+                <Copy size={16} className="mr-2" />
+              )}
+              {credentialsCopied ? 'Скопировано' : 'Скопировать в буфер'}
+            </Button>
+            <Button
+              className="flex-1"
+              onClick={() => {
+                setCreatedCredentials(null);
+                setCredentialsCopied(false);
+              }}
+            >
+              Готово
             </Button>
           </div>
         </Modal>
@@ -1095,7 +1183,6 @@ export function StudentsPage() {
   return (
     <>
       <div className="space-y-6">
-        {/* Header */}
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-slate-900">Ученики и группы</h1>
@@ -1107,7 +1194,7 @@ export function StudentsPage() {
             <Button
               variant="outline"
               onClick={() => setShowAddGroupModal(true)}
-              className="rounded-full"
+              className="rounded-xl h-[47px] px-6 text-[15px]"
             >
               <Users size={18} className="mr-2" />
               Создать группу
@@ -1118,7 +1205,7 @@ export function StudentsPage() {
                 setAddOriginGroupId('');
                 setShowAddStudentModal(true);
               }}
-              className="rounded-full"
+              className="rounded-xl h-[47px] px-6 text-[15px]"
             >
               <Plus size={18} className="mr-2" />
               Добавить ученика
@@ -1126,7 +1213,6 @@ export function StudentsPage() {
           </div>
         </div>
 
-        {/* Tabs */}
         <div className="flex gap-2 border-b border-slate-200">
           <button
             onClick={() => setActiveTab('students')}
@@ -1150,7 +1236,6 @@ export function StudentsPage() {
           </button>
         </div>
 
-        {/* Filters */}
         <Card>
           <div className="flex flex-wrap gap-4">
             <div className="flex-1 min-w-[200px]">
@@ -1176,7 +1261,6 @@ export function StudentsPage() {
           </div>
         </Card>
 
-        {/* Students Tab */}
         {activeTab === 'students' && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {filteredStudents.length === 0 && (
@@ -1271,7 +1355,6 @@ export function StudentsPage() {
           </div>
         )}
 
-        {/* Groups Tab */}
         {activeTab === 'groups' && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {filteredGroups.length === 0 && (

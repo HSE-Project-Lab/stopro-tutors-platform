@@ -46,7 +46,6 @@ public class AttemptService {
 		Assignment assignment = assignmentRepository.findById(assignmentId)
 				.orElseThrow(() -> new RuntimeException("Assignment not found"));
 
-		// Проверяем лимит попыток
 		long existingAttempts = attemptRepository.countByStudent_IdAndAssignment_Id(studentId, assignmentId);
 		if (assignment.getMaxAttempts() != null && existingAttempts >= assignment.getMaxAttempts()) {
 			throw new RuntimeException("Превышен лимит попыток");
@@ -97,7 +96,6 @@ public class AttemptService {
 		boolean isCorrect = checkAnswer(question, request.getAnswer());
 		answerData.put("isCorrect", isCorrect);
 
-		// TODO: заглушка
 		String answersJson = "{}";
 		attempt.setAnswers(answersJson);
 
@@ -169,7 +167,6 @@ public class AttemptService {
 		Attempt attempt = attemptRepository.findById(attemptId)
 				.orElseThrow(() -> new RuntimeException("Attempt not found"));
 
-		// TODO: заглушка - в реальности отправляем на AI сервис
 		attempt.setAiFeedback("AI analysis pending");
 
 		attempt = attemptRepository.save(attempt);

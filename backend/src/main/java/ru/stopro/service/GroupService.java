@@ -151,7 +151,7 @@ public class GroupService {
 
 		String username;
 		do {
-			int suffix = 100 + RANDOM.nextInt(900); // 100–999
+			int suffix = 100 + RANDOM.nextInt(900);
 			username = base + "_" + suffix;
 		} while (userRepository.existsByUsername(username));
 

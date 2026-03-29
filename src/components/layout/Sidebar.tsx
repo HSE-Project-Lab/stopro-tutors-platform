@@ -9,7 +9,6 @@ import {
   Settings,
   LogOut,
   ClipboardList,
-  Brain,
   ChevronLeft,
   ChevronRight,
   ShieldAlert,
@@ -33,7 +32,6 @@ const studentNavItems = [
   { id: 'dashboard', label: 'Мой прогресс', icon: LayoutDashboard },
   { id: 'practice', label: 'Практика', icon: BookOpen },
   { id: 'homework', label: 'Домашние задания', icon: ClipboardList },
-  { id: 'ai-assistant', label: 'ИИ-помощник', icon: Brain },
   { id: 'analytics', label: 'Статистика', icon: BarChart3 },
 ];
 
@@ -52,7 +50,7 @@ export function Sidebar() {
   return (
     <aside
       className={cn(
-        'fixed left-0 top-0 z-40 h-screen bg-white border-r border-slate-100 transition-all duration-300 flex flex-col',
+        'app-sidebar fixed left-0 top-0 z-40 h-screen bg-white border-r border-slate-100 transition-all duration-300 flex flex-col',
         sidebarOpen ? 'w-64' : 'w-20'
       )}
     >

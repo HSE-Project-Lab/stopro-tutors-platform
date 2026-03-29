@@ -14,6 +14,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -21,6 +22,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import ru.stopro.domain.entity.User;
+import ru.stopro.dto.student.DailyChallengeCompleteRequest;
+import ru.stopro.dto.student.DailyChallengeDto;
 import ru.stopro.dto.student.StudentDashboardDto;
 import ru.stopro.repository.UserRepository;
 import ru.stopro.service.StudentDashboardService;
@@ -78,6 +81,16 @@ public class StudentController {
 		return ResponseEntity.ok(activity);
 	}
 
+	@Operation(summary = "Активность за период", description = "Возвращает активность ученика по дням за выбранный период")
+	@GetMapping("/activity")
+	public ResponseEntity<List<StudentDashboardDto.DailyActivity>> getActivity(
+			@AuthenticationPrincipal UserDetails userDetails, @RequestParam(defaultValue = "30") Integer days) {
+		User user = userRepository.findByUsername(userDetails.getUsername())
+				.orElseThrow(() -> new RuntimeException("User not found"));
+		List<StudentDashboardDto.DailyActivity> activity = dashboardService.getActivity(user.getId(), days);
+		return ResponseEntity.ok(activity);
+	}
+
 	@Operation(summary = "Рекомендации", description = "Возвращает персональные рекомендации от ИИ")
 	@GetMapping("/recommendations")
 	public ResponseEntity<List<StudentDashboardDto.Recommendation>> getRecommendations(
@@ -96,5 +109,28 @@ public class StudentController {
 				.orElseThrow(() -> new RuntimeException("User not found"));
 		List<StudentDashboardDto.Achievement> achievements = dashboardService.getAchievements(user.getId());
 		return ResponseEntity.ok(achievements);
+	}
+
+	@Operation(summary = "Задача дня", description = "Возвращает детерминированную задачу дня для ученика")
+	@GetMapping("/daily-challenge")
+	public ResponseEntity<DailyChallengeDto> getDailyChallenge(@AuthenticationPrincipal UserDetails userDetails) {
+		User user = userRepository.findByUsername(userDetails.getUsername())
+				.orElseThrow(() -> new RuntimeException("User not found"));
+		DailyChallengeDto challenge = dashboardService.getDailyChallenge(user.getId());
+		return ResponseEntity.ok(challenge);
+	}
+
+	@Operation(summary = "Задача дня завершена", description = "Записывает событие завершения daily challenge")
+	@PostMapping("/daily-challenge/complete")
+	public ResponseEntity<Map<String, Object>> completeDailyChallenge(@AuthenticationPrincipal UserDetails userDetails,
+			@RequestBody(required = false) DailyChallengeCompleteRequest request) {
+		User user = userRepository.findByUsername(userDetails.getUsername())
+				.orElseThrow(() -> new RuntimeException("User not found"));
+
+		boolean accepted = dashboardService.recordDailyChallengeCompleted(user.getId(), request);
+		Map<String, Object> response = new HashMap<>();
+		response.put("accepted", accepted);
+		response.put("status", accepted ? "RECORDED" : "ALREADY_RECORDED_TODAY");
+		return ResponseEntity.ok(response);
 	}
 }

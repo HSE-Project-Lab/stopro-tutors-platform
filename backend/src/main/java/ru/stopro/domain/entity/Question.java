@@ -91,7 +91,6 @@ public class Question extends BaseEntity {
 	 */
 	@Transient
 	public List<String> getAnswerOptions() {
-		// В реальности это может быть JSON массив
 		return new ArrayList<>();
 	}
 

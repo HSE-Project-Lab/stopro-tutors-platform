@@ -82,7 +82,8 @@ public interface AssignmentRepository extends JpaRepository<Assignment, UUID> {
 	 * Активные задания для ученика (через группу ИЛИ лично)
 	 */
 	@Query("SELECT DISTINCT a FROM Assignment a " + "LEFT JOIN a.group g " + "LEFT JOIN g.students s "
-			+ "WHERE (s.id = :studentId OR a.student.id = :studentId) " + "AND a.status = 'PUBLISHED' "
+			+ "WHERE (s.id = :studentId OR a.student.id = :studentId) "
+			+ "AND (a.status = 'PUBLISHED' OR a.status = 'ACTIVE' OR a.status = 'IN_PROGRESS') "
 			+ "AND (a.startDate IS NULL OR a.startDate <= CURRENT_TIMESTAMP) " + "AND a.deadline > CURRENT_TIMESTAMP "
 			+ "AND a.isDeleted = false " + "ORDER BY a.deadline ASC")
 	List<Assignment> findActiveForStudent(@Param("studentId") UUID studentId);
@@ -109,6 +110,16 @@ public interface AssignmentRepository extends JpaRepository<Assignment, UUID> {
 			+ "WHERE att.student.id = :studentId AND att.status = 'COMPLETED' " + "AND a.isDeleted = false "
 			+ "ORDER BY a.deadline DESC")
 	Page<Assignment> findCompletedByStudent(@Param("studentId") UUID studentId, Pageable pageable);
+
+	@Query("SELECT DISTINCT a FROM Assignment a " + "JOIN Attempt att ON att.assignment = a "
+			+ "WHERE att.student.id = :studentId AND att.status = 'COMPLETED' " + "AND a.isDeleted = false "
+			+ "ORDER BY a.deadline DESC")
+	List<Assignment> findCompletedListByStudent(@Param("studentId") UUID studentId);
+
+	@Query("SELECT DISTINCT a FROM Assignment a " + "LEFT JOIN a.group g " + "LEFT JOIN g.students s "
+			+ "WHERE (s.id = :studentId OR a.student.id = :studentId) " + "AND a.status = 'COMPLETED' "
+			+ "AND a.isDeleted = false " + "ORDER BY a.deadline DESC")
+	List<Assignment> findCompletedAssignedForStudent(@Param("studentId") UUID studentId);
 
 	/**
 	 * Задания с истёкшим дедлайном (для автообновления статуса)

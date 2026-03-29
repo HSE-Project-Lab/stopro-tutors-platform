@@ -3,17 +3,19 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Card } from '@/components/ui/Card';
 import { useAuthStore } from '@/store/authStore';
-import { GraduationCap, BookOpen, Lock } from 'lucide-react';
+import { GraduationCap, BookOpen, Lock, AlertCircle } from 'lucide-react';
 
 export function LoginPage() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
   const { login } = useAuthStore();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    setAuthError(null);
 
     try {
       const { default: api } = await import('@/lib/axios');
@@ -33,7 +35,13 @@ export function LoginPage() {
       login(normalizedUser as any, response.data.accessToken);
     } catch (error: any) {
       console.error('Login failed', error);
-      alert(error.response?.data?.message || 'Ошибка входа');
+      const status = error.response?.status;
+      const backendMessage = error.response?.data?.message;
+      if (status === 401 || status === 403) {
+        setAuthError('Неверный логин или пароль. Проверьте данные и попробуйте снова.');
+      } else {
+        setAuthError(backendMessage || 'Не удалось выполнить вход. Попробуйте ещё раз.');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -118,7 +126,10 @@ export function LoginPage() {
               type="text"
               placeholder="username"
               value={username}
-              onChange={(e) => setUsername(e.target.value)}
+              onChange={(e) => {
+                setUsername(e.target.value);
+                if (authError) setAuthError(null);
+              }}
               icon={<BookOpen size={18} />}
             />
             <Input
@@ -126,9 +137,22 @@ export function LoginPage() {
               type="password"
               placeholder="••••••••"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={(e) => {
+                setPassword(e.target.value);
+                if (authError) setAuthError(null);
+              }}
               icon={<Lock size={18} />}
             />
+
+            {authError && (
+              <div className="flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 animate-in fade-in duration-200">
+                <AlertCircle size={18} className="text-red-600 mt-0.5 shrink-0" />
+                <div>
+                  <p className="text-sm font-semibold text-red-700">Не удалось войти</p>
+                  <p className="text-sm text-red-600">{authError}</p>
+                </div>
+              </div>
+            )}
 
             <div className="flex items-center justify-between text-sm">
               <label className="flex items-center gap-2 text-slate-600">

@@ -52,7 +52,6 @@ export function CreateTaskModal({ isOpen, onClose, onSubmit }: CreateTaskModalPr
   const [solution, setSolution] = useState('');
   const [answer, setAnswer] = useState('');
 
-  // Изображения
   const [imageUrls, setImageUrls] = useState<string[]>([]);
   const [newImageUrl, setNewImageUrl] = useState('');
   const [isUploadingImage, setIsUploadingImage] = useState(false);
@@ -174,9 +173,7 @@ export function CreateTaskModal({ isOpen, onClose, onSubmit }: CreateTaskModalPr
         onClick={handleClose}
       />
 
-      {/* Модальное окно с правильной структурой (Header -> Scrollable Body -> Footer) */}
       <div className="relative w-full max-w-4xl max-h-full flex flex-col bg-white rounded-2xl shadow-2xl z-10 overflow-hidden animate-in zoom-in-95 duration-200">
-        {/* Шапка */}
         <div className="shrink-0 bg-white border-b border-slate-100 px-8 py-5 flex items-center justify-between z-20">
           <div>
             <h2 className="text-xl font-bold text-slate-900">Новая задача</h2>
@@ -192,7 +189,6 @@ export function CreateTaskModal({ isOpen, onClose, onSubmit }: CreateTaskModalPr
           </button>
         </div>
 
-        {/* Скроллируемая область с кастомным скроллбаром */}
         <div className="flex-1 overflow-y-auto [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-slate-200 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-slate-300 px-8 py-6">
           <div className="flex gap-1 bg-slate-100 p-1 rounded-xl w-fit mb-6">
             <button
@@ -340,7 +336,6 @@ export function CreateTaskModal({ isOpen, onClose, onSubmit }: CreateTaskModalPr
                 )}
               </div>
 
-              {/* Улучшенный блок загрузки изображений */}
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1.5">
                   Изображения к задаче
@@ -357,7 +352,6 @@ export function CreateTaskModal({ isOpen, onClose, onSubmit }: CreateTaskModalPr
                           alt={`Изображение ${index + 1}`}
                           className="w-full h-full object-cover"
                           onError={(e) => {
-                            // Если ссылка битая, показываем красивую заглушку, а не прячем блок
                             (e.target as HTMLImageElement).src =
                               'https://placehold.co/100x100/f8fafc/94a3b8?text=Error';
                           }}
@@ -433,7 +427,6 @@ export function CreateTaskModal({ isOpen, onClose, onSubmit }: CreateTaskModalPr
           )}
         </div>
 
-        {/* Подвал */}
         <div className="shrink-0 bg-slate-50/80 border-t border-slate-100 px-8 py-4 flex items-center justify-between z-20">
           <p className="text-sm text-slate-400">
             Поля со <span className="text-red-400">*</span> обязательны

@@ -55,7 +55,6 @@ export function TeacherDashboard() {
     open: false,
     group: null,
   });
-  const [deleteGroupId, setDeleteGroupId] = useState<string | null>(null);
   const [groupsState, setGroupsState] = useState<any[]>([]);
   const [teacherStats, setTeacherStats] = useState(() => ({ ...teacherStatsDefault }));
   const [selectedGroup, setSelectedGroup] = useState<any | null>(null);
@@ -63,7 +62,6 @@ export function TeacherDashboard() {
   const [showCredentialsModal, setShowCredentialsModal] = useState<{ open: boolean; creds: any[] }>(
     { open: false, creds: [] }
   );
-  const [addingStudent, setAddingStudent] = useState({ fullName: '', desiredScore: '' });
 
   const getGreeting = () => {
     const hour = new Date().getHours();
@@ -89,8 +87,8 @@ export function TeacherDashboard() {
         email: newStudent.email,
         firstName: newStudent.firstName,
         lastName: newStudent.lastName,
-        grade: 11, // Default
-        level: 'BEGINNER', // Default
+        grade: 11,
+        level: 'BEGINNER',
       });
 
       alert(`Ученик ${newStudent.firstName} добавлен!`);
@@ -186,7 +184,7 @@ export function TeacherDashboard() {
     }
   };
 
-  const addStudentToGroup = async (groupId: string, fullName: string, desiredScore?: string) => {
+  const addStudentToGroup = async (groupId: string, fullName: string, _desiredScore?: string) => {
     try {
       const { default: api } = await import('@/lib/axios');
 
@@ -197,7 +195,6 @@ export function TeacherDashboard() {
       const students: any[] = sres.data || [];
       setStudentsForGroup(students.filter((s) => s.groupId === groupId));
       setShowCredentialsModal({ open: true, creds });
-      setAddingStudent({ fullName: '', desiredScore: '' });
     } catch (err: any) {
       alert(err.response?.data?.message || 'Ошибка при добавлении ученика');
     }
@@ -286,7 +283,7 @@ export function TeacherDashboard() {
             <Button
               variant="secondary"
               size="lg"
-              className="bg-white text-indigo-600 hover:bg-indigo-50 shadow-lg"
+              className="bg-white text-indigo-600 hover:bg-indigo-50 shadow-lg rounded-xl h-[50px] px-7 text-[15px]"
               onClick={() => setShowAddStudentModal(true)}
             >
               <Plus size={18} className="mr-2" />
@@ -295,7 +292,7 @@ export function TeacherDashboard() {
             <Button
               variant="outline"
               size="lg"
-              className="border-white/30 text-white hover:bg-white/10"
+              className="border-white/30 text-white hover:bg-white/10 rounded-xl h-[50px] px-7 text-[15px]"
               onClick={() => setShowCreateHomeworkModal(true)}
             >
               <BookOpen size={18} className="mr-2" />
@@ -326,14 +323,17 @@ export function TeacherDashboard() {
       </div>
 
       <div className="lg:hidden grid grid-cols-2 gap-3">
-        <Button onClick={() => setShowAddStudentModal(true)} className="w-full">
+        <Button
+          onClick={() => setShowAddStudentModal(true)}
+          className="w-full rounded-xl h-[47px] px-6 text-[15px]"
+        >
           <Plus size={18} className="mr-2" />
           Добавить ученика
         </Button>
         <Button
           variant="outline"
           onClick={() => setShowCreateHomeworkModal(true)}
-          className="w-full"
+          className="w-full rounded-xl h-[47px] px-6 text-[15px]"
         >
           <BookOpen size={18} className="mr-2" />
           Создать ДЗ
@@ -666,7 +666,7 @@ export function TeacherDashboard() {
                   ...groupsState.map((g) => ({ value: g.id, label: g.name })),
                 ]}
                 value={newStudent.groupId}
-                onChange={(e) => setNewStudent((prev) => ({ ...prev, groupId: e.target.value }))}
+                onChange={(value) => setNewStudent((prev) => ({ ...prev, groupId: value }))}
               />
             </div>
 

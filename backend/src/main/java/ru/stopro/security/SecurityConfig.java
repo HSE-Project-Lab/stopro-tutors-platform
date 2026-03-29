@@ -49,7 +49,7 @@ public class SecurityConfig {
 						.requestMatchers("/api/v1/groups/**", "/api/v1/teacher/**")
 						.hasAnyAuthority("TEACHER", "ROLE_TEACHER", "ADMIN", "ROLE_ADMIN")
 
-						.requestMatchers("/api/student/**").hasAnyAuthority("STUDENT", "ROLE_STUDENT")
+						.requestMatchers("/api/v1/student/**").hasAnyAuthority("STUDENT", "ROLE_STUDENT")
 
 						.requestMatchers(HttpMethod.GET, "/api/v1/ege-tasks/**").authenticated()
 						.requestMatchers("/api/v1/ege-tasks/**").hasAnyAuthority("ADMIN", "ROLE_ADMIN")

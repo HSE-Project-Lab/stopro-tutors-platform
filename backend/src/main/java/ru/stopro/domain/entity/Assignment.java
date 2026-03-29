@@ -364,7 +364,6 @@ public class Assignment extends BaseEntity {
 		this.status = AssignmentStatus.PUBLISHED;
 		this.publishedAt = LocalDateTime.now();
 
-		// Пересчитываем общие баллы
 		this.totalPoints = questions.stream().mapToInt(Question::getPoints).sum();
 	}
 
@@ -449,7 +448,6 @@ public class Assignment extends BaseEntity {
 	@PreUpdate
 	protected void updateStatusAutomatically() {
 		if (status == AssignmentStatus.PUBLISHED && isOverdue()) {
-			// Проверяем, все ли ученики выполнили
 			int totalStudents = group.getStudentsCount();
 			if (completedCount >= totalStudents) {
 				status = AssignmentStatus.COMPLETED;

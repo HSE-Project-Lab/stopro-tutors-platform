@@ -11,6 +11,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import ru.stopro.domain.entity.User;
+import ru.stopro.dto.student.StudentCreateResponse;
 import ru.stopro.dto.student.StudentDto;
 import ru.stopro.service.TeacherService;
 
@@ -29,7 +30,7 @@ public class TeacherController {
 	}
 
 	@PostMapping("/students")
-	public ResponseEntity<StudentDto> addStudent(@AuthenticationPrincipal User user,
+	public ResponseEntity<StudentCreateResponse> addStudent(@AuthenticationPrincipal User user,
 			@RequestBody StudentDto studentDto) {
 		return ResponseEntity.ok(teacherService.addStudent(user.getId(), studentDto));
 	}

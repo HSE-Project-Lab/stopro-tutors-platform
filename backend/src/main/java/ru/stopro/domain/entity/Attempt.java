@@ -159,7 +159,6 @@ public class Attempt extends BaseEntity {
 	 */
 	@Transient
 	public Map<String, Object> getAnswers() {
-		// В реальности это JSON парсинг
 		return new HashMap<>();
 	}
 
@@ -168,7 +167,6 @@ public class Attempt extends BaseEntity {
 	 */
 	@Transient
 	public void setAnswers(Map<String, Object> answers) {
-		// В реальности это JSON сериализация
 		this.answers = "{}";
 	}
 

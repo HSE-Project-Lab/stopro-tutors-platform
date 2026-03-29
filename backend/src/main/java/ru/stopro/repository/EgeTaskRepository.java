@@ -27,4 +27,8 @@ public interface EgeTaskRepository extends JpaRepository<EgeTask, String> {
 			@Param("hasTopics") boolean hasTopics, @Param("difficulty") TaskDifficulty difficulty,
 			@Param("hasDifficulty") boolean hasDifficulty, @Param("search") String search,
 			@Param("hasSearch") boolean hasSearch, Pageable pageable);
+
+	List<EgeTask> findByParentIsNullAndEgeNumberOrderByCreatedAtAsc(Integer egeNumber);
+
+	List<EgeTask> findByParentIsNullOrderByEgeNumberAscCreatedAtAsc();
 }

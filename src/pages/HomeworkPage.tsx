@@ -15,8 +15,9 @@ import {
   Calendar,
   Users,
   CheckCircle,
-  AlertCircle,
   FileText,
+  ChevronDown,
+  ChevronUp,
   ChevronRight,
   X,
   Trash2,
@@ -29,9 +30,9 @@ import {
   Info,
   HelpCircle,
 } from 'lucide-react';
-import { format, parseISO, differenceInDays } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { ru } from 'date-fns/locale';
-import type { Homework, EgeTask, EgeTaskPage } from '@/types';
+import type { EgeTask, EgeTaskPage } from '@/types';
 
 interface GroupDto {
   id: string;
@@ -40,6 +41,30 @@ interface GroupDto {
 interface StudentDto {
   id: string;
   fullName: string;
+}
+
+interface HomeworkQuestionResult {
+  questionId: string;
+  index: number;
+  egeNumber?: number;
+  topicName?: string;
+  content?: string;
+  userAnswer?: string;
+  isCorrect: boolean;
+  correctAnswer?: string;
+  solution?: string;
+}
+
+interface HomeworkSubmissionResult {
+  assignmentId: string;
+  assignmentTitle: string;
+  status: string;
+  submittedAt: string;
+  totalQuestions: number;
+  answeredQuestions: number;
+  correctAnswers: number;
+  scorePercent: number;
+  questionResults: HomeworkQuestionResult[];
 }
 
 const parseBackendError = (error: any): string => {
@@ -54,6 +79,7 @@ const parseBackendError = (error: any): string => {
 function HomeworkDetail({
   homeworkId,
   onBack,
+  onSubmitted,
   isTeacher,
   onDeleted,
   groups,
@@ -61,6 +87,7 @@ function HomeworkDetail({
 }: {
   homeworkId: string;
   onBack: () => void;
+  onSubmitted: () => void;
   isTeacher: boolean;
   onDeleted: () => void;
   groups: any[];
@@ -71,6 +98,7 @@ function HomeworkDetail({
   const [viewMode, setViewMode] = useState<'EDIT' | 'PREVIEW'>('PREVIEW');
   const [isSaving, setIsSaving] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
+  const [isSubmittingHomework, setIsSubmittingHomework] = useState(false);
 
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [taskToRemove, setTaskToRemove] = useState<string | null>(null);
@@ -82,6 +110,10 @@ function HomeworkDetail({
   const [assignType, setAssignType] = useState<'GROUP' | 'STUDENT'>('GROUP');
 
   const [studentAnswers, setStudentAnswers] = useState<Record<string, string>>({});
+  const [submissionResult, setSubmissionResult] = useState<HomeworkSubmissionResult | null>(null);
+  const [expandedSolutions, setExpandedSolutions] = useState<Record<string, boolean>>({});
+
+  const answersStorageKey = `student-homework-answers:${homeworkId}`;
 
   const showToast = (message: string, type: ToastType) => setToast({ message, type });
 
@@ -94,17 +126,55 @@ function HomeworkDetail({
       }
       setHw(hwData);
       setAssignType(hwData.studentId ? 'STUDENT' : 'GROUP');
+
+      if (!isTeacher && hwData.status === 'COMPLETED') {
+        try {
+          const resultRes = await api.get<HomeworkSubmissionResult>(
+            `/student/assignments/${homeworkId}/result`
+          );
+          const result = resultRes.data;
+          setSubmissionResult(result);
+
+          const restoredAnswers: Record<string, string> = {};
+          for (const item of result.questionResults || []) {
+            restoredAnswers[item.questionId] = item.userAnswer || '';
+          }
+          setStudentAnswers(restoredAnswers);
+        } catch {
+          setSubmissionResult(null);
+        }
+      } else {
+        setSubmissionResult(null);
+      }
+
       setLoading(false);
     } catch (error) {
       console.error(error);
       setLoading(false);
     }
-  }, [homeworkId]);
+  }, [homeworkId, isTeacher]);
 
   useEffect(() => {
     if (isTeacher) setViewMode('EDIT');
     fetchDetail();
   }, [fetchDetail, isTeacher]);
+
+  useEffect(() => {
+    if (isTeacher) return;
+    try {
+      const saved = localStorage.getItem(answersStorageKey);
+      if (saved) {
+        setStudentAnswers(JSON.parse(saved));
+      }
+    } catch {}
+  }, [answersStorageKey, isTeacher]);
+
+  useEffect(() => {
+    if (isTeacher) return;
+    try {
+      localStorage.setItem(answersStorageKey, JSON.stringify(studentAnswers));
+    } catch {}
+  }, [answersStorageKey, studentAnswers, isTeacher]);
 
   const fetchTasks = useCallback(async (query: string = '') => {
     setIsSearchingTasks(true);
@@ -198,6 +268,32 @@ function HomeworkDetail({
     }
   };
 
+  const handleCompleteHomework = async () => {
+    if (!hw || isTeacher) return;
+    if (hw.status === 'COMPLETED') return showToast('Это задание уже сдано', 'info');
+
+    setIsSubmittingHomework(true);
+    try {
+      const response = await api.post<HomeworkSubmissionResult>(
+        `/student/assignments/${homeworkId}/complete`,
+        {
+          answers: studentAnswers,
+        }
+      );
+      const updated = response.data;
+      setSubmissionResult(updated);
+      setHw((prev: any) => ({ ...prev, status: updated?.status || 'COMPLETED' }));
+      try {
+        localStorage.removeItem(answersStorageKey);
+      } catch {}
+      onSubmitted();
+    } catch (error: any) {
+      showToast(parseBackendError(error), 'error');
+    } finally {
+      setIsSubmittingHomework(false);
+    }
+  };
+
   const moveTask = (index: number, direction: 'UP' | 'DOWN') => {
     if (!hw) return;
     const newTasks = [...hw.questions];
@@ -234,7 +330,11 @@ function HomeworkDetail({
     return <div className="text-center py-12 text-slate-500">Загрузка задания...</div>;
 
   const solvedCount = Object.keys(studentAnswers).filter((k) => studentAnswers[k].trim()).length;
-  const progressPercent = Math.round((solvedCount / (hw.questions?.length || 1)) * 100);
+  const answeredCount = submissionResult?.answeredQuestions ?? solvedCount;
+  const progressPercent = Math.round((answeredCount / (hw.questions?.length || 1)) * 100);
+  const resultByQuestionId = new Map(
+    (submissionResult?.questionResults ?? []).map((result) => [result.questionId, result])
+  );
 
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
@@ -454,7 +554,7 @@ function HomeworkDetail({
                               </div>
                             </div>
                             <Button
-                              variant={isSelected ? 'secondary' : 'default'}
+                              variant={isSelected ? 'secondary' : 'primary'}
                               size="sm"
                               onClick={() =>
                                 isSelected ? requestRemoveTask(task.id) : addTask(task)
@@ -475,7 +575,6 @@ function HomeworkDetail({
             </div>
           </div>
 
-          {/* Панель кнопок (Опубликовать + Сохранить) */}
           <div className="max-w-7xl mx-auto flex justify-center gap-4 mt-8 pb-8">
             {hw.isTemplate && (
               <Button
@@ -504,49 +603,125 @@ function HomeworkDetail({
             {hw.description && <p className="text-lg text-slate-600 max-w-3xl">{hw.description}</p>}
           </div>
 
+          {submissionResult && (
+            <Card className="mb-6 border-emerald-200 bg-emerald-50/50">
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <div>
+                  <h3 className="text-lg font-bold text-emerald-900">Работа отправлена ✅</h3>
+                  <p className="text-sm text-emerald-800 mt-1">
+                    Правильно: {submissionResult.correctAnswers} из{' '}
+                    {submissionResult.totalQuestions} ({submissionResult.scorePercent}%)
+                  </p>
+                </div>
+                <Badge variant="success">Результат: {submissionResult.scorePercent}%</Badge>
+              </div>
+            </Card>
+          )}
+
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 items-start">
             <div className="lg:col-span-3 space-y-6">
-              {hw.questions.map((task: any, index: number) => (
-                <Card
-                  key={task.id}
-                  className="border-slate-200 shadow-sm hover:shadow-md transition-shadow p-6"
-                >
-                  <div className="flex items-center gap-4 mb-6 pb-4 border-b border-slate-100">
-                    <div className="w-10 h-10 bg-slate-900 text-white rounded-xl flex items-center justify-center font-bold text-lg">
-                      {index + 1}
+              {hw.questions.map((task: any, index: number) => {
+                const result = resultByQuestionId.get(task.id);
+                const isExpanded = expandedSolutions[task.id] === true;
+
+                return (
+                  <Card
+                    key={task.id}
+                    className="border-slate-200 shadow-sm hover:shadow-md transition-shadow p-6"
+                  >
+                    <div className="flex items-center justify-between gap-4 mb-6 pb-4 border-b border-slate-100">
+                      <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 bg-slate-900 text-white rounded-xl flex items-center justify-center font-bold text-lg">
+                          {index + 1}
+                        </div>
+                        <div>
+                          <span className="font-bold text-slate-900 block">
+                            Задание №{task.egeNumber || '?'}
+                          </span>
+                          <span className="text-sm text-slate-500">
+                            {task.topicName || task.topic || 'Без темы'}
+                          </span>
+                        </div>
+                      </div>
+                      {result && (
+                        <Badge variant={result.isCorrect ? 'success' : 'danger'}>
+                          {result.isCorrect
+                            ? 'Правильно'
+                            : result.userAnswer?.trim()
+                              ? 'Неправильно'
+                              : 'Нет ответа'}
+                        </Badge>
+                      )}
                     </div>
-                    <div>
-                      <span className="font-bold text-slate-900 block">
-                        Задание №{task.egeNumber || '?'}
-                      </span>
-                      <span className="text-sm text-slate-500">
-                        {task.topicName || task.topic || 'Без темы'}
-                      </span>
+                    <div className="text-slate-800 leading-relaxed mb-8 text-lg">
+                      <LaTeX>{task.content}</LaTeX>
                     </div>
-                  </div>
-                  <div className="text-slate-800 leading-relaxed mb-8 text-lg">
-                    <LaTeX>{task.content}</LaTeX>
-                  </div>
-                  <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200 flex flex-col sm:flex-row sm:items-center gap-4">
-                    <span className="font-semibold text-slate-700 shrink-0">Ваш ответ:</span>
-                    <input
-                      type="text"
-                      value={studentAnswers[task.id] || ''}
-                      onChange={(e) =>
-                        setStudentAnswers({ ...studentAnswers, [task.id]: e.target.value })
-                      }
-                      className="flex-1 bg-white border border-slate-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-indigo-500 outline-none transition-shadow"
-                      placeholder="Введите число, дробь или текст..."
-                    />
-                    {studentAnswers[task.id]?.trim() && (
-                      <CheckCircle
-                        size={24}
-                        className="text-emerald-500 shrink-0 hidden sm:block"
+                    <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200 flex flex-col sm:flex-row sm:items-center gap-4">
+                      <span className="font-semibold text-slate-700 shrink-0">Ваш ответ:</span>
+                      <input
+                        type="text"
+                        value={studentAnswers[task.id] || ''}
+                        onChange={(e) => {
+                          if (isTeacher || hw.status === 'COMPLETED' || submissionResult) return;
+                          setStudentAnswers({ ...studentAnswers, [task.id]: e.target.value });
+                        }}
+                        readOnly={
+                          isTeacher || hw.status === 'COMPLETED' || Boolean(submissionResult)
+                        }
+                        className="flex-1 bg-white border border-slate-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-indigo-500 outline-none transition-shadow"
+                        placeholder="Введите число, дробь или текст..."
                       />
+                      {studentAnswers[task.id]?.trim() && (
+                        <CheckCircle
+                          size={24}
+                          className="text-emerald-500 shrink-0 hidden sm:block"
+                        />
+                      )}
+                    </div>
+
+                    {result && (result.correctAnswer || result.solution) && (
+                      <div className="mt-4">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() =>
+                            setExpandedSolutions((prev) => ({
+                              ...prev,
+                              [task.id]: !prev[task.id],
+                            }))
+                          }
+                        >
+                          {isExpanded ? (
+                            <ChevronUp size={16} className="mr-2" />
+                          ) : (
+                            <ChevronDown size={16} className="mr-2" />
+                          )}
+                          Посмотреть решение
+                        </Button>
+
+                        {isExpanded && (
+                          <div className="mt-3 rounded-xl border border-indigo-100 bg-indigo-50/40 p-4 space-y-3">
+                            <div>
+                              <p className="text-sm font-semibold text-slate-700 mb-1">
+                                Правильный ответ
+                              </p>
+                              <div className="text-slate-900">
+                                <LaTeX>{result.correctAnswer || '—'}</LaTeX>
+                              </div>
+                            </div>
+                            <div>
+                              <p className="text-sm font-semibold text-slate-700 mb-1">Решение</p>
+                              <div className="text-slate-900">
+                                <LaTeX>{result.solution || 'Решение не указано'}</LaTeX>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     )}
-                  </div>
-                </Card>
-              ))}
+                  </Card>
+                );
+              })}
             </div>
 
             <div className="lg:col-span-1 sticky top-24 space-y-6">
@@ -575,15 +750,29 @@ function HomeworkDetail({
                     />
                   </div>
                   <div className="text-xs text-slate-500 mt-2 text-right">
-                    Решено {solvedCount} из {hw.questions.length}
+                    Решено {answeredCount} из {hw.questions.length}
                   </div>
                 </div>
                 <Button
                   size="lg"
                   className="w-full shadow-lg shadow-indigo-200"
-                  disabled={isTeacher}
+                  disabled={
+                    isTeacher ||
+                    isSubmittingHomework ||
+                    hw.status === 'COMPLETED' ||
+                    Boolean(submissionResult)
+                  }
+                  onClick={handleCompleteHomework}
                 >
-                  {isTeacher ? 'Режим предпросмотра' : 'Завершить и сдать'}
+                  {isTeacher
+                    ? 'Режим предпросмотра'
+                    : submissionResult
+                      ? 'Работа отправлена'
+                      : hw.status === 'COMPLETED'
+                        ? 'Сдано'
+                        : isSubmittingHomework
+                          ? 'Отправка...'
+                          : 'Завершить и сдать'}
                 </Button>
               </Card>
             </div>
@@ -657,7 +846,7 @@ export function HomeworkPage() {
   const [groups, setGroups] = useState<GroupDto[]>([]);
   const [students, setStudents] = useState<StudentDto[]>([]);
 
-  const [activeTab, setActiveTab] = useState<'ACTIVE' | 'TEMPLATES'>('ACTIVE');
+  const [activeTab, setActiveTab] = useState<'ACTIVE' | 'TEMPLATES' | 'COMPLETED'>('ACTIVE');
 
   const [searchQuery, setSearchQuery] = useState('');
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -698,9 +887,24 @@ export function HomeworkPage() {
   const fetchHomeworks = useCallback(async () => {
     setLoading(true);
     try {
-      const endpoint = isTeacher ? '/assignments/my' : '/student/assignments';
-      const response = await api.get(endpoint);
-      setHomeworks(response.data);
+      if (isTeacher) {
+        const response = await api.get('/assignments/my');
+        setHomeworks(response.data);
+      } else {
+        const [activeRes, completedRes] = await Promise.all([
+          api.get('/student/assignments'),
+          api.get('/student/assignments/completed'),
+        ]);
+
+        const merged = [...(activeRes.data || [])];
+        const seen = new Set(merged.map((h: any) => h.id));
+        for (const hw of completedRes.data || []) {
+          if (!seen.has(hw.id)) {
+            merged.push(hw);
+          }
+        }
+        setHomeworks(merged);
+      }
     } catch (error) {
     } finally {
       setLoading(false);
@@ -818,6 +1022,10 @@ export function HomeworkPage() {
           setSelectedHomeworkId(null);
           fetchHomeworks();
         }}
+        onSubmitted={() => {
+          showToast('Домашнее задание успешно отправлено', 'success');
+          fetchHomeworks();
+        }}
         isTeacher={isTeacher}
         onDeleted={() => {
           setSelectedHomeworkId(null);
@@ -831,13 +1039,20 @@ export function HomeworkPage() {
 
   const filteredHomeworks = homeworks.filter((hw) => {
     if (searchQuery && !hw.title.toLowerCase().includes(searchQuery.toLowerCase())) return false;
-    if (activeTab === 'TEMPLATES') return hw.isTemplate === true;
-    if (activeTab === 'ACTIVE') return hw.isTemplate !== true;
+    if (isTeacher) {
+      if (activeTab === 'TEMPLATES') return hw.isTemplate === true;
+      if (activeTab === 'ACTIVE') return hw.isTemplate !== true;
+      return true;
+    }
+    if (activeTab === 'COMPLETED') return hw.status === 'COMPLETED';
+    if (activeTab === 'ACTIVE') return hw.status !== 'COMPLETED';
     return true;
   });
 
   const activeCount = homeworks.filter((h) => !h.isTemplate).length;
   const templateCount = homeworks.filter((h) => h.isTemplate).length;
+  const studentActiveCount = homeworks.filter((h) => h.status !== 'COMPLETED').length;
+  const studentCompletedCount = homeworks.filter((h) => h.status === 'COMPLETED').length;
 
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
@@ -859,7 +1074,10 @@ export function HomeworkPage() {
           </p>
         </div>
         {isTeacher && (
-          <Button onClick={() => setShowCreateModal(true)}>
+          <Button
+            onClick={() => setShowCreateModal(true)}
+            className="rounded-xl h-[47px] px-6 text-[15px]"
+          >
             <Plus size={18} className="mr-2" /> Создать ДЗ
           </Button>
         )}
@@ -890,6 +1108,31 @@ export function HomeworkPage() {
         </div>
       )}
 
+      {!isTeacher && (
+        <div className="flex gap-2 border-b border-slate-200">
+          <button
+            onClick={() => setActiveTab('ACTIVE')}
+            className={`px-4 py-2 font-medium transition-colors border-b-2 -mb-px ${
+              activeTab === 'ACTIVE'
+                ? 'text-indigo-600 border-indigo-600'
+                : 'text-slate-500 border-transparent hover:text-slate-700'
+            }`}
+          >
+            Активные ({studentActiveCount})
+          </button>
+          <button
+            onClick={() => setActiveTab('COMPLETED')}
+            className={`px-4 py-2 font-medium transition-colors border-b-2 -mb-px ${
+              activeTab === 'COMPLETED'
+                ? 'text-indigo-600 border-indigo-600'
+                : 'text-slate-500 border-transparent hover:text-slate-700'
+            }`}
+          >
+            Завершённые ({studentCompletedCount})
+          </button>
+        </div>
+      )}
+
       <Card>
         <div className="flex flex-wrap gap-4">
           <div className="flex-1 min-w-[200px]">
@@ -909,9 +1152,13 @@ export function HomeworkPage() {
         <Card className="text-center py-12 border-dashed">
           <FileText size={48} className="mx-auto text-slate-300 mb-4" />
           <p className="text-slate-500">
-            {activeTab === 'TEMPLATES'
-              ? 'У вас пока нет сохраненных шаблонов'
-              : 'Домашних заданий пока нет'}
+            {isTeacher
+              ? activeTab === 'TEMPLATES'
+                ? 'У вас пока нет сохраненных шаблонов'
+                : 'Домашних заданий пока нет'
+              : activeTab === 'COMPLETED'
+                ? 'У вас пока нет завершённых заданий'
+                : 'Активных заданий пока нет'}
           </p>
         </Card>
       ) : (
@@ -930,7 +1177,7 @@ export function HomeworkPage() {
                       <Badge variant="warning">Шаблон</Badge>
                     ) : (
                       <Badge variant={hw.status === 'COMPLETED' ? 'success' : 'info'}>
-                        {hw.status === 'COMPLETED' ? 'Выполнено' : 'Активно'}
+                        {hw.status === 'COMPLETED' ? 'Сдано' : 'Активно'}
                       </Badge>
                     )}
                   </div>
@@ -981,7 +1228,6 @@ export function HomeworkPage() {
         </div>
       )}
 
-      {/* МОДАЛКА УДАЛЕНИЯ ИЗ СПИСКА */}
       {taskToDelete && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-in fade-in duration-200">
           <Card className="w-full max-w-md shadow-2xl animate-in zoom-in-95 duration-200">
@@ -1007,10 +1253,9 @@ export function HomeworkPage() {
         </div>
       )}
 
-      {/* МОДАЛКА СОЗДАНИЯ */}
       {showCreateModal && (
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl h-[90vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
+          <div className="app-homework-constructor bg-white rounded-2xl shadow-2xl w-full max-w-5xl h-[90vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
             <div className="shrink-0 border-b border-slate-100 p-6 flex items-center justify-between bg-white z-10">
               <h2 className="text-xl font-bold text-slate-900">Конструктор домашнего задания</h2>
               <button
@@ -1209,7 +1454,7 @@ export function HomeworkPage() {
                                   </div>
                                 </div>
                                 <Button
-                                  variant={isSelected ? 'secondary' : 'default'}
+                                  variant={isSelected ? 'secondary' : 'primary'}
                                   size="sm"
                                   onClick={() => (isSelected ? removeTask(task.id) : addTask(task))}
                                   className="shrink-0"

@@ -24,11 +24,15 @@ public class StudentDashboardDto {
 	private Integer daysStreak;
 	private Integer completedTasksTotal;
 	private Integer solvedProblemsTotal;
+	private Integer correctAnswersTotal;
+	private Integer accuracyPercent;
+	private Integer averageTimeSeconds;
 
 	private List<AssignmentInfo> activeAssignments;
 	private List<TopicProgress> topicProgress;
 	private List<Recommendation> recommendations;
 	private List<Achievement> achievements;
+	private List<ForecastPoint> forecastHistory;
 	private Map<String, Integer> weeklyActivity;
 
 	@Data
@@ -52,6 +56,8 @@ public class StudentDashboardDto {
 	public static class TopicProgress {
 		private String topicId;
 		private String topicName;
+		private Integer egeNumber;
+		private Integer successRate;
 		private Integer progressPercent;
 		private TopicStatus status;
 		private Integer solvedCount;
@@ -81,6 +87,9 @@ public class StudentDashboardDto {
 		private String description;
 		private String iconUrl;
 		private LocalDateTime receivedAt;
+		private Integer progressValue;
+		private Integer targetValue;
+		private Boolean unlocked;
 	}
 
 	@Data
@@ -93,5 +102,14 @@ public class StudentDashboardDto {
 		private Integer solved;
 		private Integer correct;
 		private Integer timeSpentMinutes;
+	}
+
+	@Data
+	@Builder
+	@AllArgsConstructor
+	@NoArgsConstructor
+	public static class ForecastPoint {
+		private LocalDate date;
+		private Integer predictedScore;
 	}
 }

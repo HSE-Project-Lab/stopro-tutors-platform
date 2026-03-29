@@ -12,7 +12,15 @@ export function Badge({ children, variant = 'default', size = 'md', className }:
   return (
     <span
       className={cn(
+        'app-badge',
         'inline-flex items-center font-medium rounded-full',
+        {
+          'badge-default': variant === 'default',
+          'badge-success': variant === 'success',
+          'badge-warning': variant === 'warning',
+          'badge-danger': variant === 'danger',
+          'badge-info': variant === 'info',
+        },
         {
           'bg-slate-100 text-slate-700': variant === 'default',
           'bg-emerald-100 text-emerald-700': variant === 'success',

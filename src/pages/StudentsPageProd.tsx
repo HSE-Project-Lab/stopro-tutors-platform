@@ -187,11 +187,18 @@ export function StudentsPage(): JSX.Element {
           <p className="text-slate-500 mt-1">Управляйте учениками и распределяйте их по группам</p>
         </div>
         <div className="flex gap-3">
-          <Button variant="outline" onClick={() => setShowAddGroup(true)} className="rounded-full">
+          <Button
+            variant="outline"
+            onClick={() => setShowAddGroup(true)}
+            className="rounded-xl h-[47px] px-6 text-[15px]"
+          >
             <Users size={18} className="mr-2" />
             Создать группу
           </Button>
-          <Button onClick={() => setShowAddStudent(true)} className="rounded-full">
+          <Button
+            onClick={() => setShowAddStudent(true)}
+            className="rounded-xl h-[47px] px-6 text-[15px]"
+          >
             <Plus size={18} className="mr-2" />
             Добавить ученика
           </Button>

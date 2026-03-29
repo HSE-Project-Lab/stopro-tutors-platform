@@ -96,7 +96,6 @@ export function FilterDropdown({
 
   return (
     <div ref={containerRef} className={cn('relative', className)}>
-      {/* Кнопка-триггер */}
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
@@ -125,10 +124,8 @@ export function FilterDropdown({
         </div>
       </button>
 
-      {/* Выпадающий список */}
       {isOpen && (
         <div className="absolute z-50 mt-1.5 bg-white border border-slate-200 rounded-xl shadow-lg overflow-hidden min-w-full max-w-[280px] right-0">
-          {/* Поиск */}
           {searchable && (
             <div className="p-2 border-b border-slate-100">
               <input
@@ -141,7 +138,6 @@ export function FilterDropdown({
             </div>
           )}
 
-          {/* Опции */}
           <div className="overflow-y-auto max-h-64 p-1">
             {Object.keys(grouped).length === 0 ? (
               <p className="text-sm text-slate-400 text-center py-4">Ничего не найдено</p>
@@ -185,7 +181,6 @@ export function FilterDropdown({
             )}
           </div>
 
-          {/* Футер */}
           {multiple && selected.length > 0 && (
             <div className="p-2 border-t border-slate-100 flex justify-between items-center">
               <span className="text-xs text-slate-500">Выбрано: {selected.length}</span>

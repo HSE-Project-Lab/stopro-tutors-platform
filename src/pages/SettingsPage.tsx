@@ -1,16 +1,17 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Card, CardHeader } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { Badge } from '@/components/ui/Badge';
+import { ProgressBar } from '@/components/ui/ProgressBar';
 import { useAuthStore } from '@/store/authStore';
+import api from '@/lib/axios';
 import {
   User,
   Mail,
   Phone,
   Lock,
-  Bell,
   Palette,
   Shield,
   Download,
@@ -18,13 +19,55 @@ import {
   Save,
   Camera,
   CheckCircle,
+  Trophy,
+  Star,
 } from 'lucide-react';
+
+interface StudentAchievementDto {
+  id: string;
+  title: string;
+  description: string;
+  iconUrl?: string;
+  receivedAt?: string;
+  progressValue?: number;
+  targetValue?: number;
+  unlocked?: boolean;
+}
+
+type UiTheme = 'light' | 'dark' | 'auto';
+type UiTextSize = 'small' | 'medium' | 'large';
+
+const UI_THEME_STORAGE_KEY = 'uiTheme';
+const UI_TEXT_SIZE_STORAGE_KEY = 'uiTextSize';
+
+const applyThemePreference = (theme: UiTheme) => {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  const useDark = theme === 'dark' || (theme === 'auto' && prefersDark);
+  document.documentElement.classList.toggle('theme-dark', useDark);
+};
+
+const applyTextSizePreference = (size: UiTextSize) => {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  document.documentElement.setAttribute('data-text-size', size);
+};
 
 export function SettingsPage() {
   const { user, updateUser } = useAuthStore();
-  const [activeSection, setActiveSection] = useState('profile');
+  const isStudent = user?.role === 'STUDENT';
+  const [activeSection, setActiveSection] = useState(isStudent ? 'appearance' : 'profile');
   const [isSaving, setIsSaving] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [uiTheme, setUiTheme] = useState<UiTheme>('auto');
+  const [textSize, setTextSize] = useState<UiTextSize>('medium');
+  const [achievements, setAchievements] = useState<StudentAchievementDto[]>([]);
+  const [achievementsLoading, setAchievementsLoading] = useState(false);
 
   const [formData, setFormData] = useState({
     firstName: user?.firstName || '',
@@ -34,14 +77,6 @@ export function SettingsPage() {
     currentPassword: '',
     newPassword: '',
     confirmPassword: '',
-  });
-
-  const [notifications, setNotifications] = useState({
-    emailHomework: true,
-    emailResults: true,
-    emailWeekly: false,
-    pushHomework: true,
-    pushResults: true,
   });
 
   const handleSave = async () => {
@@ -64,15 +99,106 @@ export function SettingsPage() {
   };
 
   const sections = [
-    { id: 'profile', label: 'Профиль', icon: User },
-    { id: 'security', label: 'Безопасность', icon: Lock },
-    { id: 'notifications', label: 'Уведомления', icon: Bell },
+    ...(!isStudent ? [{ id: 'profile', label: 'Профиль', icon: User }] : []),
     { id: 'appearance', label: 'Внешний вид', icon: Palette },
-    { id: 'data', label: 'Данные', icon: Download },
+    ...(isStudent ? [{ id: 'achievements', label: 'Мои достижения', icon: Trophy }] : []),
+    ...(!isStudent ? [{ id: 'security', label: 'Безопасность', icon: Lock }] : []),
+    ...(!isStudent ? [{ id: 'data', label: 'Данные', icon: Download }] : []),
   ];
 
+  useEffect(() => {
+    setActiveSection(isStudent ? 'appearance' : 'profile');
+  }, [isStudent]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    const savedTheme = localStorage.getItem(UI_THEME_STORAGE_KEY) as UiTheme | null;
+    const savedTextSize = localStorage.getItem(UI_TEXT_SIZE_STORAGE_KEY) as UiTextSize | null;
+
+    const nextTheme =
+      savedTheme === 'light' || savedTheme === 'dark' || savedTheme === 'auto'
+        ? savedTheme
+        : 'auto';
+    const nextTextSize =
+      savedTextSize === 'small' || savedTextSize === 'medium' || savedTextSize === 'large'
+        ? savedTextSize
+        : 'medium';
+
+    setUiTheme(nextTheme);
+    setTextSize(nextTextSize);
+
+    applyThemePreference(nextTheme);
+    applyTextSizePreference(nextTextSize);
+  }, []);
+
+  useEffect(() => {
+    applyThemePreference(uiTheme);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(UI_THEME_STORAGE_KEY, uiTheme);
+    }
+  }, [uiTheme]);
+
+  useEffect(() => {
+    applyTextSizePreference(textSize);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(UI_TEXT_SIZE_STORAGE_KEY, textSize);
+    }
+  }, [textSize]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || uiTheme !== 'auto') {
+      return;
+    }
+
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    const handler = () => applyThemePreference('auto');
+    mediaQuery.addEventListener('change', handler);
+
+    return () => {
+      mediaQuery.removeEventListener('change', handler);
+    };
+  }, [uiTheme]);
+
+  useEffect(() => {
+    if (!isStudent) {
+      setAchievements([]);
+      return;
+    }
+
+    let isMounted = true;
+
+    const loadAchievements = async () => {
+      setAchievementsLoading(true);
+      try {
+        const response = await api.get<StudentAchievementDto[]>('/student/achievements');
+        if (!isMounted) {
+          return;
+        }
+        setAchievements(response.data ?? []);
+      } catch {
+        if (!isMounted) {
+          return;
+        }
+        setAchievements([]);
+      } finally {
+        if (isMounted) {
+          setAchievementsLoading(false);
+        }
+      }
+    };
+
+    void loadAchievements();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [isStudent]);
+
   return (
-    <div className="space-y-6">
+    <div className="app-settings-page space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-slate-900">Настройки</h1>
         <p className="text-slate-500 mt-1">Управление аккаунтом и персонализация</p>
@@ -93,7 +219,7 @@ export function SettingsPage() {
                 <button
                   key={section.id}
                   onClick={() => setActiveSection(section.id)}
-                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors ${
+                  className={`settings-section-button w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors ${
                     activeSection === section.id
                       ? 'bg-indigo-50 text-indigo-600'
                       : 'text-slate-600 hover:bg-slate-50'
@@ -108,7 +234,7 @@ export function SettingsPage() {
         </div>
 
         <div className="lg:col-span-3">
-          {activeSection === 'profile' && (
+          {activeSection === 'profile' && !isStudent && (
             <Card>
               <CardHeader title="Личные данные" subtitle="Информация о вашем профиле" />
 
@@ -163,29 +289,6 @@ export function SettingsPage() {
                 />
               </div>
 
-              {user?.role === 'STUDENT' && (
-                <div className="mt-6 pt-6 border-t border-slate-100">
-                  <h4 className="font-medium text-slate-900 mb-4">Настройки обучения</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <Select
-                      label="Класс"
-                      options={[
-                        { value: '10', label: '10 класс' },
-                        { value: '11', label: '11 класс' },
-                      ]}
-                      defaultValue="11"
-                    />
-                    <Input
-                      label="Целевой балл ЕГЭ"
-                      type="number"
-                      defaultValue="85"
-                      min={0}
-                      max={100}
-                    />
-                  </div>
-                </div>
-              )}
-
               <div className="mt-6 flex justify-end">
                 <Button onClick={handleSave} isLoading={isSaving}>
                   <Save size={18} className="mr-2" />
@@ -195,7 +298,90 @@ export function SettingsPage() {
             </Card>
           )}
 
-          {activeSection === 'security' && (
+          {activeSection === 'achievements' && isStudent && (
+            <Card>
+              <CardHeader
+                title="Мои достижения"
+                subtitle="Трофеи и ачивки, которые ты уже заработал"
+              />
+
+              {achievementsLoading ? (
+                <p className="text-slate-600">Загружаем достижения…</p>
+              ) : achievements.length === 0 ? (
+                <div className="p-4 rounded-xl border border-slate-200 bg-slate-50">
+                  <div className="flex items-start gap-3">
+                    <div className="achievement-star-empty p-2 rounded-lg bg-slate-200 text-slate-500">
+                      <Star size={18} />
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-slate-900">Пока нет достижений</h4>
+                      <p className="text-sm text-slate-600">
+                        Решай задачи ежедневно — первые трофеи появятся совсем скоро.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {achievements.map((achievement) => (
+                    <div
+                      key={achievement.id}
+                      className={`p-4 rounded-xl border ${
+                        achievement.unlocked
+                          ? 'bg-amber-50 border-amber-200'
+                          : 'bg-slate-50 border-slate-200'
+                      }`}
+                    >
+                      <div className="flex items-start gap-3">
+                        <div
+                          className={`p-2 rounded-lg ${
+                            achievement.unlocked
+                              ? 'bg-amber-100 text-amber-700'
+                              : 'achievement-star-locked bg-slate-200 text-slate-500'
+                          }`}
+                        >
+                          {achievement.unlocked ? <Trophy size={18} /> : <Star size={18} />}
+                        </div>
+                        <div className="w-full">
+                          <h4 className="font-semibold text-slate-900">{achievement.title}</h4>
+                          <p className="text-sm text-slate-600">{achievement.description}</p>
+
+                          {typeof achievement.progressValue === 'number' &&
+                          typeof achievement.targetValue === 'number' &&
+                          achievement.targetValue > 0 ? (
+                            <div className="mt-3 space-y-1">
+                              <ProgressBar
+                                value={Math.min(achievement.progressValue, achievement.targetValue)}
+                                max={achievement.targetValue}
+                                color={achievement.unlocked ? 'success' : 'primary'}
+                                size="sm"
+                              />
+                              <p className="text-xs text-slate-500">
+                                Прогресс: {achievement.progressValue}/{achievement.targetValue}
+                              </p>
+                            </div>
+                          ) : null}
+
+                          <p
+                            className={`text-xs mt-2 font-medium ${
+                              achievement.unlocked ? 'text-amber-700' : 'text-slate-500'
+                            }`}
+                          >
+                            {achievement.unlocked ? 'Получено' : 'В процессе'}
+                            {achievement.receivedAt
+                              ? ` · ${new Date(achievement.receivedAt).toLocaleDateString('ru-RU')}`
+                              : ''}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </Card>
+          )}
+
+          {activeSection === 'security' && !isStudent && (
             <Card>
               <CardHeader title="Безопасность" subtitle="Пароль и настройки входа" />
 
@@ -250,79 +436,16 @@ export function SettingsPage() {
             </Card>
           )}
 
-          {activeSection === 'notifications' && (
-            <Card>
-              <CardHeader title="Уведомления" subtitle="Настройте способы получения уведомлений" />
-
-              <div className="space-y-6">
-                <div>
-                  <h4 className="font-medium text-slate-900 mb-3">Email уведомления</h4>
-                  <div className="space-y-3">
-                    {[
-                      { key: 'emailHomework', label: 'Новые домашние задания' },
-                      { key: 'emailResults', label: 'Результаты проверки' },
-                      { key: 'emailWeekly', label: 'Еженедельный отчёт' },
-                    ].map((item) => (
-                      <label
-                        key={item.key}
-                        className="flex items-center justify-between p-3 bg-slate-50 rounded-xl cursor-pointer"
-                      >
-                        <span className="text-slate-700">{item.label}</span>
-                        <input
-                          type="checkbox"
-                          checked={notifications[item.key as keyof typeof notifications]}
-                          onChange={(e) =>
-                            setNotifications((prev) => ({ ...prev, [item.key]: e.target.checked }))
-                          }
-                          className="w-5 h-5 rounded text-indigo-600 focus:ring-indigo-500"
-                        />
-                      </label>
-                    ))}
-                  </div>
-                </div>
-
-                <div>
-                  <h4 className="font-medium text-slate-900 mb-3">Push уведомления</h4>
-                  <div className="space-y-3">
-                    {[
-                      { key: 'pushHomework', label: 'Напоминания о дедлайнах' },
-                      { key: 'pushResults', label: 'Результаты решения задач' },
-                    ].map((item) => (
-                      <label
-                        key={item.key}
-                        className="flex items-center justify-between p-3 bg-slate-50 rounded-xl cursor-pointer"
-                      >
-                        <span className="text-slate-700">{item.label}</span>
-                        <input
-                          type="checkbox"
-                          checked={notifications[item.key as keyof typeof notifications]}
-                          onChange={(e) =>
-                            setNotifications((prev) => ({ ...prev, [item.key]: e.target.checked }))
-                          }
-                          className="w-5 h-5 rounded text-indigo-600 focus:ring-indigo-500"
-                        />
-                      </label>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              <div className="mt-6 flex justify-end">
-                <Button
-                  onClick={() => {
-                    setShowSuccess(true);
-                    setTimeout(() => setShowSuccess(false), 3000);
-                  }}
-                >
-                  Сохранить настройки
-                </Button>
-              </div>
-            </Card>
-          )}
-
           {activeSection === 'appearance' && (
             <Card>
-              <CardHeader title="Внешний вид" subtitle="Персонализация интерфейса" />
+              <CardHeader
+                title="Внешний вид"
+                subtitle={
+                  isStudent
+                    ? 'Личные данные и учебные параметры задаёт учитель. Здесь можно настроить только интерфейс.'
+                    : 'Персонализация интерфейса'
+                }
+              />
 
               <div className="space-y-6">
                 <div>
@@ -332,7 +455,7 @@ export function SettingsPage() {
                       {
                         id: 'light',
                         label: 'Светлая',
-                        colors: 'bg-white border-2 border-indigo-500',
+                        colors: 'theme-preview-light bg-white border-2 border-indigo-500',
                       },
                       { id: 'dark', label: 'Тёмная', colors: 'bg-slate-800' },
                       {
@@ -343,7 +466,9 @@ export function SettingsPage() {
                     ].map((theme) => (
                       <button
                         key={theme.id}
-                        className={`p-4 rounded-xl border-2 border-slate-200 hover:border-indigo-300 transition-colors ${theme.id === 'light' ? 'border-indigo-500' : ''}`}
+                        type="button"
+                        onClick={() => setUiTheme(theme.id as UiTheme)}
+                        className={`p-4 rounded-xl border-2 hover:border-indigo-300 transition-colors ${uiTheme === theme.id ? 'border-indigo-500 ring-2 ring-indigo-100' : 'border-slate-200'}`}
                       >
                         <div className={`w-full h-16 rounded-lg mb-2 ${theme.colors}`} />
                         <p className="text-sm font-medium text-slate-700">{theme.label}</p>
@@ -360,14 +485,15 @@ export function SettingsPage() {
                       { value: 'medium', label: 'Средний' },
                       { value: 'large', label: 'Большой' },
                     ]}
-                    defaultValue="medium"
+                    value={textSize}
+                    onChange={(value) => setTextSize(value as UiTextSize)}
                   />
                 </div>
               </div>
             </Card>
           )}
 
-          {activeSection === 'data' && (
+          {activeSection === 'data' && !isStudent && (
             <Card>
               <CardHeader title="Данные и экспорт" subtitle="Управление вашими данными" />
 

@@ -1,5 +1,3 @@
-// src/components/ui/LaTeX.tsx
-
 import { useEffect, useRef } from 'react';
 import katex from 'katex';
 import 'katex/dist/katex.min.css';
@@ -10,17 +8,12 @@ interface LaTeXProps {
   className?: string;
 }
 
-/**
- * Рендерит текст с inline LaTeX ($...$) и block LaTeX ($$...$$)
- * Обычный текст остаётся как есть
- */
 export function LaTeX({ children, className = '' }: LaTeXProps) {
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!containerRef.current) return;
 
-    // Разбиваем текст на части: обычный текст и LaTeX-формулы
     const html = renderMixedContent(children);
     containerRef.current.innerHTML = html;
   }, [children]);
@@ -29,11 +22,8 @@ export function LaTeX({ children, className = '' }: LaTeXProps) {
 }
 
 function renderMixedContent(text: string): string {
-  // Сначала обрабатываем блочные формулы $$...$$
-  // Затем инлайновые $...$
   let result = text;
 
-  // Блочные формулы: $$...$$
   result = result.replace(/\$\$([\s\S]*?)\$\$/g, (_, formula) => {
     try {
       return katex.renderToString(formula.trim(), {
@@ -46,7 +36,6 @@ function renderMixedContent(text: string): string {
     }
   });
 
-  // Инлайновые формулы: $...$
   result = result.replace(/\$([^$]+?)\$/g, (_, formula) => {
     try {
       return katex.renderToString(formula.trim(), {
@@ -59,15 +48,11 @@ function renderMixedContent(text: string): string {
     }
   });
 
-  // Переносы строк → <br>
   result = result.replace(/\n/g, '<br/>');
 
   return result;
 }
 
-/**
- * Компонент для предпросмотра LaTeX в реальном времени
- */
 interface LaTeXPreviewProps {
   content: string;
   label?: string;

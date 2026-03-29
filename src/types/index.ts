@@ -1,15 +1,9 @@
-// src/types/index.ts
-
-// ===== РОЛИ =====
 export type UserRole = 'STUDENT' | 'TEACHER' | 'ADMIN';
-
-// ===== ПОЛЬЗОВАТЕЛИ =====
 export interface User {
   id: string;
   email: string;
   firstName: string;
   lastName: string;
-  // optional convenience fields used in UI
   fullName?: string;
   username?: string;
   role: UserRole;
@@ -31,7 +25,6 @@ export interface Teacher extends User {
   groupsCount: number;
 }
 
-// ===== ГРУППЫ =====
 export interface Group {
   id: string;
   name: string;
@@ -59,7 +52,6 @@ export interface AddStudentsResponse {
   credentials: StudentCredentials[];
 }
 
-// ===== ТЕМЫ =====
 export interface Topic {
   id: string;
   name: string;
@@ -68,7 +60,6 @@ export interface Topic {
   tasksCount: number;
 }
 
-// ===== ЗАДАЧИ =====
 export type TaskDifficulty = 'EASY' | 'MEDIUM' | 'HARD';
 
 export interface Task {
@@ -95,7 +86,6 @@ export interface TaskResult {
   createdAt: string;
 }
 
-// ===== КОНСТРУКТОР ЗАДАЧ ЕГЭ =====
 export interface EgeTask {
   id: string;
   parentId?: string;
@@ -257,7 +247,6 @@ export const DIFFICULTY_COLORS: Record<TaskDifficulty, string> = {
   HARD: 'danger',
 };
 
-// ===== ДОМАШНИЕ ЗАДАНИЯ =====
 export interface Question {
   id: string;
   content: string;
@@ -291,7 +280,6 @@ export interface Homework {
   totalCount: number;
 }
 
-// ===== СТАТИСТИКА =====
 export interface StudentProgress {
   studentId: string;
   studentName: string;
@@ -327,7 +315,6 @@ export interface TopicStat {
   status: 'WEAK' | 'NORMAL' | 'STRONG';
 }
 
-// ===== AI =====
 export interface AIRecommendation {
   id: string;
   studentId?: string;
@@ -355,7 +342,6 @@ export interface AnalysisError {
   location?: string;
 }
 
-// ===== АВТОРИЗАЦИЯ =====
 export interface LoginRequest {
   email: string;
   password: string;
