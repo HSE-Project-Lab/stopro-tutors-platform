@@ -7,6 +7,8 @@ import { Select } from '@/components/ui/Select';
 import { LaTeX } from '@/components/ui/LaTeX';
 import { AnimatedToast, type ToastType } from '@/components/ui/AnimatedToast';
 import { useAuthStore } from '@/store/authStore';
+import { useAppStore } from '@/store/appStore';
+import { useHomeworkDraftStore } from '@/store/homeworkDraftStore';
 import api from '@/lib/axios';
 import { AnimatePresence } from 'framer-motion';
 import {
@@ -840,6 +842,8 @@ function HomeworkDetail({
 
 export function HomeworkPage() {
   const { user } = useAuthStore();
+  const { openHomeworkConstructorFromDraft, setOpenHomeworkConstructorFromDraft } = useAppStore();
+  const { selectedTasks: draftTasks } = useHomeworkDraftStore();
   const isTeacher = user?.role === 'TEACHER' || user?.role === 'ADMIN';
 
   const [homeworks, setHomeworks] = useState<any[]>([]);
@@ -915,6 +919,67 @@ export function HomeworkPage() {
     fetchHomeworks();
     if (isTeacher) fetchTeacherData();
   }, [fetchHomeworks, fetchTeacherData, isTeacher]);
+
+  useEffect(() => {
+    if (!isTeacher || !openHomeworkConstructorFromDraft) {
+      return;
+    }
+
+    const openConstructorWithDraft = async () => {
+      setOpenHomeworkConstructorFromDraft(false);
+
+      if (draftTasks.length === 0) {
+        setShowCreateModal(true);
+        return;
+      }
+
+      try {
+        const results = await Promise.allSettled(
+          draftTasks.map((task) => api.get<EgeTask>(`/ege-tasks/${task.taskId}`))
+        );
+
+        const loadedById = new Map<string, EgeTask>();
+        for (const result of results) {
+          if (result.status === 'fulfilled') {
+            loadedById.set(result.value.data.id, result.value.data);
+          }
+        }
+
+        const orderedLoadedTasks = draftTasks
+          .map((task) => loadedById.get(task.taskId))
+          .filter((task): task is EgeTask => Boolean(task));
+
+        if (orderedLoadedTasks.length === 0) {
+          showToast('Не удалось загрузить задачи из корзины. Открыл пустой конструктор.', 'info');
+          setShowCreateModal(true);
+          return;
+        }
+
+        setAssignType('GROUP');
+        setTaskSearch('');
+        setNewHomework((prev) => ({
+          ...prev,
+          isTemplate: false,
+          selectedTasks: orderedLoadedTasks,
+        }));
+        setShowCreateModal(true);
+
+        if (orderedLoadedTasks.length < draftTasks.length) {
+          showToast('Часть задач из корзины не загрузилась и была пропущена.', 'info');
+        }
+      } catch {
+        showToast('Не удалось подготовить задачи из корзины.', 'error');
+        setShowCreateModal(true);
+      }
+    };
+
+    void openConstructorWithDraft();
+  }, [
+    isTeacher,
+    openHomeworkConstructorFromDraft,
+    draftTasks,
+    setOpenHomeworkConstructorFromDraft,
+  ]);
 
   const fetchTasks = useCallback(async (query: string = '') => {
     setIsSearchingTasks(true);

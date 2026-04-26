@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useAuthStore } from '@/store/authStore';
 import { useAppStore } from '@/store/appStore';
 import { Layout } from '@/components/layout/Layout';
@@ -10,9 +10,13 @@ import { TasksPage } from '@/pages/TasksPage';
 import { AIAssistantPage } from '@/pages/AIAssistantPage';
 import { StudentsPage } from '@/pages/StudentsPage';
 import { AnalyticsPage } from '@/pages/AnalyticsPage';
+import { TeacherAnalytics } from '@/pages/TeacherAnalytics';
+import { TeacherTaskBank } from '@/pages/TeacherTaskBank';
+import { StudentPractice } from '@/pages/StudentPractice';
 import { HomeworkPage } from '@/pages/HomeworkPage';
 import { SettingsPage } from '@/pages/SettingsPage';
 import { AdminDashboard } from '@/pages/AdminDashboard';
+import { CrmPage } from '@/pages/CrmPage';
 
 type UiTheme = 'light' | 'dark' | 'auto';
 type UiTextSize = 'small' | 'medium' | 'large';
@@ -40,9 +44,23 @@ const applyTextSizePreference = (size: UiTextSize) => {
 
 function AppContent() {
   const { user } = useAuthStore();
-  const { activeTab } = useAppStore();
+  const { activeTab, setActiveTab } = useAppStore();
+  const previousRoleRef = useRef(user?.role);
 
   const [showLogin, setShowLogin] = useState(false);
+
+  useEffect(() => {
+    if (!user) {
+      previousRoleRef.current = undefined;
+      return;
+    }
+
+    if (previousRoleRef.current && previousRoleRef.current !== user.role) {
+      setActiveTab('dashboard');
+    }
+
+    previousRoleRef.current = user.role;
+  }, [user, setActiveTab]);
 
   useEffect(() => {
     if (typeof window === 'undefined') {
@@ -108,16 +126,27 @@ function AppContent() {
         if (user.role === 'ADMIN') return <AdminDashboard />;
         return user.role === 'TEACHER' ? <TeacherDashboard /> : <StudentDashboard />;
       case 'tasks':
+        if (user.role === 'TEACHER') return <TeacherTaskBank />;
+        if (user.role === 'ADMIN') return <TasksPage />;
+        return <StudentPractice />;
       case 'practice':
-        return <TasksPage />;
+        return user.role === 'STUDENT' ? <StudentPractice /> : <TeacherTaskBank />;
       case 'students':
-        return <StudentsPage />;
+        return user.role === 'TEACHER' ? <StudentsPage /> : <TeacherDashboard />;
       case 'ai-assistant':
-        return <AIAssistantPage />;
+        return user.role === 'TEACHER' ? <AIAssistantPage /> : <StudentDashboard />;
       case 'analytics':
-        return <AnalyticsPage />;
+        return user.role === 'TEACHER' ? (
+          <TeacherAnalytics />
+        ) : user.role === 'STUDENT' ? (
+          <AnalyticsPage />
+        ) : (
+          <AdminDashboard />
+        );
       case 'homework':
-        return <HomeworkPage />;
+        return user.role === 'ADMIN' ? <AdminDashboard /> : <HomeworkPage />;
+      case 'crm':
+        return user.role === 'TEACHER' ? <CrmPage /> : <TeacherDashboard />;
       case 'settings':
         return <SettingsPage />;
       default:

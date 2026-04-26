@@ -105,7 +105,7 @@ export function FilterDropdown({
           'transition-all duration-200 flex items-center gap-2 whitespace-nowrap',
           hasSelection
             ? 'border-indigo-300 bg-indigo-50 text-indigo-700 font-medium'
-            : 'border-slate-200 text-slate-600',
+            : 'border-slate-200 text-slate-900',
           isOpen && 'ring-2 ring-indigo-500 border-transparent'
         )}
       >

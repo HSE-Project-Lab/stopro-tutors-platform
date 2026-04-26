@@ -14,21 +14,28 @@ import {
   ShieldAlert,
 } from 'lucide-react';
 import type { UserRole } from '@/types';
+import type { AppTab } from '@/store/appStore';
 
-const adminNavItems = [
+interface NavItem {
+  id: AppTab;
+  label: string;
+  icon: typeof LayoutDashboard;
+}
+
+const adminNavItems: NavItem[] = [
   { id: 'admin', label: 'Админ-панель', icon: ShieldAlert },
   { id: 'tasks', label: 'База задач', icon: BookOpen },
 ];
 
-const teacherNavItems = [
+const teacherNavItems: NavItem[] = [
   { id: 'dashboard', label: 'Дашборд', icon: LayoutDashboard },
   { id: 'students', label: 'Ученики и группы', icon: Users },
   { id: 'homework', label: 'Домашние задания', icon: ClipboardList },
-  { id: 'tasks', label: 'База задач', icon: BookOpen },
+  { id: 'tasks', label: 'База задач (прототипы)', icon: BookOpen },
   { id: 'analytics', label: 'Аналитика и отчёты', icon: BarChart3 },
 ];
 
-const studentNavItems = [
+const studentNavItems: NavItem[] = [
   { id: 'dashboard', label: 'Мой прогресс', icon: LayoutDashboard },
   { id: 'practice', label: 'Практика', icon: BookOpen },
   { id: 'homework', label: 'Домашние задания', icon: ClipboardList },
