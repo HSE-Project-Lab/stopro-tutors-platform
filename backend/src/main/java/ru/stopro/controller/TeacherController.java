@@ -13,7 +13,9 @@ import org.springframework.web.bind.annotation.*;
 import ru.stopro.domain.entity.User;
 import ru.stopro.dto.student.StudentCreateResponse;
 import ru.stopro.dto.student.StudentDto;
+import ru.stopro.dto.teacher.TeacherDashboardDto;
 import ru.stopro.service.TeacherService;
+import ru.stopro.service.TeacherDashboardService;
 
 @RestController
 @RequestMapping("/api/v1/teacher")
@@ -23,6 +25,7 @@ public class TeacherController {
 
 	private final TeacherService teacherService;
 	private final ru.stopro.service.GroupService groupService;
+	private final TeacherDashboardService dashboardService;
 
 	@GetMapping("/students")
 	public ResponseEntity<List<StudentDto>> getMyStudents(@AuthenticationPrincipal User user) {
@@ -51,5 +54,10 @@ public class TeacherController {
 	@GetMapping("/groups")
 	public ResponseEntity<List<ru.stopro.dto.group.GroupResponse>> getMyGroups(@AuthenticationPrincipal User user) {
 		return ResponseEntity.ok(groupService.getGroupsByTeacher(user.getId()));
+	}
+
+	@GetMapping("/dashboard")
+	public ResponseEntity<TeacherDashboardDto> getDashboard(@AuthenticationPrincipal User user) {
+		return ResponseEntity.ok(dashboardService.getDashboardData(user.getId()));
 	}
 }
