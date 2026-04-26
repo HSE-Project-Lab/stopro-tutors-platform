@@ -1,36 +1,58 @@
 ```
-# Compiled and build artifacts
+# Java/Maven specific ignores
 *.class
-*.o
-*.obj
-*.out
-build/
+*.jar
+*.war
+*.ear
+*.zip
 target/
+!target/pom.xml.tag
+!target/pom.xml.releaseBackup
+!target/dependency-mgt.properties
+!target/classes/**/*
+!.mvn/wrapper/maven-wrapper.jar
 
-# Dependencies
+# Gradle
 .gradle/
-.mypy_cache/
-.pytest_cache/
-__pycache__/
-coverage/
-htmlcov/
-*.coverage
+build/
 
-# Logs and temp files
+# IDE specific
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Logs
 *.log
-*.tmp
-*.swp
 
 # Environment
 .env
 .env.local
 *.env.*
 
-# Editors
-.vscode/
-.idea/
-
-# System files
-.DS_Store
-Thumbs.db
+# Python (if present)
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+pip-log.txt
+pip-delete-this-directory.txt
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.log
+.git/modules/
 ```
