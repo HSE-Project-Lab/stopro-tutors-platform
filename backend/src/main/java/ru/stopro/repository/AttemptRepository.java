@@ -128,6 +128,16 @@ public interface AttemptRepository extends JpaRepository<Attempt, UUID> {
 	List<Object[]> getStudentStatsByEgeNumber(@Param("studentId") UUID studentId);
 
 	/**
+	 * Статистика по конкретному номеру ЕГЭ с количеством попыток
+	 */
+	@Query("SELECT COUNT(a), " + "SUM(CASE WHEN a.isCorrect = true THEN 1 ELSE 0 END) "
+			+ "FROM Attempt a JOIN a.question q "
+			+ "WHERE a.student.id = :studentId AND a.status = 'COMPLETED' " + "AND a.isDeleted = false "
+			+ "AND q.egeNumber = :egeNumber")
+	List<Object[]> getStudentStatsByEgeNumberWithAttempts(@Param("studentId") UUID studentId,
+			@Param("egeNumber") Integer egeNumber);
+
+	/**
 	 * Недельная активность ученика
 	 */
 	@Query("SELECT DATE(a.startedAt), COUNT(a), " + "SUM(CASE WHEN a.isCorrect = true THEN 1 ELSE 0 END) "

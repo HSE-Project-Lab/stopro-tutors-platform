@@ -13,7 +13,12 @@ import ru.stopro.domain.entity.StudentScoreForecast;
 @Repository
 public interface StudentScoreForecastRepository extends JpaRepository<StudentScoreForecast, UUID> {
 
-	Optional<StudentScoreForecast> findByStudent_IdAndForecastDate(UUID studentId, LocalDate forecastDate);
+    Optional<StudentScoreForecast> findByStudent_IdAndForecastDate(UUID studentId, LocalDate forecastDate);
 
-	List<StudentScoreForecast> findByStudent_IdAndIsDeletedFalseOrderByForecastDateAsc(UUID studentId);
+    List<StudentScoreForecast> findByStudent_IdAndIsDeletedFalseOrderByForecastDateAsc(UUID studentId);
+    
+    /**
+     * Последний прогноз для студента (сортировка по дате убывания)
+     */
+    Optional<StudentScoreForecast> findTopByStudent_IdOrderByForecastDateDesc(UUID studentId);
 }

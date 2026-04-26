@@ -198,9 +198,18 @@ public interface AssignmentRepository extends JpaRepository<Assignment, UUID> {
 	@Query("UPDATE Assignment a SET " + "a.completedCount = a.completedCount + 1, "
 			+ "a.averageScore = CASE WHEN a.averageScore IS NULL THEN :score "
 			+ "  ELSE (a.averageScore * (a.completedCount - 1) + :score) / a.completedCount END, "
-			+ "a.averageTimeMinutes = CASE WHEN a.averageTimeMinutes IS NULL THEN :timeMinutes "
-			+ "  ELSE (a.averageTimeMinutes * (a.completedCount - 1) + :timeMinutes) / a.completedCount END "
-			+ "WHERE a.id = :id")
-	void updateCompletionStats(@Param("id") UUID id, @Param("score") double score,
-			@Param("timeMinutes") int timeMinutes);
+/**
+ * Задания учителя, созданные после указанной даты
+ */
+List<Assignment> findByTeacherIdAndCreatedAtAfter(UUID teacherId, LocalDateTime createdAt);
+
+/**
+ * Задания группы по статусу
+ */
+List<Assignment> findByGroupIdInAndStatus(java.util.Set<UUID> groupIds, AssignmentStatus status);
+
+/**
+ * Задания группы по ID
+ */
+List<Assignment> findByGroupIdIn(java.util.Set<UUID> groupIds);
 }
