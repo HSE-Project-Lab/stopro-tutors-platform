@@ -1,69 +1,36 @@
-.env
-.env.local
-.env.*.local
-*.pem
-*.key
-*.p12
-*.jks
-
-!.env.example
-
-node_modules/
-dist/
-.vite/
-*.tsbuildinfo
-.eslintcache
-
-backend/target/
+```
+# Compiled and build artifacts
 *.class
-*.jar
-*.war
-*.ear
-*.log
-hs_err_pid*
-replay_pid*
+*.o
+*.obj
+*.out
+build/
+target/
 
-__pycache__/
-*.py[cod]
-*$py.class
-*.egg-info/
-*.egg
-.eggs/
-.venv/
-venv/
-env/
+# Dependencies
+.gradle/
 .mypy_cache/
 .pytest_cache/
-.ruff_cache/
+__pycache__/
+coverage/
+htmlcov/
+*.coverage
 
-.idea/
-.vscode/
-*.iml
-*.ipr
-*.iws
-*.swp
-*.swo
-*~
-.project
-.classpath
-.settings/
-
-docker-compose.override.yml
-.docker/
-
-.DS_Store
-Thumbs.db
-Desktop.ini
-ehthumbs.db
-
-logs/
+# Logs and temp files
 *.log
 *.tmp
-*.bak
 *.swp
 
-coverage/
-.nyc_output/
-htmlcov/
-.coverage
-jacoco/
+# Environment
+.env
+.env.local
+*.env.*
+
+# Editors
+.vscode/
+.idea/
+
+# System files
+.DS_Store
+Thumbs.db
+```

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle, Info } from 'lucide-react';
 import api from '@/lib/axios';
 import { Card, CardHeader } from '@/components/ui/Card';
 import { Select } from '@/components/ui/Select';
@@ -14,190 +14,6 @@ import type {
   TaskHeatmapCell,
   WeakTopicPoint,
 } from '@/types/analytics';
-
-const randomInt = (min: number, max: number) => Math.floor(Math.random() * (max - min + 1)) + min;
-
-const темыЕгэ = [
-  'Планиметрия',
-  'Векторы',
-  'Стереометрия',
-  'Вероятность',
-  'Логарифмы',
-  'Тригонометрия',
-  'Производная',
-  'Первообразная',
-  'Текстовые задачи',
-  'Параметры',
-  'Неравенства',
-  'Экономические задачи',
-  'Графики функций',
-  'Системы уравнений',
-  'Задача №15',
-  'Задача №16',
-  'Задача №17',
-  'Задача №18',
-  'Задача №19',
-] as const;
-
-const buildHeatmap = (baseShift: number): TaskHeatmapCell[] =>
-  Array.from({ length: 19 }, (_, index) => {
-    const taskNumber = index + 1;
-    const attempts = randomInt(2, 16);
-    const raw = randomInt(38, 94) - baseShift + (taskNumber % 5 === 0 ? -8 : 0);
-    const successRate = Math.max(22, Math.min(96, raw));
-
-    return {
-      taskNumber,
-      successRate,
-      attempts,
-    };
-  });
-
-const buildRadar = (profileShift: number): StudentSkillPoint[] => {
-  const предметы = [
-    'Алгебра',
-    'Геометрия',
-    'Тригонометрия',
-    'Параметры',
-    'Вероятность',
-    'Стереометрия',
-  ];
-
-  return предметы.map((subject, index) => ({
-    subject,
-    value: Math.max(35, Math.min(98, randomInt(50, 90) - profileShift + (index % 2 ? 4 : -2))),
-    fullMark: 100,
-  }));
-};
-
-const buildProgress = (
-  start: number,
-  trend: 'рост' | 'стабильно' | 'снижение'
-): StudentProgressPoint[] => {
-  const месяцы = ['Окт', 'Ноя', 'Дек', 'Янв', 'Фев', 'Мар'];
-  return месяцы.map((monthLabel, index) => {
-    const delta =
-      trend === 'рост'
-        ? index * randomInt(1, 2)
-        : trend === 'снижение'
-          ? -index * randomInt(1, 2)
-          : randomInt(-2, 2);
-    return {
-      monthLabel,
-      predictedScore: Math.max(42, Math.min(98, start + delta)),
-    };
-  });
-};
-
-const buildWeakTopics = (heatmap: TaskHeatmapCell[]): WeakTopicPoint[] =>
-  heatmap
-    .map((item) => ({
-      taskNumber: item.taskNumber,
-      topicName: темыЕгэ[item.taskNumber - 1],
-      successRate: item.successRate,
-      practiceCount: item.attempts,
-    }))
-    .sort((a, b) => (a.successRate ?? 0) - (b.successRate ?? 0));
-
-const buildDiscipline = (offsetDays: number): StudentDisciplineStats => ({
-  homeworkOnTimeRate: randomInt(61, 96),
-  lastActiveAt: new Date(Date.now() - offsetDays * 24 * 60 * 60 * 1000).toISOString(),
-});
-
-const mockStudents = (): StudentAnalyticsDto[] => {
-  const source = [
-    {
-      groupId: 'g11a',
-      groupName: '11А Профиль',
-      studentName: 'Иван Смирнов',
-      targetScore: 84,
-      predicted: 76,
-      shift: 4,
-      trend: 'рост' as const,
-    },
-    {
-      groupId: 'g11a',
-      groupName: '11А Профиль',
-      studentName: 'Мария Захарова',
-      targetScore: 90,
-      predicted: 86,
-      shift: 1,
-      trend: 'стабильно' as const,
-    },
-    {
-      groupId: 'g11a',
-      groupName: '11А Профиль',
-      studentName: 'Лев Кузнецов',
-      targetScore: 78,
-      predicted: 69,
-      shift: 7,
-      trend: 'снижение' as const,
-    },
-    {
-      groupId: 'g11a',
-      groupName: '11А Профиль',
-      studentName: 'София Романова',
-      targetScore: 82,
-      predicted: 80,
-      shift: 2,
-      trend: 'рост' as const,
-    },
-    {
-      groupId: 'g10b',
-      groupName: '10Б База+',
-      studentName: 'Алина Петрова',
-      targetScore: 74,
-      predicted: 66,
-      shift: 6,
-      trend: 'снижение' as const,
-    },
-    {
-      groupId: 'g10b',
-      groupName: '10Б База+',
-      studentName: 'Егор Орлов',
-      targetScore: 70,
-      predicted: 71,
-      shift: 3,
-      trend: 'стабильно' as const,
-    },
-    {
-      groupId: 'g10b',
-      groupName: '10Б База+',
-      studentName: 'Никита Журавлёв',
-      targetScore: 76,
-      predicted: 68,
-      shift: 8,
-      trend: 'снижение' as const,
-    },
-    {
-      groupId: 'g10b',
-      groupName: '10Б База+',
-      studentName: 'Артём Белов',
-      targetScore: 72,
-      predicted: 74,
-      shift: 2,
-      trend: 'рост' as const,
-    },
-  ];
-
-  return source.map((item, index) => {
-    const heatmap = buildHeatmap(item.shift);
-
-    return {
-      studentId: `student-${index + 1}`,
-      studentName: item.studentName,
-      groupId: item.groupId,
-      groupName: item.groupName,
-      targetScore: item.targetScore,
-      predictedEgeScore: item.predicted,
-      heatmap,
-      radarSkills: buildRadar(item.shift),
-      weakTopics: buildWeakTopics(heatmap),
-      progressHistory: buildProgress(item.predicted - 6, item.trend),
-      discipline: buildDiscipline(index + 1),
-    };
-  });
-};
 
 export function TeacherAnalytics() {
   const [students, setStudents] = useState<StudentAnalyticsDto[]>([]);
@@ -222,18 +38,12 @@ export function TeacherAnalytics() {
 
         const fetchedStudents = studentsResp.data ?? [];
 
-        if (fetchedStudents.length === 0) {
-          const fallbackStudents = mockStudents();
-          setStudents(fallbackStudents);
-          return;
-        }
-
+        // НЕТ FALLBACK НА MOCK! Показываем реальные данные или пустой список
         setStudents(fetchedStudents);
-      } catch {
+      } catch (err) {
         if (cancelled) return;
-        const fallbackStudents = mockStudents();
-        setStudents(fallbackStudents);
-        setError('API аналитики недоступен — показаны демо-данные.');
+        setError('Не удалось загрузить аналитику. Проверьте подключение к серверу.');
+        setStudents([]); // Пустой список, не моки!
       } finally {
         if (!cancelled) {
           setLoading(false);
@@ -298,6 +108,18 @@ export function TeacherAnalytics() {
 
         {loading ? (
           <p className="text-sm text-slate-500">Загрузка тепловой карты...</p>
+        ) : students.length === 0 ? (
+          <div className="p-6 text-center">
+            <Info className="mx-auto h-12 w-12 text-slate-400" />
+            <h3 className="mt-4 text-lg font-semibold text-slate-900">Аналитика пуста</h3>
+            <p className="mt-2 text-slate-600">
+              Данные появятся после того, как ученики начнут выполнять задания.
+              Убедитесь, что вы создали группу и добавили в неё учеников.
+            </p>
+            <Button className="mt-4" onClick={() => (window.location.href = '/groups')}>
+              Перейти к группам
+            </Button>
+          </div>
         ) : (
           <GroupHeatmap students={studentsByGroup} onStudentClick={setSelectedStudent} />
         )}
