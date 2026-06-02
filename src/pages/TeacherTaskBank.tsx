@@ -76,8 +76,8 @@ export function TeacherTaskBank() {
   ];
 
   const topicOptions = useMemo(() => {
-    const uniqueTopics = Array.from(new Set(prototypes.map((prototype) => prototype.topic))).sort(
-      (a, b) => a.localeCompare(b)
+    const uniqueTopics = Array.from(new Set(prototypes.map((prototype) => prototype.topic))).sort((a, b) =>
+      a.localeCompare(b)
     );
     return uniqueTopics.map((topic) => ({ value: topic, label: topic }));
   }, [prototypes]);
@@ -143,7 +143,9 @@ export function TeacherTaskBank() {
     }
 
     setSelectedPrototypeId((prev) =>
-      prev && filteredPrototypes.some((prototype) => prototype.id === prev) ? prev : null
+      prev && filteredPrototypes.some((prototype) => prototype.id === prev)
+        ? prev
+        : null
     );
   }, [filteredPrototypes]);
 
@@ -225,9 +227,7 @@ export function TeacherTaskBank() {
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">База задач преподавателя</h1>
-          <p className="text-slate-500 text-sm mt-1">
-            Склад прототипов и вариаций для быстрой сборки домашних заданий.
-          </p>
+          <p className="text-slate-500 text-sm mt-1">Склад прототипов и вариаций для быстрой сборки домашних заданий.</p>
         </div>
       </div>
 
@@ -241,11 +241,7 @@ export function TeacherTaskBank() {
             icon={<Search size={16} />}
           />
           <Select value={selectedEge} onChange={setSelectedEge} options={numberOptions} />
-          <Select
-            value={selectedDifficulty}
-            onChange={setSelectedDifficulty}
-            options={difficultyOptions}
-          />
+          <Select value={selectedDifficulty} onChange={setSelectedDifficulty} options={difficultyOptions} />
           <FilterDropdown
             options={topicOptions}
             selected={selectedTopics}
@@ -324,12 +320,8 @@ export function TeacherTaskBank() {
                   }`}
                 >
                   <div className="flex flex-wrap items-center gap-2 mb-2">
-                    <Badge variant="info" size="sm">
-                      ЕГЭ №{item.egeNumber}
-                    </Badge>
-                    <Badge variant="warning" size="sm">
-                      {item.topic}
-                    </Badge>
+                    <Badge variant="info" size="sm">ЕГЭ №{item.egeNumber}</Badge>
+                    <Badge variant="warning" size="sm">{item.topic}</Badge>
                     <Badge variant={difficultyVariant[item.difficulty]} size="sm">
                       {difficultyLabel[item.difficulty]}
                     </Badge>

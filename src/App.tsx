@@ -136,13 +136,11 @@ function AppContent() {
       case 'ai-assistant':
         return user.role === 'TEACHER' ? <AIAssistantPage /> : <StudentDashboard />;
       case 'analytics':
-        return user.role === 'TEACHER' ? (
-          <TeacherAnalytics />
-        ) : user.role === 'STUDENT' ? (
-          <AnalyticsPage />
-        ) : (
-          <AdminDashboard />
-        );
+        return user.role === 'TEACHER'
+          ? <TeacherAnalytics />
+          : user.role === 'STUDENT'
+            ? <AnalyticsPage />
+            : <AdminDashboard />;
       case 'homework':
         return user.role === 'ADMIN' ? <AdminDashboard /> : <HomeworkPage />;
       case 'crm':

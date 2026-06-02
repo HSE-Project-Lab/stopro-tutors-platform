@@ -92,11 +92,7 @@ export function TeacherTaskDetail({
       <CardHeader
         title={prototype.title}
         subtitle={`Задание №${prototype.egeNumber} · ${prototype.topic}`}
-        action={
-          <Badge variant={difficultyVariant[prototype.difficulty]}>
-            {difficultyLabel[prototype.difficulty]}
-          </Badge>
-        }
+        action={<Badge variant={difficultyVariant[prototype.difficulty]}>{difficultyLabel[prototype.difficulty]}</Badge>}
       />
 
       <div className="space-y-4">
@@ -108,16 +104,12 @@ export function TeacherTaskDetail({
         </div>
 
         <div className="rounded-xl border border-indigo-100 bg-indigo-50 p-4">
-          <p className="text-xs font-semibold text-indigo-600 uppercase tracking-wide mb-1">
-            Ответ
-          </p>
+          <p className="text-xs font-semibold text-indigo-600 uppercase tracking-wide mb-1">Ответ</p>
           <p className="text-xl font-bold text-indigo-900">{activeTask.answer}</p>
         </div>
 
         <div className="rounded-xl border border-violet-300 border-l-4 border-l-violet-500 bg-violet-50 p-4">
-          <p className="text-xs font-semibold text-violet-700 uppercase tracking-wide mb-2">
-            Решение
-          </p>
+          <p className="text-xs font-semibold text-violet-700 uppercase tracking-wide mb-2">Решение</p>
           <LaTeX className="text-slate-700 leading-relaxed">
             {activeSolution || 'Решение для выбранной задачи пока отсутствует в базе.'}
           </LaTeX>
@@ -126,9 +118,7 @@ export function TeacherTaskDetail({
         <div className="rounded-xl border border-slate-200 p-4">
           <div className="flex items-center justify-between gap-2 mb-3">
             <h4 className="text-sm font-semibold text-slate-800">Варианты этой задачи</h4>
-            <Badge variant="info" size="sm">
-              {variantsWithPrototype.length} элементов
-            </Badge>
+            <Badge variant="info" size="sm">{variantsWithPrototype.length} элементов</Badge>
           </div>
 
           {isLoadingVariations ? (
@@ -140,9 +130,7 @@ export function TeacherTaskDetail({
                 onClick={() => setSelectedVariationId(null)}
                 className="w-full rounded-lg border p-3 text-left transition-all border-indigo-300 bg-indigo-50 shadow-sm"
               >
-                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">
-                  Прототип
-                </p>
+                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">Прототип</p>
                 <LaTeX className="text-sm text-slate-800">{prototype.contentLatex}</LaTeX>
                 <p className="text-xs text-slate-600 mt-2">
                   Ответ: <span className="font-semibold text-slate-900">{prototype.answer}</span>
@@ -192,11 +180,7 @@ export function TeacherTaskDetail({
                       taskId={item.isPrototype ? prototype.id : item.id}
                       taskNumber={item.egeNumber}
                       isClone={!item.isPrototype}
-                      taskLabel={
-                        item.isPrototype
-                          ? `Прототип · №${item.egeNumber}`
-                          : `${item.title} · №${item.egeNumber}`
-                      }
+                      taskLabel={item.isPrototype ? `Прототип · №${item.egeNumber}` : `${item.title} · №${item.egeNumber}`}
                       difficulty={prototype.difficulty}
                       taskTopics={topicTags}
                       taskPreview={item.contentLatex}

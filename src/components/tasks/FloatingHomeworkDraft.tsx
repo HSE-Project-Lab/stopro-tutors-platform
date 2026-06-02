@@ -63,9 +63,7 @@ export function FloatingHomeworkDraft({
           </div>
           <div>
             <p className="text-sm font-semibold text-slate-900">Черновик домашнего задания</p>
-            <p className="text-xs text-slate-500 mt-0.5">
-              В черновике: {selectedTasks.length} задач
-            </p>
+            <p className="text-xs text-slate-500 mt-0.5">В черновике: {selectedTasks.length} задач</p>
           </div>
         </button>
 
@@ -141,11 +139,7 @@ export function FloatingHomeworkDraft({
       </div>
 
       <div className="mt-3 flex items-center gap-2">
-        <Button
-          size="sm"
-          className="flex-1 h-9 whitespace-nowrap rounded-full"
-          onClick={handleCheckout}
-        >
+        <Button size="sm" className="flex-1 h-9 whitespace-nowrap rounded-full" onClick={handleCheckout}>
           <Check size={16} className="mr-2" />
           Оформить ДЗ
         </Button>
