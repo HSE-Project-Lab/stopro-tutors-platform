@@ -7,9 +7,10 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 
 public record PersonalChatDto(
 		UUID id,
-		UUID studentId,
-		String studentName,
-		String studentAvatarUrl,
+		String chatType,
+		UUID counterpartId,
+		String counterpartName,
+		String counterpartAvatarUrl,
 
 		@JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm'Z'", timezone = "UTC")
 		LocalDateTime lastMessageAt,

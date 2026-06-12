@@ -24,6 +24,7 @@ import ru.stopro.dto.chat.*;
 import ru.stopro.repository.StudyGroupRepository;
 import ru.stopro.repository.UserRepository;
 import ru.stopro.repository.chat.*;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 
 @Service
 @Transactional
@@ -39,6 +40,7 @@ public class ChatService {
 	private final UserRepository userRepository;
 	private final StudyGroupRepository studyGroupRepository;
 	private final ChatMessageService chatMessageService;
+	private final SimpMessagingTemplate messagingTemplate;
 
 	@Transactional
 	public Chat getOrCreatePersonalChat(UUID teacherId, UUID studentId) {
@@ -48,22 +50,32 @@ public class ChatService {
 				.orElseThrow(() -> new IllegalArgumentException("Student not found"));
 
 		Optional<PersonalChat> existingChat = personalChatRepository.findByTeacherAndStudent(teacherId, studentId);
+		Chat chat;
+		boolean isNewChat = false;
 		if (existingChat.isPresent()) {
-			return existingChat.get();
+			chat = existingChat.get();
+			log.info("Personal chat already exists between teacher {} and student {}, ID: {}", teacherId, studentId, chat.getId());
+		} else {
+			PersonalChat personalChat = new PersonalChat();
+			personalChat.setChatType(ChatType.PERSONAL);
+			personalChat.setTeacher(teacher);
+			personalChat.setStudent(student);
+			personalChat.setStatus(ChatStatus.ACTIVE);
+
+			chat = chatRepository.save(personalChat);
+			chatMessageService.createSystemMessage(chat.getId(), "Чат создан");
+			isNewChat = true;
+			log.info("Personal chat created between teacher {} and student {}, ID: {}", teacherId, studentId, chat.getId());
 		}
 
-		PersonalChat personalChat = new PersonalChat();
-		personalChat.setChatType(ChatType.PERSONAL);
-		personalChat.setTeacher(teacher);
-		personalChat.setStudent(student);
-		personalChat.setStatus(ChatStatus.ACTIVE);
+		addParticipant(chat.getId(), teacherId);
+		addParticipant(chat.getId(), studentId);
 
-		Chat savedChat = chatRepository.save(personalChat);
-		addParticipant(savedChat.getId(), teacherId);
-		addParticipant(savedChat.getId(), studentId);
-		chatMessageService.createSystemMessage(savedChat.getId(), "Чат создан");
-		log.info("Personal chat created between teacher {} and student {}", teacherId, studentId);
-		return savedChat;
+		if (isNewChat) {
+			notifyStudentOfNewChat(studentId, chat);
+		}
+
+		return chat;
 	}
 
 	@Transactional
@@ -105,6 +117,7 @@ public class ChatService {
 						.orElseThrow(() -> new IllegalArgumentException("Student not found: " + studentId));
 				addParticipant(savedChat.getId(), studentId);
 				studyGroup.getStudents().add(student);
+				notifyStudentOfNewChat(studentId, savedChat);
 			}
 			studyGroupRepository.save(studyGroup);
 		}
@@ -167,6 +180,7 @@ public class ChatService {
 		}
 
 		chatMessageService.createSystemMessage(chatId, student.getFullName() + " добавлен в группу");
+		notifyStudentOfNewChat(studentId, chat);
 		log.info("Student {} added to group chat {}", studentId, chatId);
 	}
 
@@ -217,12 +231,21 @@ public class ChatService {
 			throw new IllegalArgumentException("Chat is not a group chat");
 		}
 
-		chat.setStatus(ChatStatus.PENDING_DELETION);
-		chatRepository.save(chat);
-		log.info("Group chat {} marked for deletion", chatId);
+		GroupChat groupChat = (GroupChat) chat;
+		StudyGroup studyGroup = groupChat.getStudyGroup();
+
+		chatRepository.delete(chat);
+		chatRepository.flush();
+
+		if (studyGroup != null) {
+			studyGroup.getStudents().clear();
+			studyGroupRepository.saveAndFlush(studyGroup);
+			studyGroupRepository.delete(studyGroup);
+		}
+
+		log.info("Group chat {} deleted by teacher {}", chatId, teacherId);
 	}
 
-	@Transactional
 	public void addParticipant(UUID chatId, UUID userId) {
 		Chat chat = chatRepository.findById(chatId)
 				.orElseThrow(() -> new IllegalArgumentException("Chat not found"));
@@ -230,7 +253,15 @@ public class ChatService {
 				.orElseThrow(() -> new IllegalArgumentException("User not found"));
 
 		Optional<ChatParticipant> existing = chatParticipantRepository.findByChatAndUser(chatId, userId);
-		if (existing.isPresent() && existing.get().getLeftAt() == null) {
+		if (existing.isPresent()) {
+			if (existing.get().getLeftAt() == null) {
+				log.debug("User {} already participant in chat {}", userId, chatId);
+				return;
+			}
+			existing.get().setLeftAt(null);
+			existing.get().setJoinedAt(LocalDateTime.now());
+			chatParticipantRepository.save(existing.get());
+			log.info("User {} re-joined chat {}", userId, chatId);
 			return;
 		}
 
@@ -240,7 +271,7 @@ public class ChatService {
 				.joinedAt(LocalDateTime.now())
 				.build();
 		chatParticipantRepository.save(participant);
-		log.debug("User {} added as participant to chat {}", userId, chatId);
+		log.info("User {} added as participant to chat {}", userId, chatId);
 	}
 
 	@Transactional(readOnly = true)
@@ -253,6 +284,7 @@ public class ChatService {
 					Integer unreadCount = countUnreadMessages(chat.getId(), teacherId);
 					return new PersonalChatDto(
 							chat.getId(),
+							ChatType.PERSONAL.name(),
 							pc.getStudent().getId(),
 							pc.getStudent().getFullName(),
 							null,
@@ -268,10 +300,12 @@ public class ChatService {
 	public List<GroupChatDto> getTeacherGroupChats(UUID teacherId) {
 		List<GroupChat> groupChats = groupChatRepository.findByTeacherId(teacherId);
 		return groupChats.stream()
+				.filter(gc -> gc.getStatus() == ChatStatus.ACTIVE)
 				.map(gc -> {
 					Integer unreadCount = countUnreadMessages(gc.getId(), teacherId);
 					return new GroupChatDto(
 							gc.getId(),
+							ChatType.GROUP.name(),
 							gc.getChatName(),
 							gc.getChatAvatarUrl(),
 							gc.getStudyGroup().getId(),
@@ -285,27 +319,46 @@ public class ChatService {
 	}
 
 	@Transactional(readOnly = true)
-	public List<ChatDto> getStudentChats(UUID studentId) {
+	public List<Object> getStudentChats(UUID studentId) {
 		List<UUID> chatIds = chatParticipantRepository.findChatsForUser(studentId);
-		return chatIds.stream()
+		log.info("Found {} chats for student {}", chatIds.size(), studentId);
+
+		List<Object> result = chatIds.stream()
 				.map(chatId -> chatRepository.findById(chatId).orElse(null))
 				.filter(c -> c != null && c.getStatus() == ChatStatus.ACTIVE)
 				.map(chat -> {
 					Integer unreadCount = countUnreadMessages(chat.getId(), studentId);
-					return new ChatDto(
-							chat.getId(),
-							chat.getChatType().name(),
-							chat.getTeacher().getId(),
-							chat.getChatName(),
-							chat.getChatAvatarUrl(),
-							chat.getStatus().name(),
-							chat.getLastMessageAt(),
-							unreadCount,
-							chat.getCreatedAt(),
-							chat.getUpdatedAt()
-					);
+					if (chat.getChatType() == ChatType.PERSONAL) {
+						PersonalChat pc = (PersonalChat) chat;
+						return (Object) new PersonalChatDto(
+								chat.getId(),
+								ChatType.PERSONAL.name(),
+								chat.getTeacher().getId(),
+								chat.getTeacher().getFullName(),
+								null,
+								chat.getLastMessageAt(),
+								unreadCount,
+								chat.getCreatedAt()
+						);
+					} else {
+						GroupChat gc = (GroupChat) chat;
+						return (Object) new GroupChatDto(
+								chat.getId(),
+								ChatType.GROUP.name(),
+								chat.getChatName(),
+								chat.getChatAvatarUrl(),
+								gc.getStudyGroup().getId(),
+								gc.getStudyGroup().getStudentsCount(),
+								chat.getLastMessageAt(),
+								unreadCount,
+								chat.getCreatedAt()
+						);
+					}
 				})
 				.collect(Collectors.toList());
+
+		log.info("Returning {} active chats for student {}", result.size(), studentId);
+		return result;
 	}
 
 	@Transactional(readOnly = true)
@@ -325,6 +378,17 @@ public class ChatService {
 			participant.get().setLastReadAt(LocalDateTime.now());
 			chatParticipantRepository.save(participant.get());
 			log.debug("Messages marked as read for user {} in chat {}", userId, chatId);
+		}
+	}
+
+	/**
+	 * Проверить, что пользователь является активным участником чата.
+	 *
+	 * @throws IllegalArgumentException если пользователь не является участником
+	 */
+	public void requireChatAccess(UUID chatId, UUID userId) {
+		if (!chatParticipantRepository.isUserInChat(chatId, userId)) {
+			throw new IllegalArgumentException("Нет доступа к данному чату");
 		}
 	}
 
@@ -348,6 +412,38 @@ public class ChatService {
 		return pinnedMessages.stream()
 				.map(this::convertToDto)
 				.collect(Collectors.toList());
+	}
+
+	private void notifyStudentOfNewChat(UUID studentId, Chat chat) {
+		try {
+			log.info("Sending new chat notification to student {}", studentId);
+			messagingTemplate.convertAndSend(
+					"/topic/notifications/" + studentId,
+					new ChatNotificationDto(
+							"new_chat",
+							chat.getId().toString(),
+							chat.getChatType().name(),
+							"Новый чат создан"
+					)
+			);
+			log.info("New chat notification sent to student {}", studentId);
+		} catch (Exception e) {
+			log.error("Failed to send chat notification to student {}: {}", studentId, e.getMessage());
+		}
+	}
+
+	public static class ChatNotificationDto {
+		public String type;
+		public String chatId;
+		public String chatType;
+		public String message;
+
+		public ChatNotificationDto(String type, String chatId, String chatType, String message) {
+			this.type = type;
+			this.chatId = chatId;
+			this.chatType = chatType;
+			this.message = message;
+		}
 	}
 
 	private ChatMessageDto convertToDto(ChatMessage message) {

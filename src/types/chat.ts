@@ -12,9 +12,9 @@ export interface Chat {
 }
 
 export interface PersonalChat extends Chat {
-  studentId: string;
-  studentName: string;
-  studentAvatarUrl: string | null;
+  counterpartId: string;
+  counterpartName: string;
+  counterpartAvatarUrl: string | null;
 }
 
 export interface GroupChat extends Chat {
@@ -59,6 +59,12 @@ export interface ChatParticipant {
   userName: string;
   userEmail: string;
   unreadCount: number;
+}
+
+export interface ChatEvent {
+  type: 'MESSAGE_SENT' | 'MESSAGE_EDITED' | 'MESSAGE_DELETED' | 'MESSAGE_PINNED' | 'MESSAGE_UNPINNED';
+  message: ChatMessage | null;
+  messageId: string | null;
 }
 
 export interface SendMessageRequest {

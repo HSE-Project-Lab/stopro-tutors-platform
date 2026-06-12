@@ -16,7 +16,13 @@ import ru.stopro.domain.entity.ChatMessage;
 @Repository
 public interface ChatMessageRepository extends JpaRepository<ChatMessage, UUID> {
 
-	Page<ChatMessage> findByChatIdOrderByCreatedAtAsc(UUID chatId, Pageable pageable);
+	@Query("""
+	            SELECT cm FROM ChatMessage cm
+	            WHERE cm.chat.id = :chatId
+	            AND cm.isDeleted = FALSE
+	            ORDER BY cm.createdAt ASC
+	            """)
+	Page<ChatMessage> findByChatIdOrderByCreatedAtAsc(@Param("chatId") UUID chatId, Pageable pageable);
 
 	List<ChatMessage> findByChatIdAndCreatedAtAfterOrderByCreatedAtAsc(UUID chatId, LocalDateTime createdAt);
 

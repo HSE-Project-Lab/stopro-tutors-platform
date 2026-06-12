@@ -1,9 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useAuthStore } from '@/store/authStore';
 import { useChatStore } from '@/store/chatStore';
+import { webSocketService } from '@/lib/websocket';
 import api from '@/lib/axios';
 import { Mail, Search, Users, User } from 'lucide-react';
-import type { PersonalChat, GroupChat } from '@/types/chat';
+import type { ChatEvent, PersonalChat, GroupChat } from '@/types/chat';
 import { ChatWindow } from '@/components/chat/ChatWindow';
 
 export function ChatsPage() {
@@ -17,14 +18,66 @@ export function ChatsPage() {
     setGroupChats,
     setMessages,
     markChatLoaded,
+    updateChatUnreadCount,
   } = useChatStore();
 
   const [activeTab, setActiveTab] = useState<'personal' | 'group'>('personal');
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(false);
+  const chatSubscriptionsRef = useRef<Map<string, () => void>>(new Map());
+  const privateSubscriptionRef = useRef<(() => void) | null>(null);
+
+  const setupChatSubscriptions = () => {
+    const { personalChats: pc, groupChats: gc } = useChatStore.getState();
+    [...pc, ...gc].forEach((chat) => {
+      if (chatSubscriptionsRef.current.has(chat.id)) return;
+      const unsubscribe = webSocketService.subscribeToChatMessages(chat.id, (event: ChatEvent) => {
+        if (event.type !== 'MESSAGE_SENT') return;
+        if (event.message?.messageType !== 'TEXT') return;
+        const state = useChatStore.getState();
+        if (chat.id === state.selectedChatId) return;
+        const current = [...state.personalChats, ...state.groupChats].find((c) => c.id === chat.id);
+        updateChatUnreadCount(chat.id, (current?.unreadCount ?? 0) + 1);
+      });
+      if (unsubscribe !== null) {
+        chatSubscriptionsRef.current.set(chat.id, unsubscribe);
+      }
+    });
+  };
+
+  const setupPrivateSubscription = () => {
+    if (privateSubscriptionRef.current) return;
+    const userId = user?.id;
+    if (!userId) return;
+    const unsubscribe = webSocketService.subscribeToUserNotifications(userId, (notification: any) => {
+      if (notification.type === 'new_chat') {
+        loadChats().then(() => setupChatSubscriptions());
+      }
+    });
+    if (unsubscribe !== null) {
+      privateSubscriptionRef.current = unsubscribe;
+    }
+  };
 
   useEffect(() => {
-    loadChats();
+    loadChats().then(() => setupChatSubscriptions());
+    setupPrivateSubscription();
+
+    const wsHandler = (connected: boolean) => {
+      if (connected) {
+        setupPrivateSubscription();
+        setupChatSubscriptions();
+      }
+    };
+    webSocketService.onConnectionStatusChange(wsHandler);
+
+    return () => {
+      chatSubscriptionsRef.current.forEach((unsub) => unsub());
+      chatSubscriptionsRef.current.clear();
+      privateSubscriptionRef.current?.();
+      privateSubscriptionRef.current = null;
+      webSocketService.removeConnectionStatusHandler(wsHandler);
+    };
   }, []);
 
   const preloadAllMessages = (chats: (PersonalChat | GroupChat)[]) => {
@@ -62,8 +115,10 @@ export function ChatsPage() {
       }
 
       preloadAllMessages(allChats);
+      return allChats;
     } catch (error) {
       console.error('Error loading chats:', error);
+      return [];
     } finally {
       setLoading(false);
     }
@@ -72,10 +127,10 @@ export function ChatsPage() {
   const filteredChats =
     activeTab === 'personal'
       ? personalChats.filter((c) =>
-          c.studentName?.toLowerCase().includes(searchQuery.toLowerCase())
+          !searchQuery || c.counterpartName?.toLowerCase().includes(searchQuery.toLowerCase())
         )
       : groupChats.filter((c) =>
-          c.chatName?.toLowerCase().includes(searchQuery.toLowerCase())
+          !searchQuery || c.chatName?.toLowerCase().includes(searchQuery.toLowerCase())
         );
 
   return (
@@ -134,10 +189,10 @@ export function ChatsPage() {
             filteredChats.map((chat) => {
               const isPersonal = activeTab === 'personal';
               const avatarUrl = isPersonal
-                ? (chat as PersonalChat).studentAvatarUrl
+                ? (chat as PersonalChat).counterpartAvatarUrl
                 : (chat as GroupChat).chatAvatarUrl;
               const name = isPersonal
-                ? (chat as PersonalChat).studentName
+                ? (chat as PersonalChat).counterpartName
                 : (chat as GroupChat).chatName;
 
               return (

@@ -4,7 +4,7 @@ import { Send, Trash2 } from 'lucide-react';
 import { useChatStore } from '@/store/chatStore';
 import { useAuthStore } from '@/store/authStore';
 import { webSocketService } from '@/lib/websocket';
-import type { ChatMessage } from '@/types/chat';
+import type { ChatEvent, ChatMessage } from '@/types/chat';
 
 interface ChatWindowProps {
   chatId: string;
@@ -12,7 +12,7 @@ interface ChatWindowProps {
 
 export function ChatWindow({ chatId }: ChatWindowProps) {
   const { user, token } = useAuthStore();
-  const { messages, loadedChats, addMessage, setMessages, markChatLoaded } = useChatStore();
+  const { messages, loadedChats, addMessage, updateMessage, deleteMessage, setMessages, markChatLoaded, updateChatUnreadCount } = useChatStore();
   const [input, setInput] = useState('');
   const [stickyDate, setStickyDate] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -30,8 +30,14 @@ export function ChatWindow({ chatId }: ChatWindowProps) {
       }
       unsubscribeRef.current = webSocketService.subscribeToChatMessages(
         chatId,
-        (message: ChatMessage) => {
-          addMessage(chatId, message);
+        (event: ChatEvent) => {
+          if (event.type === 'MESSAGE_SENT') {
+            addMessage(chatId, event.message!);
+          } else if (event.type === 'MESSAGE_EDITED' || event.type === 'MESSAGE_PINNED' || event.type === 'MESSAGE_UNPINNED') {
+            updateMessage(chatId, event.message!);
+          } else if (event.type === 'MESSAGE_DELETED') {
+            deleteMessage(chatId, event.messageId!);
+          }
         }
       );
     };
@@ -91,6 +97,12 @@ export function ChatWindow({ chatId }: ChatWindowProps) {
       markChatLoaded(chatId);
     } catch (error) {
       console.error('Error loading messages:', error);
+    }
+    try {
+      await api.post(`/chats/${chatId}/mark-read`);
+      updateChatUnreadCount(chatId, 0);
+    } catch (error) {
+      console.error('Error marking messages as read:', error);
     }
   };
 
@@ -152,7 +164,7 @@ export function ChatWindow({ chatId }: ChatWindowProps) {
         );
         lastDate = msgDate;
       }
-      const isOwn = user?.fullName ? msg.senderName === user.fullName : false;
+      const isOwn = user?.id ? msg.senderId === user.id : false;
       elements.push(
         <MessageBubble
           key={msg.id}

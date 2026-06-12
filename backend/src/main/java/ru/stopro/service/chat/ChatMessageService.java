@@ -11,6 +11,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import org.springframework.data.domain.PageRequest;
+
 import ru.stopro.domain.entity.Chat;
 import ru.stopro.domain.entity.ChatMessage;
 import ru.stopro.domain.entity.MessageAttachment;
@@ -18,10 +20,13 @@ import ru.stopro.domain.entity.MessageReadReceipt;
 import ru.stopro.domain.entity.User;
 import ru.stopro.domain.enums.AttachmentType;
 import ru.stopro.domain.enums.ChatMessageType;
+import ru.stopro.domain.enums.ChatStatus;
 import ru.stopro.dto.chat.AttachmentDto;
 import ru.stopro.dto.chat.ChatMessageDto;
 import ru.stopro.repository.UserRepository;
+import ru.stopro.repository.chat.ChatInactivityWarningRepository;
 import ru.stopro.repository.chat.ChatMessageRepository;
+import ru.stopro.repository.chat.ChatParticipantRepository;
 import ru.stopro.repository.chat.ChatRepository;
 import ru.stopro.repository.chat.MessageReadReceiptRepository;
 
@@ -36,16 +41,24 @@ public class ChatMessageService {
 
 	private final ChatMessageRepository chatMessageRepository;
 	private final ChatRepository chatRepository;
+	private final ChatParticipantRepository chatParticipantRepository;
 	private final UserRepository userRepository;
 	private final MessageReadReceiptRepository messageReadReceiptRepository;
+	private final ChatInactivityWarningRepository chatInactivityWarningRepository;
 
 	/**
 	 * Отправить текстовое сообщение в чат.
 	 */
 	@Transactional
 	public ChatMessageDto sendMessage(UUID chatId, UUID senderId, String content) {
+		if (content == null || content.isBlank()) {
+			throw new IllegalArgumentException("Сообщение не может быть пустым");
+		}
 		if (content.length() > 4096) {
 			throw new IllegalArgumentException("Сообщение не может быть длиннее 4096 символов");
+		}
+		if (!chatParticipantRepository.isUserInChat(chatId, senderId)) {
+			throw new IllegalArgumentException("Пользователь не является участником чата");
 		}
 
 		Chat chat = chatRepository.findById(chatId)
@@ -65,6 +78,15 @@ public class ChatMessageService {
 		ChatMessage savedMessage = chatMessageRepository.save(message);
 
 		chat.setLastMessageAt(LocalDateTime.now());
+
+		if (chat.getStatus() == ChatStatus.PENDING_DELETION) {
+			chatInactivityWarningRepository
+				.findLatestActiveWarning(chatId, PageRequest.of(0, 1))
+				.forEach(w -> w.setWarningDismissed(true));
+			chat.setStatus(ChatStatus.ACTIVE);
+			log.info("Chat {} restored to ACTIVE after message from user {}", chatId, senderId);
+		}
+
 		chatRepository.save(chat);
 
 		log.info("Message sent to chat {} by user {}", chatId, senderId);
@@ -76,6 +98,9 @@ public class ChatMessageService {
 	 */
 	@Transactional
 	public ChatMessageDto editMessage(UUID messageId, UUID editorId, String newContent) {
+		if (newContent == null || newContent.isBlank()) {
+			throw new IllegalArgumentException("Сообщение не может быть пустым");
+		}
 		if (newContent.length() > 4096) {
 			throw new IllegalArgumentException("Сообщение не может быть длиннее 4096 символов");
 		}
@@ -84,11 +109,7 @@ public class ChatMessageService {
 			.orElseThrow(() -> new IllegalArgumentException("Message not found"));
 
 		if (!message.getSender().getId().equals(editorId)) {
-			User editor = userRepository.findById(editorId)
-				.orElseThrow(() -> new IllegalArgumentException("User not found"));
-			if (!"TEACHER".equals(editor.getRole().name()) && !"ADMIN".equals(editor.getRole().name())) {
-				throw new IllegalArgumentException("You can only edit your own messages");
-			}
+			throw new IllegalArgumentException("Редактировать можно только свои сообщения");
 		}
 
 		message.setContent(newContent);
@@ -110,12 +131,10 @@ public class ChatMessageService {
 		ChatMessage message = chatMessageRepository.findById(messageId)
 			.orElseThrow(() -> new IllegalArgumentException("Message not found"));
 
-		if (!message.getSender().getId().equals(deleterId)) {
-			User deleter = userRepository.findById(deleterId)
-				.orElseThrow(() -> new IllegalArgumentException("User not found"));
-			if (!"TEACHER".equals(deleter.getRole().name()) && !"ADMIN".equals(deleter.getRole().name())) {
-				throw new IllegalArgumentException("You can only delete your own messages");
-			}
+		boolean isOwnMessage = message.getSender().getId().equals(deleterId);
+		boolean isChatOwner = message.getChat().getTeacher().getId().equals(deleterId);
+		if (!isOwnMessage && !isChatOwner) {
+			throw new IllegalArgumentException("Недостаточно прав для удаления сообщения");
 		}
 
 		message.setIsDeleted(true);
@@ -125,7 +144,7 @@ public class ChatMessageService {
 	}
 
 	/**
-	 * Закрепить сообщение (только для учителя).
+	 * Закрепить сообщение (только для учителя-владельца чата).
 	 */
 	@Transactional
 	public ChatMessageDto pinMessage(UUID messageId, UUID teacherId) {
@@ -136,7 +155,10 @@ public class ChatMessageService {
 			.orElseThrow(() -> new IllegalArgumentException("User not found"));
 
 		if (!"TEACHER".equals(teacher.getRole().name()) && !"ADMIN".equals(teacher.getRole().name())) {
-			throw new IllegalArgumentException("Only teachers can pin messages");
+			throw new IllegalArgumentException("Закреплять сообщения может только учитель");
+		}
+		if (!message.getChat().getTeacher().getId().equals(teacherId)) {
+			throw new IllegalArgumentException("Недостаточно прав для закрепления в этом чате");
 		}
 
 		message.setPinnedBy(teacher);
@@ -151,10 +173,10 @@ public class ChatMessageService {
 	}
 
 	/**
-	 * Открепить сообщение.
+	 * Открепить сообщение (только для учителя-владельца чата).
 	 */
 	@Transactional
-	public void unpinMessage(UUID messageId, UUID teacherId) {
+	public ChatMessageDto unpinMessage(UUID messageId, UUID teacherId) {
 		ChatMessage message = chatMessageRepository.findById(messageId)
 			.orElseThrow(() -> new IllegalArgumentException("Message not found"));
 
@@ -162,17 +184,21 @@ public class ChatMessageService {
 			.orElseThrow(() -> new IllegalArgumentException("User not found"));
 
 		if (!"TEACHER".equals(teacher.getRole().name()) && !"ADMIN".equals(teacher.getRole().name())) {
-			throw new IllegalArgumentException("Only teachers can unpin messages");
+			throw new IllegalArgumentException("Откреплять сообщения может только учитель");
+		}
+		if (!message.getChat().getTeacher().getId().equals(teacherId)) {
+			throw new IllegalArgumentException("Недостаточно прав для открепления в этом чате");
 		}
 
 		message.setPinnedBy(null);
 		message.setPinnedAt(null);
 
-		chatMessageRepository.save(message);
+		ChatMessage updatedMessage = chatMessageRepository.save(message);
 
 		createSystemMessage(message.getChat().getId(), "Сообщение откреплено");
 
 		log.info("Message {} unpinned by teacher {}", messageId, teacherId);
+		return convertToDto(updatedMessage, teacherId);
 	}
 
 	/**

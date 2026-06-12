@@ -1,5 +1,6 @@
 package ru.stopro.repository.chat;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -45,9 +46,25 @@ public interface ChatRepository extends JpaRepository<Chat, UUID> {
 	 * Найти чаты, ожидающие удаления (для автоматического удаления через неделю).
 	 */
 	@Query("""
-		SELECT c FROM Chat c 
+		SELECT c FROM Chat c
 		WHERE c.status = 'PENDING_DELETION'
 		""")
 	List<Chat> findChatsPendingDeletion();
+
+	/**
+	 * Найти активные чаты без сообщений с указанной даты и без действующего предупреждения о неактивности.
+	 *
+	 * @param threshold дата, раньше которой не должно быть активности
+	 */
+	@Query("""
+		SELECT c FROM Chat c
+		WHERE c.status = 'ACTIVE'
+		AND COALESCE(c.lastMessageAt, c.createdAt) < :threshold
+		AND NOT EXISTS (
+			SELECT ciw FROM ChatInactivityWarning ciw
+			WHERE ciw.chat = c AND ciw.warningDismissed = FALSE
+		)
+		""")
+	List<Chat> findChatsInactiveFor(@Param("threshold") LocalDateTime threshold);
 }
 

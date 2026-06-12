@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useAuthStore } from '@/store/authStore';
 import { useAppStore } from '@/store/appStore';
+import { webSocketService } from '@/lib/websocket';
 import { Layout } from '@/components/layout/Layout';
 import { LoginPage } from '@/pages/LoginPage';
 import { LandingPage } from '@/pages/LandingPage';
@@ -44,23 +45,30 @@ const applyTextSizePreference = (size: UiTextSize) => {
 };
 
 function AppContent() {
-  const { user } = useAuthStore();
+  const { user, token } = useAuthStore();
   const { activeTab, setActiveTab } = useAppStore();
   const previousRoleRef = useRef(user?.role);
 
   const [showLogin, setShowLogin] = useState(false);
 
   useEffect(() => {
-    if (!user) {
+    if (!user || !token) {
       previousRoleRef.current = undefined;
+      webSocketService.disconnect();
       return;
     }
+
+    webSocketService.connect(token);
 
     if (previousRoleRef.current && previousRoleRef.current !== user.role) {
       setActiveTab('dashboard');
     }
 
     previousRoleRef.current = user.role;
+
+    return () => {
+      webSocketService.disconnect();
+    };
   }, [user, setActiveTab]);
 
   useEffect(() => {

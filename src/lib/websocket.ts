@@ -1,6 +1,6 @@
 import SockJS from 'sockjs-client';
 import { Client, IFrame, IMessage } from '@stomp/stompjs';
-import type { ChatMessage } from '@/types/chat';
+import type { ChatEvent, ChatMessage } from '@/types/chat';
 
 /**
  * WebSocket service для реального общения в чате через STOMP protocol
@@ -168,10 +168,9 @@ class WebSocketService {
   /**
    * Подписаться на сообщения чата
    */
-  subscribeToChatMessages(chatId: string, handler: (message: ChatMessage) => void) {
+  subscribeToChatMessages(chatId: string, handler: (event: ChatEvent) => void): (() => void) | null {
     if (!this.client?.connected) {
-      console.error('WebSocket not connected');
-      return () => {};
+      return null;
     }
 
     const subscription = this.client.subscribe(
@@ -235,6 +234,13 @@ class WebSocketService {
   }
 
   /**
+   * Отписаться от изменений статуса подключения
+   */
+  removeConnectionStatusHandler(handler: (connected: boolean) => void) {
+    this.connectionHandlers = this.connectionHandlers.filter((h) => h !== handler);
+  }
+
+  /**
    * Получить статус подключения
    */
   isConnected(): boolean {
@@ -259,10 +265,9 @@ class WebSocketService {
   /**
    * Подписаться на приватные сообщения
    */
-  subscribeToPrivateMessages(handler: (message: any) => void) {
+  subscribeToPrivateMessages(handler: (message: any) => void): (() => void) | null {
     if (!this.client?.connected) {
-      console.error('WebSocket not connected');
-      return () => {};
+      return null;
     }
 
     const subscription = this.client.subscribe(
@@ -273,6 +278,29 @@ class WebSocketService {
           handler(body);
         } catch (e) {
           console.error('Error parsing private message:', e);
+        }
+      }
+    );
+
+    return () => subscription.unsubscribe();
+  }
+
+  /**
+   * Подписаться на уведомления конкретного пользователя
+   */
+  subscribeToUserNotifications(userId: string, handler: (message: any) => void): (() => void) | null {
+    if (!this.client?.connected) {
+      return null;
+    }
+
+    const subscription = this.client.subscribe(
+      `/topic/notifications/${userId}`,
+      (message: IMessage) => {
+        try {
+          const body = JSON.parse(message.body);
+          handler(body);
+        } catch (e) {
+          console.error('Error parsing notification:', e);
         }
       }
     );

@@ -17,6 +17,7 @@ import ru.stopro.dto.student.StudentCredentialsDto;
 import ru.stopro.dto.student.StudentDto;
 import ru.stopro.repository.StudyGroupRepository;
 import ru.stopro.repository.UserRepository;
+import ru.stopro.repository.chat.GroupChatRepository;
 import ru.stopro.service.chat.ChatService;
 
 @Service
@@ -25,6 +26,7 @@ public class TeacherService {
 
 	private final UserRepository userRepository;
 	private final StudyGroupRepository studyGroupRepository;
+	private final GroupChatRepository groupChatRepository;
 	private final PasswordEncoder passwordEncoder;
 	private final ChatService chatService;
 
@@ -79,6 +81,8 @@ public class TeacherService {
 			}
 			group.getStudents().add(student);
 			studyGroupRepository.save(group);
+			groupChatRepository.findByStudyGroupId(groupId)
+					.ifPresent(chat -> chatService.addStudentToGroupChat(chat.getId(), student.getId(), teacherUserId));
 		}
 		return StudentCreateResponse.builder().student(StudentDto.fromEntity(student, groupId)).credentials(
 				StudentCredentialsDto.builder().fullName(fullName).username(username).password(rawPassword).build())
@@ -106,6 +110,10 @@ public class TeacherService {
 				old.getStudents().removeIf(s -> s.getId().equals(studentId));
 				studyGroupRepository.save(old);
 			}
+			if (newGroupId == null) {
+				groupChatRepository.findByStudyGroupId(currentGroupId)
+						.ifPresent(chat -> chatService.removeStudentFromGroupChat(chat.getId(), studentId, teacherUserId));
+			}
 		}
 		if (newGroupId != null) {
 			StudyGroup group = studyGroupRepository.findById(newGroupId)
@@ -115,6 +123,8 @@ public class TeacherService {
 			}
 			group.getStudents().add(student);
 			studyGroupRepository.save(group);
+			groupChatRepository.findByStudyGroupId(newGroupId)
+					.ifPresent(chat -> chatService.addStudentToGroupChat(chat.getId(), studentId, teacherUserId));
 		}
 		return StudentDto.fromEntity(student, newGroupId);
 	}

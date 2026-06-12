@@ -7,6 +7,7 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 
 public record GroupChatDto(
 		UUID id,
+		String chatType,
 		String chatName,
 		String chatAvatarUrl,
 		UUID studyGroupId,

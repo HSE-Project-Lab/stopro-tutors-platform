@@ -106,9 +106,9 @@ public class ChatController {
 	 */
 	@GetMapping
 	@PreAuthorize("hasRole('STUDENT')")
-	public ResponseEntity<List<ChatDto>> getMyChats(Authentication authentication) {
+	public ResponseEntity<List<Object>> getMyChats(Authentication authentication) {
 		UUID userId = extractUserIdFromAuth(authentication);
-		List<ChatDto> chats = chatService.getStudentChats(userId);
+		List<Object> chats = chatService.getStudentChats(userId);
 		return ResponseEntity.ok(chats);
 	}
 
@@ -125,7 +125,7 @@ public class ChatController {
 	}
 
 	/**
-	 * Удалить групповой чат (отложенное удаление).
+	 * Удалить групповой чат вместе со связанной учебной группой.
 	 */
 	@DeleteMapping("/groups/{chatId}")
 	@PreAuthorize("hasRole('TEACHER')")
@@ -176,8 +176,11 @@ public class ChatController {
 	public ResponseEntity<Page<ChatMessageDto>> getChatHistory(
 		@PathVariable UUID chatId,
 		@RequestParam(defaultValue = "0") int page,
-		@RequestParam(defaultValue = "50") int pageSize) {
+		@RequestParam(defaultValue = "50") int pageSize,
+		Authentication authentication) {
 
+		UUID userId = extractUserIdFromAuth(authentication);
+		chatService.requireChatAccess(chatId, userId);
 		Page<ChatMessageDto> messages = chatService.getChatHistory(chatId, page, pageSize);
 		return ResponseEntity.ok(messages);
 	}
@@ -191,8 +194,11 @@ public class ChatController {
 		@PathVariable UUID chatId,
 		@RequestParam String query,
 		@RequestParam(defaultValue = "0") int page,
-		@RequestParam(defaultValue = "20") int pageSize) {
+		@RequestParam(defaultValue = "20") int pageSize,
+		Authentication authentication) {
 
+		UUID userId = extractUserIdFromAuth(authentication);
+		chatService.requireChatAccess(chatId, userId);
 		Page<ChatMessageDto> results = chatService.searchMessages(chatId, query, page, pageSize);
 		return ResponseEntity.ok(results);
 	}
@@ -202,7 +208,12 @@ public class ChatController {
 	 */
 	@GetMapping("/{chatId}/pinned-messages")
 	@PreAuthorize("isAuthenticated()")
-	public ResponseEntity<List<ChatMessageDto>> getPinnedMessages(@PathVariable UUID chatId) {
+	public ResponseEntity<List<ChatMessageDto>> getPinnedMessages(
+		@PathVariable UUID chatId,
+		Authentication authentication) {
+
+		UUID userId = extractUserIdFromAuth(authentication);
+		chatService.requireChatAccess(chatId, userId);
 		List<ChatMessageDto> pinnedMessages = chatService.getPinnedMessages(chatId);
 		return ResponseEntity.ok(pinnedMessages);
 	}
@@ -217,6 +228,7 @@ public class ChatController {
 		Authentication authentication) {
 
 		UUID userId = extractUserIdFromAuth(authentication);
+		chatService.requireChatAccess(chatId, userId);
 		chatService.markMessagesAsRead(chatId, userId);
 		return ResponseEntity.ok().build();
 	}
@@ -231,6 +243,7 @@ public class ChatController {
 		Authentication authentication) {
 
 		UUID userId = extractUserIdFromAuth(authentication);
+		chatService.requireChatAccess(chatId, userId);
 		Integer unreadCount = chatService.countUnreadMessages(chatId, userId);
 		return ResponseEntity.ok(unreadCount);
 	}
