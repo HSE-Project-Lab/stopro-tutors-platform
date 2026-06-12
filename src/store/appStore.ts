@@ -9,6 +9,7 @@ export type AppTab =
   | 'ai-assistant'
   | 'analytics'
   | 'homework'
+  | 'chats'
   | 'crm'
   | 'settings';
 

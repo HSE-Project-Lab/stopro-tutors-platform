@@ -1,0 +1,256 @@
+package ru.stopro.controller;
+
+import java.util.List;
+import java.util.UUID;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
+import org.springframework.data.domain.Page;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.*;
+
+import jakarta.validation.Valid;
+
+import ru.stopro.domain.entity.Chat;
+import ru.stopro.domain.entity.User;
+import ru.stopro.dto.chat.*;
+import ru.stopro.repository.UserRepository;
+import ru.stopro.service.chat.ChatMessageService;
+import ru.stopro.service.chat.ChatService;
+
+/**
+ * REST контроллер для управления чатами.
+ *
+ * Endpoints:
+ * - POST /api/v1/chats/personal/{studentId} - получить или создать личный чат
+ * - GET /api/v1/chats/personal - получить все личные чаты (для учителя)
+ * - GET /api/v1/chats/groups - получить все групповые чаты (для учителя)
+ * - GET /api/v1/chats - получить все доступные чаты (для ученика)
+ * - POST /api/v1/chats/groups - создать групповой чат
+ * - PUT /api/v1/chats/groups/{chatId} - обновить информацию о групповом чате
+ * - DELETE /api/v1/chats/groups/{chatId} - удалить групповой чат
+ * - POST /api/v1/chats/{chatId}/students/{studentId} - добавить ученика в групповой чат
+ * - DELETE /api/v1/chats/{chatId}/students/{studentId} - удалить ученика из группового чата
+ * - GET /api/v1/chats/{chatId}/messages - получить историю сообщений
+ * - GET /api/v1/chats/{chatId}/messages/search - поиск сообщений
+ * - GET /api/v1/chats/{chatId}/pinned-messages - получить закрепленные сообщения
+ * - POST /api/v1/chats/{chatId}/mark-read - пометить сообщения как прочитанные
+ */
+@RestController
+@RequestMapping("/api/v1/chats")
+@Slf4j
+@RequiredArgsConstructor
+@CrossOrigin(origins = {"http://localhost:3000", "http://localhost:5173"})
+public class ChatController {
+
+	private final ChatService chatService;
+	private final ChatMessageService chatMessageService;
+	private final UserRepository userRepository;
+
+	/**
+	 * Получить или создать личный чат между текущим учителем и студентом.
+	 */
+	@PostMapping("/personal/{studentId}")
+	@PreAuthorize("hasRole('TEACHER')")
+	public ResponseEntity<ChatDto> getOrCreatePersonalChat(
+		@PathVariable UUID studentId,
+		Authentication authentication) {
+
+		UUID teacherId = extractUserIdFromAuth(authentication);
+		Chat chat = chatService.getOrCreatePersonalChat(teacherId, studentId);
+
+		ChatDto dto = new ChatDto(
+			chat.getId(),
+			chat.getChatType().name(),
+			chat.getTeacher().getId(),
+			chat.getChatName(),
+			chat.getChatAvatarUrl(),
+			chat.getStatus().name(),
+			chat.getLastMessageAt(),
+			0,
+			chat.getCreatedAt(),
+			chat.getUpdatedAt()
+		);
+
+		return ResponseEntity.ok(dto);
+	}
+
+	/**
+	 * Получить все личные чаты преподавателя.
+	 */
+	@GetMapping("/personal")
+	@PreAuthorize("hasRole('TEACHER')")
+	public ResponseEntity<List<PersonalChatDto>> getPersonalChats(Authentication authentication) {
+		UUID teacherId = extractUserIdFromAuth(authentication);
+		List<PersonalChatDto> chats = chatService.getTeacherPersonalChats(teacherId);
+		return ResponseEntity.ok(chats);
+	}
+
+	/**
+	 * Получить все групповые чаты преподавателя.
+	 */
+	@GetMapping("/groups")
+	@PreAuthorize("hasRole('TEACHER')")
+	public ResponseEntity<List<GroupChatDto>> getGroupChats(Authentication authentication) {
+		UUID teacherId = extractUserIdFromAuth(authentication);
+		List<GroupChatDto> chats = chatService.getTeacherGroupChats(teacherId);
+		return ResponseEntity.ok(chats);
+	}
+
+	/**
+	 * Получить все доступные чаты текущего пользователя (для студентов).
+	 */
+	@GetMapping
+	@PreAuthorize("hasRole('STUDENT')")
+	public ResponseEntity<List<ChatDto>> getMyChats(Authentication authentication) {
+		UUID userId = extractUserIdFromAuth(authentication);
+		List<ChatDto> chats = chatService.getStudentChats(userId);
+		return ResponseEntity.ok(chats);
+	}
+
+	@PutMapping("/groups/{chatId}")
+	@PreAuthorize("hasRole('TEACHER')")
+	public ResponseEntity<Void> updateGroupChat(
+		@PathVariable UUID chatId,
+		@Valid @RequestBody UpdateGroupChatRequest request,
+		Authentication authentication) {
+
+		UUID teacherId = extractUserIdFromAuth(authentication);
+		chatService.updateGroupChatName(chatId, teacherId, request);
+		return ResponseEntity.ok().build();
+	}
+
+	/**
+	 * Удалить групповой чат (отложенное удаление).
+	 */
+	@DeleteMapping("/groups/{chatId}")
+	@PreAuthorize("hasRole('TEACHER')")
+	public ResponseEntity<Void> deleteGroupChat(
+		@PathVariable UUID chatId,
+		Authentication authentication) {
+
+		UUID teacherId = extractUserIdFromAuth(authentication);
+		chatService.deleteGroupChat(chatId, teacherId);
+		return ResponseEntity.ok().build();
+	}
+
+	/**
+	 * Добавить студента в групповой чат.
+	 */
+	@PostMapping("/{chatId}/students/{studentId}")
+	@PreAuthorize("hasRole('TEACHER')")
+	public ResponseEntity<Void> addStudentToGroupChat(
+		@PathVariable UUID chatId,
+		@PathVariable UUID studentId,
+		Authentication authentication) {
+
+		UUID teacherId = extractUserIdFromAuth(authentication);
+		chatService.addStudentToGroupChat(chatId, studentId, teacherId);
+		return ResponseEntity.ok().build();
+	}
+
+	/**
+	 * Удалить студента из группового чата.
+	 */
+	@DeleteMapping("/{chatId}/students/{studentId}")
+	@PreAuthorize("hasRole('TEACHER')")
+	public ResponseEntity<Void> removeStudentFromGroupChat(
+		@PathVariable UUID chatId,
+		@PathVariable UUID studentId,
+		Authentication authentication) {
+
+		UUID teacherId = extractUserIdFromAuth(authentication);
+		chatService.removeStudentFromGroupChat(chatId, studentId, teacherId);
+		return ResponseEntity.ok().build();
+	}
+
+	/**
+	 * Получить историю сообщений в чате.
+	 */
+	@GetMapping("/{chatId}/messages")
+	@PreAuthorize("isAuthenticated()")
+	public ResponseEntity<Page<ChatMessageDto>> getChatHistory(
+		@PathVariable UUID chatId,
+		@RequestParam(defaultValue = "0") int page,
+		@RequestParam(defaultValue = "50") int pageSize) {
+
+		Page<ChatMessageDto> messages = chatService.getChatHistory(chatId, page, pageSize);
+		return ResponseEntity.ok(messages);
+	}
+
+	/**
+	 * Поиск сообщений в чате.
+	 */
+	@GetMapping("/{chatId}/messages/search")
+	@PreAuthorize("isAuthenticated()")
+	public ResponseEntity<Page<ChatMessageDto>> searchMessages(
+		@PathVariable UUID chatId,
+		@RequestParam String query,
+		@RequestParam(defaultValue = "0") int page,
+		@RequestParam(defaultValue = "20") int pageSize) {
+
+		Page<ChatMessageDto> results = chatService.searchMessages(chatId, query, page, pageSize);
+		return ResponseEntity.ok(results);
+	}
+
+	/**
+	 * Получить закрепленные сообщения в чате.
+	 */
+	@GetMapping("/{chatId}/pinned-messages")
+	@PreAuthorize("isAuthenticated()")
+	public ResponseEntity<List<ChatMessageDto>> getPinnedMessages(@PathVariable UUID chatId) {
+		List<ChatMessageDto> pinnedMessages = chatService.getPinnedMessages(chatId);
+		return ResponseEntity.ok(pinnedMessages);
+	}
+
+	/**
+	 * Пометить сообщения как прочитанные.
+	 */
+	@PostMapping("/{chatId}/mark-read")
+	@PreAuthorize("isAuthenticated()")
+	public ResponseEntity<Void> markMessagesAsRead(
+		@PathVariable UUID chatId,
+		Authentication authentication) {
+
+		UUID userId = extractUserIdFromAuth(authentication);
+		chatService.markMessagesAsRead(chatId, userId);
+		return ResponseEntity.ok().build();
+	}
+
+	/**
+	 * Получить количество непрочитанных сообщений в чате.
+	 */
+	@GetMapping("/{chatId}/unread-count")
+	@PreAuthorize("isAuthenticated()")
+	public ResponseEntity<Integer> getUnreadCount(
+		@PathVariable UUID chatId,
+		Authentication authentication) {
+
+		UUID userId = extractUserIdFromAuth(authentication);
+		Integer unreadCount = chatService.countUnreadMessages(chatId, userId);
+		return ResponseEntity.ok(unreadCount);
+	}
+
+	/**
+	 * Вспомогательный метод для извлечения ID пользователя из Authentication.
+	 */
+	private UUID extractUserIdFromAuth(Authentication authentication) {
+		if (authentication != null && authentication.getPrincipal() instanceof User) {
+			return ((User) authentication.getPrincipal()).getId();
+		}
+
+		String username = authentication != null ? authentication.getName() : null;
+		if (username != null) {
+			return userRepository.findByUsername(username)
+				.map(User::getId)
+				.orElseThrow(() -> new IllegalArgumentException("User not found"));
+		}
+
+		throw new IllegalArgumentException("Could not extract user ID from authentication");
+	}
+}
+

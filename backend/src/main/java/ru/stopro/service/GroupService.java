@@ -18,13 +18,10 @@ import ru.stopro.domain.enums.UserRole;
 import ru.stopro.dto.group.*;
 import ru.stopro.repository.StudyGroupRepository;
 import ru.stopro.repository.UserRepository;
+import ru.stopro.repository.chat.GroupChatRepository;
+import ru.stopro.service.chat.ChatService;
+import ru.stopro.dto.chat.CreateGroupChatRequest;
 
-/**
- * Сервис управления учебными группами.
- *
- * Отвечает за: - создание группы учителем; - массовое добавление учеников с
- * генерацией логинов/паролей.
- */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -33,40 +30,41 @@ public class GroupService {
 	private final StudyGroupRepository groupRepository;
 	private final UserRepository userRepository;
 	private final PasswordEncoder passwordEncoder;
+	private final ChatService chatService;
+	private final GroupChatRepository groupChatRepository;
 
 	private static final SecureRandom RANDOM = new SecureRandom();
 	private static final String PASSWORD_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789";
 	private static final int PASSWORD_LENGTH = 8;
 
-	/**
-	 * Создаёт новую учебную группу для указанного учителя.
-	 *
-	 * @param name
-	 *            название группы
-	 * @param teacherId
-	 *            ID пользователя-учителя
-	 * @return DTO созданной группы
-	 */
 	@Transactional
 	public GroupResponse createGroup(String name, UUID teacherId) {
-		User teacher = userRepository.findById(teacherId).orElseThrow(() -> new RuntimeException("Учитель не найден"));
+		User teacher = userRepository.findById(teacherId)
+				.orElseThrow(() -> new RuntimeException("Учитель не найден"));
 
 		if (teacher.getRole() != UserRole.TEACHER) {
 			throw new RuntimeException("Пользователь не является учителем");
 		}
 
-		StudyGroup group = StudyGroup.builder().name(name).teacher(teacher).inviteCode(generateUniqueInviteCode())
+		StudyGroup group = StudyGroup.builder()
+				.name(name)
+				.teacher(teacher)
+				.inviteCode(generateUniqueInviteCode())
 				.build();
 
 		groupRepository.save(group);
-		log.info("Создана группа '{}' (id={}) учителем {}", name, group.getId(), teacher.getUsername());
 
+		chatService.createGroupChat(teacherId, new CreateGroupChatRequest(
+				name,
+				null,
+				List.of(),
+				group.getId()
+		));
+
+		log.info("Создана группа '{}' (id={}) учителем {}", name, group.getId(), teacher.getUsername());
 		return toGroupResponse(group);
 	}
 
-	/**
-	 * Обновляет название группы.
-	 */
 	@Transactional
 	public GroupResponse updateGroup(UUID groupId, String name, UUID teacherId) {
 		StudyGroup group = groupRepository.findById(groupId)
@@ -80,10 +78,6 @@ public class GroupService {
 		return toGroupResponse(group);
 	}
 
-	/**
-	 * Удаляет группу. Связи с учениками (group_students) снимаются в той же
-	 * транзакции.
-	 */
 	@Transactional
 	public void deleteGroup(UUID groupId, UUID teacherId) {
 		StudyGroup group = groupRepository.findById(groupId)
@@ -97,54 +91,68 @@ public class GroupService {
 		log.info("Группа {} удалена", groupId);
 	}
 
-	/**
-	 * Для каждого ФИО из списка генерирует уникальный логин и временный пароль,
-	 * создаёт пользователя-ученика и добавляет его в группу.
-	 *
-	 * Пароль хешируется BCrypt перед сохранением. В ответе возвращаются чистые
-	 * пароли — учитель распечатывает их один раз.
-	 *
-	 * @param groupId
-	 *            ID группы
-	 * @param studentNames
-	 *            список ФИО учеников
-	 * @return DTO со списком сгенерированных учётных данных
-	 */
 	@Transactional
 	public AddStudentsResponse addStudentsToGroup(UUID groupId, List<String> studentNames) {
 		StudyGroup group = groupRepository.findById(groupId)
 				.orElseThrow(() -> new RuntimeException("Группа не найдена"));
 
 		List<StudentCredentials> credentials = new ArrayList<>();
+		List<UUID> newStudentIds = new ArrayList<>();
 
 		for (String fullName : studentNames) {
 			String username = generateUniqueUsername(fullName);
 			String rawPassword = generatePassword();
 
-			User student = User.builder().username(username).passwordHash(passwordEncoder.encode(rawPassword))
-					.role(UserRole.STUDENT).fullName(fullName.trim()).teacher(group.getTeacher())
-					.dataConsentStatus(false).build();
+			User student = User.builder()
+					.username(username)
+					.passwordHash(passwordEncoder.encode(rawPassword))
+					.role(UserRole.STUDENT)
+					.fullName(fullName.trim())
+					.teacher(group.getTeacher())
+					.dataConsentStatus(false)
+					.build();
 
 			userRepository.save(student);
 			group.getStudents().add(student);
+			newStudentIds.add(student.getId());
 
-			credentials.add(StudentCredentials.builder().fullName(fullName.trim()).username(username)
-					.password(rawPassword).build());
+			credentials.add(StudentCredentials.builder()
+					.fullName(fullName.trim())
+					.username(username)
+					.password(rawPassword)
+					.build());
 
 			log.info("Ученик '{}' (login={}) добавлен в группу '{}'", fullName, username, group.getName());
 		}
 
 		groupRepository.save(group);
 
-		return AddStudentsResponse.builder().groupId(group.getId().toString()).groupName(group.getName())
-				.credentials(credentials).build();
+		groupChatRepository.findByStudyGroupId(groupId).ifPresentOrElse(
+				existingChat -> {
+					for (UUID studentId : newStudentIds) {
+						chatService.addStudentToGroupChat(existingChat.getId(), studentId, group.getTeacher().getId());
+					}
+				},
+				() -> {
+					chatService.createGroupChat(
+							group.getTeacher().getId(),
+							new CreateGroupChatRequest(
+									group.getName(),
+									null,
+									newStudentIds,
+									groupId
+							)
+					);
+				}
+		);
+
+		return AddStudentsResponse.builder()
+				.groupId(group.getId().toString())
+				.groupName(group.getName())
+				.credentials(credentials)
+				.build();
 	}
 
-	/**
-	 * Генерирует уникальный логин вида «ivanov_482». Берёт последнее слово из ФИО
-	 * (фамилию), транслитерирует в латиницу и добавляет случайный трёхзначный
-	 * суффикс.
-	 */
 	private String generateUniqueUsername(String fullName) {
 		String[] parts = fullName.trim().split("\\s+");
 		String base = transliterate(parts[0]).toLowerCase();

@@ -12,6 +12,7 @@ import {
   ChevronLeft,
   ChevronRight,
   ShieldAlert,
+  MessageSquare,
 } from 'lucide-react';
 import type { UserRole } from '@/types';
 import type { AppTab } from '@/store/appStore';
@@ -30,6 +31,7 @@ const adminNavItems: NavItem[] = [
 const teacherNavItems: NavItem[] = [
   { id: 'dashboard', label: 'Дашборд', icon: LayoutDashboard },
   { id: 'students', label: 'Ученики и группы', icon: Users },
+  { id: 'chats', label: 'Чаты', icon: MessageSquare },
   { id: 'homework', label: 'Домашние задания', icon: ClipboardList },
   { id: 'tasks', label: 'База задач (прототипы)', icon: BookOpen },
   { id: 'analytics', label: 'Аналитика и отчёты', icon: BarChart3 },
@@ -38,6 +40,7 @@ const teacherNavItems: NavItem[] = [
 const studentNavItems: NavItem[] = [
   { id: 'dashboard', label: 'Мой прогресс', icon: LayoutDashboard },
   { id: 'practice', label: 'Практика', icon: BookOpen },
+  { id: 'chats', label: 'Чаты', icon: MessageSquare },
   { id: 'homework', label: 'Домашние задания', icon: ClipboardList },
   { id: 'analytics', label: 'Статистика', icon: BarChart3 },
 ];

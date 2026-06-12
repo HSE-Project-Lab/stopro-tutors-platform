@@ -17,6 +17,7 @@ import { HomeworkPage } from '@/pages/HomeworkPage';
 import { SettingsPage } from '@/pages/SettingsPage';
 import { AdminDashboard } from '@/pages/AdminDashboard';
 import { CrmPage } from '@/pages/CrmPage';
+import { ChatsPage } from '@/pages/ChatsPage';
 
 type UiTheme = 'light' | 'dark' | 'auto';
 type UiTextSize = 'small' | 'medium' | 'large';
@@ -143,6 +144,8 @@ function AppContent() {
             : <AdminDashboard />;
       case 'homework':
         return user.role === 'ADMIN' ? <AdminDashboard /> : <HomeworkPage />;
+      case 'chats':
+        return <ChatsPage />;
       case 'crm':
         return user.role === 'TEACHER' ? <CrmPage /> : <TeacherDashboard />;
       case 'settings':

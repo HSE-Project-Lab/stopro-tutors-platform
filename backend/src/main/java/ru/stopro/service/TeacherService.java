@@ -17,6 +17,7 @@ import ru.stopro.dto.student.StudentCredentialsDto;
 import ru.stopro.dto.student.StudentDto;
 import ru.stopro.repository.StudyGroupRepository;
 import ru.stopro.repository.UserRepository;
+import ru.stopro.service.chat.ChatService;
 
 @Service
 @RequiredArgsConstructor
@@ -25,6 +26,7 @@ public class TeacherService {
 	private final UserRepository userRepository;
 	private final StudyGroupRepository studyGroupRepository;
 	private final PasswordEncoder passwordEncoder;
+	private final ChatService chatService;
 
 	private static final SecureRandom RANDOM = new SecureRandom();
 	private static final String PASSWORD_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789";
@@ -67,6 +69,7 @@ public class TeacherService {
 		User student = User.builder().username(username).passwordHash(passwordEncoder.encode(rawPassword))
 				.role(UserRole.STUDENT).fullName(fullName).teacher(teacher).dataConsentStatus(false).build();
 		userRepository.save(student);
+		chatService.getOrCreatePersonalChat(teacherUserId, student.getId());
 		UUID groupId = dto.getGroupId();
 		if (groupId != null) {
 			StudyGroup group = studyGroupRepository.findById(groupId)

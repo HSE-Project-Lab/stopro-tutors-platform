@@ -42,6 +42,7 @@ public class SecurityConfig {
 				.addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
 				.authorizeHttpRequests(auth -> auth.requestMatchers("/api/v1/auth/**", "/error").permitAll()
 						.requestMatchers("/api/v1/uploads/**").permitAll()
+						.requestMatchers("/api/v1/ws/**").permitAll()
 						.requestMatchers("/health", "/actuator/health").permitAll()
 						.requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
 						.requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
@@ -53,6 +54,8 @@ public class SecurityConfig {
 
 						.requestMatchers(HttpMethod.GET, "/api/v1/ege-tasks/**").authenticated()
 						.requestMatchers("/api/v1/ege-tasks/**").hasAnyAuthority("ADMIN", "ROLE_ADMIN")
+
+						.requestMatchers("/api/v1/chats/**").authenticated()
 
 						.anyRequest().authenticated());
 
