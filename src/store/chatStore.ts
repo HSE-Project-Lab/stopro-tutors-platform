@@ -22,6 +22,7 @@ interface ChatStore {
   setMessages: (chatId: string, messages: ChatMessage[]) => void;
   setPinnedMessages: (chatId: string, messages: ChatMessage[]) => void;
   markMessageAsRead: (chatId: string, messageId: string) => void;
+  applyReadReceipt: (chatId: string, messageId: string, readerId: string) => void;
   updateChatUnreadCount: (chatId: string, count: number) => void;
   markChatLoaded: (chatId: string) => void;
   setLoading: (loading: boolean) => void;
@@ -112,6 +113,22 @@ export const useChatStore = create<ChatStore>((set) => ({
         [chatId]: (state.messages[chatId] || []).map((m) =>
           m.id === messageId ? { ...m, isReadByCurrentUser: true } : m
         ),
+      },
+    })),
+
+  applyReadReceipt: (chatId, messageId, readerId) =>
+    set((state) => ({
+      messages: {
+        ...state.messages,
+        [chatId]: (state.messages[chatId] || []).map((m) => {
+          if (m.id !== messageId) return m;
+          if (m.readByUserIds.includes(readerId)) return m;
+          return {
+            ...m,
+            readByUserIds: [...m.readByUserIds, readerId],
+            readCount: m.readCount + 1,
+          };
+        }),
       },
     })),
 

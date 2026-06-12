@@ -249,6 +249,20 @@ public class ChatController {
 	}
 
 	/**
+	 * Получить список «кто и когда прочитал» сообщение.
+	 */
+	@GetMapping("/messages/{messageId}/read-by")
+	@PreAuthorize("isAuthenticated()")
+	public ResponseEntity<List<MessageReadInfoDto>> getMessageReadBy(
+		@PathVariable UUID messageId,
+		Authentication authentication) {
+
+		UUID userId = extractUserIdFromAuth(authentication);
+		List<MessageReadInfoDto> readBy = chatMessageService.getMessageReadInfo(messageId, userId);
+		return ResponseEntity.ok(readBy);
+	}
+
+	/**
 	 * Вспомогательный метод для извлечения ID пользователя из Authentication.
 	 */
 	private UUID extractUserIdFromAuth(Authentication authentication) {

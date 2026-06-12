@@ -15,6 +15,7 @@ export interface Student extends User {
   grade: number;
   targetScore: number;
   groupId?: string;
+  groupIds?: string[];
   teacherId?: string;
 }
 

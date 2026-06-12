@@ -480,6 +480,10 @@ public class ChatService {
 				message.getReadCount(),
 				false,
 				readByUserIds,
+				message.getReplyTo() != null ? message.getReplyTo().getId() : null,
+				message.getReplyTo() != null ? message.getReplyTo().getSender().getId() : null,
+				message.getReplyTo() != null ? message.getReplyTo().getSender().getFullName() : null,
+				message.getReplyTo() != null ? ChatMessageService.previewOf(message.getReplyTo()) : null,
 				message.getCreatedAt(),
 				message.getUpdatedAt()
 		);

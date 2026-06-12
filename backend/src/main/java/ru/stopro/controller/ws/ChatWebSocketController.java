@@ -1,6 +1,7 @@
 package ru.stopro.controller.ws;
 
 import java.security.Principal;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 import org.springframework.messaging.handler.annotation.DestinationVariable;
@@ -34,7 +35,7 @@ public class ChatWebSocketController {
 			@Payload SendMessageRequest request,
 			Principal principal) {
 		UUID senderId = UUID.fromString(principal.getName());
-		ChatMessageDto savedMessage = chatMessageService.sendMessage(chatId, senderId, request.content());
+		ChatMessageDto savedMessage = chatMessageService.sendMessage(chatId, senderId, request.content(), request.replyToId());
 		log.info("Message sent to chat {} by user {}", chatId, senderId);
 		return ChatEvent.sent(savedMessage);
 	}
@@ -86,5 +87,19 @@ public class ChatWebSocketController {
 		ChatMessageDto unpinnedMessage = chatMessageService.unpinMessage(messageId, teacherId);
 		log.info("Message {} unpinned in chat {} by user {}", messageId, chatId, teacherId);
 		return ChatEvent.unpinned(unpinnedMessage);
+	}
+
+	@MessageMapping("/chat/{chatId}/read/{messageId}")
+	@SendTo("/topic/chat/{chatId}")
+	public ChatEvent markRead(
+			@DestinationVariable UUID chatId,
+			@DestinationVariable UUID messageId,
+			Principal principal) {
+		UUID readerId = UUID.fromString(principal.getName());
+		LocalDateTime readAt = chatMessageService.markMessageAsRead(messageId, readerId);
+		if (readAt == null) {
+			return null;
+		}
+		return ChatEvent.read(messageId, readerId, readAt);
 	}
 }

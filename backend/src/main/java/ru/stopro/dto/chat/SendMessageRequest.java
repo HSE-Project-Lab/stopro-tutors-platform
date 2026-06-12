@@ -11,7 +11,10 @@ import jakarta.validation.constraints.Size;
 public record SendMessageRequest(
 	@NotBlank(message = "Содержание сообщения не может быть пустым")
 	@Size(min = 1, max = 4096, message = "Сообщение должно содержать от 1 до 4096 символов")
-	String content
+	String content,
+
+	/** ID сообщения, на которое отвечают (необязательно). */
+	UUID replyToId
 ) {
 }
 

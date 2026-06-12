@@ -85,27 +85,35 @@ export function LoginPage() {
 
   const handleDemoLogin = async (role: 'teacher' | 'student') => {
     setIsLoading(true);
-    await new Promise((resolve) => setTimeout(resolve, 500));
-    const demoTeacher = {
-      id: 't-demo',
-      username: 'teacher_demo',
-      fullName: 'Учитель Демонстрационный',
-      role: 'TEACHER',
-    };
-    const demoStudent = {
-      id: 's-demo',
-      username: 'student_demo',
-      fullName: 'Ученик Демонстрационный',
-      role: 'STUDENT',
-    };
+    setAuthError(null);
 
-    if (role === 'teacher') {
-      login(demoTeacher as any, 'demo-token-teacher');
-    } else {
-      login(demoStudent as any, 'demo-token-student');
+    const credentials =
+      role === 'teacher'
+        ? { username: 'demo_teacher', password: 'demo' }
+        : { username: 'demo_student', password: 'demo' };
+
+    try {
+      const { default: api } = await import('@/lib/axios');
+      const response = await api.post('/auth/login', credentials);
+
+      const backendUser = response.data.user || {};
+      const fullName = backendUser.fullName || backendUser.username || '';
+      const [firstName = '', ...rest] = fullName.split(' ').filter(Boolean);
+      const lastName = rest.join(' ');
+      const normalizedUser = {
+        ...backendUser,
+        firstName,
+        lastName,
+        email: backendUser.email || backendUser.username || '',
+      };
+
+      login(normalizedUser as any, response.data.accessToken);
+    } catch (error: any) {
+      console.error('Demo login failed', error);
+      setAuthError('Не удалось войти в демо-режиме. Убедитесь, что бэкенд запущен.');
+    } finally {
+      setIsLoading(false);
     }
-
-    setIsLoading(false);
   };
 
   return (

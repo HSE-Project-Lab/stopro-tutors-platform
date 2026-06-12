@@ -38,8 +38,18 @@ export interface ChatMessage {
   readCount: number;
   isReadByCurrentUser: boolean;
   readByUserIds: string[];
+  replyToId: string | null;
+  replyToSenderId: string | null;
+  replyToSenderName: string | null;
+  replyToPreview: string | null;
   createdAt: string;
   updatedAt: string | null;
+}
+
+export interface MessageReadInfo {
+  userId: string;
+  userName: string;
+  readAt: string;
 }
 
 export interface MessageAttachment {
@@ -62,9 +72,17 @@ export interface ChatParticipant {
 }
 
 export interface ChatEvent {
-  type: 'MESSAGE_SENT' | 'MESSAGE_EDITED' | 'MESSAGE_DELETED' | 'MESSAGE_PINNED' | 'MESSAGE_UNPINNED';
+  type:
+    | 'MESSAGE_SENT'
+    | 'MESSAGE_EDITED'
+    | 'MESSAGE_DELETED'
+    | 'MESSAGE_PINNED'
+    | 'MESSAGE_UNPINNED'
+    | 'MESSAGE_READ';
   message: ChatMessage | null;
   messageId: string | null;
+  readerId?: string | null;
+  readAt?: string | null;
 }
 
 export interface SendMessageRequest {

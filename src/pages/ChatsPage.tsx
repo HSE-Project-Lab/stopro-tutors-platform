@@ -8,7 +8,7 @@ import type { ChatEvent, PersonalChat, GroupChat } from '@/types/chat';
 import { ChatWindow } from '@/components/chat/ChatWindow';
 
 export function ChatsPage() {
-  const { user } = useAuthStore();
+  const { user, token } = useAuthStore();
   const {
     selectedChatId,
     personalChats,
@@ -60,9 +60,6 @@ export function ChatsPage() {
   };
 
   useEffect(() => {
-    loadChats().then(() => setupChatSubscriptions());
-    setupPrivateSubscription();
-
     const wsHandler = (connected: boolean) => {
       if (connected) {
         setupPrivateSubscription();
@@ -71,6 +68,15 @@ export function ChatsPage() {
     };
     webSocketService.onConnectionStatusChange(wsHandler);
 
+    loadChats().then(() => setupChatSubscriptions());
+
+    if (token && !webSocketService.isConnected()) {
+      webSocketService.connect(token);
+    } else if (webSocketService.isConnected()) {
+      setupPrivateSubscription();
+      setupChatSubscriptions();
+    }
+
     return () => {
       chatSubscriptionsRef.current.forEach((unsub) => unsub());
       chatSubscriptionsRef.current.clear();
@@ -78,7 +84,7 @@ export function ChatsPage() {
       privateSubscriptionRef.current = null;
       webSocketService.removeConnectionStatusHandler(wsHandler);
     };
-  }, []);
+  }, [token]);
 
   const preloadAllMessages = (chats: (PersonalChat | GroupChat)[]) => {
     chats.forEach(async (chat) => {

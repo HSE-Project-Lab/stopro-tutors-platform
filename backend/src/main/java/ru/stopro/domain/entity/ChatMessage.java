@@ -71,6 +71,11 @@ public class ChatMessage extends BaseEntity {
 	@Column(name = "pinned_at")
 	private LocalDateTime pinnedAt;
 
+	/** Сообщение, на которое отвечают (NULL если это не ответ) */
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "reply_to_id")
+	private ChatMessage replyTo;
+
 	/** Вложения к сообщению */
 	@OneToMany(mappedBy = "message", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
 	@Builder.Default

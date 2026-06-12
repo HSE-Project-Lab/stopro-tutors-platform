@@ -68,7 +68,7 @@ class WebSocketService {
   /**
    * Отправить сообщение в чат
    */
-  sendMessage(chatId: string, content: string) {
+  sendMessage(chatId: string, content: string, replyToId?: string | null) {
     if (!this.client?.connected) {
       console.error('WebSocket not connected');
       return;
@@ -76,7 +76,20 @@ class WebSocketService {
 
     this.client.publish({
       destination: `/app/chat/${chatId}/send`,
-      body: JSON.stringify({ content }),
+      body: JSON.stringify({ content, replyToId: replyToId ?? null }),
+    });
+  }
+
+  /**
+   * Пометить одно сообщение как прочитанное
+   */
+  markRead(chatId: string, messageId: string) {
+    if (!this.client?.connected) {
+      return;
+    }
+
+    this.client.publish({
+      destination: `/app/chat/${chatId}/read/${messageId}`,
     });
   }
 

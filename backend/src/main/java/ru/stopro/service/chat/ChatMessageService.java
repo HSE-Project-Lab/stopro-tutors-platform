@@ -1,6 +1,7 @@
 package ru.stopro.service.chat;
 
 import java.time.LocalDateTime;
+import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -23,6 +24,7 @@ import ru.stopro.domain.enums.ChatMessageType;
 import ru.stopro.domain.enums.ChatStatus;
 import ru.stopro.dto.chat.AttachmentDto;
 import ru.stopro.dto.chat.ChatMessageDto;
+import ru.stopro.dto.chat.MessageReadInfoDto;
 import ru.stopro.repository.UserRepository;
 import ru.stopro.repository.chat.ChatInactivityWarningRepository;
 import ru.stopro.repository.chat.ChatMessageRepository;
@@ -50,7 +52,7 @@ public class ChatMessageService {
 	 * Отправить текстовое сообщение в чат.
 	 */
 	@Transactional
-	public ChatMessageDto sendMessage(UUID chatId, UUID senderId, String content) {
+	public ChatMessageDto sendMessage(UUID chatId, UUID senderId, String content, UUID replyToId) {
 		if (content == null || content.isBlank()) {
 			throw new IllegalArgumentException("Сообщение не может быть пустым");
 		}
@@ -67,12 +69,20 @@ public class ChatMessageService {
 		User sender = userRepository.findById(senderId)
 			.orElseThrow(() -> new IllegalArgumentException("User not found"));
 
+		ChatMessage replyTo = null;
+		if (replyToId != null) {
+			replyTo = chatMessageRepository.findById(replyToId)
+				.filter(m -> m.getChat().getId().equals(chatId))
+				.orElse(null);
+		}
+
 		ChatMessage message = ChatMessage.builder()
 			.chat(chat)
 			.sender(sender)
 			.messageType(ChatMessageType.TEXT)
 			.content(content)
 			.contentPlain(content)
+			.replyTo(replyTo)
 			.build();
 
 		ChatMessage savedMessage = chatMessageRepository.save(message);
@@ -203,27 +213,57 @@ public class ChatMessageService {
 
 	/**
 	 * Пометить сообщение как прочитанное пользователем.
+	 *
+	 * @return время прочтения, если квитанция создана; {@code null}, если помечать нечего
+	 *         (своё сообщение, нет доступа или уже прочитано)
 	 */
 	@Transactional
-	public void markMessageAsRead(UUID messageId, UUID userId) {
-		ChatMessage message = chatMessageRepository.findById(messageId)
-			.orElseThrow(() -> new IllegalArgumentException("Message not found"));
-
-		User user = userRepository.findById(userId)
-			.orElseThrow(() -> new IllegalArgumentException("User not found"));
-
+	public LocalDateTime markMessageAsRead(UUID messageId, UUID userId) {
+		ChatMessage message = chatMessageRepository.findById(messageId).orElse(null);
+		if (message == null) {
+			return null;
+		}
+		if (message.getSender().getId().equals(userId)) {
+			return null;
+		}
+		if (!chatParticipantRepository.isUserInChat(message.getChat().getId(), userId)) {
+			return null;
+		}
 		if (messageReadReceiptRepository.isMessageReadByUser(messageId, userId)) {
-			return;
+			return null;
 		}
 
+		User user = userRepository.findById(userId).orElse(null);
+		if (user == null) {
+			return null;
+		}
+
+		LocalDateTime readAt = LocalDateTime.now();
 		MessageReadReceipt readReceipt = MessageReadReceipt.builder()
 			.message(message)
 			.user(user)
-			.readAt(LocalDateTime.now())
+			.readAt(readAt)
 			.build();
 
 		messageReadReceiptRepository.save(readReceipt);
 		log.debug("Message {} marked as read by user {}", messageId, userId);
+		return readAt;
+	}
+
+	/**
+	 * Получить список «кто и когда прочитал» сообщение (с проверкой доступа запрашивающего).
+	 */
+	@Transactional(readOnly = true)
+	public List<MessageReadInfoDto> getMessageReadInfo(UUID messageId, UUID requesterId) {
+		ChatMessage message = chatMessageRepository.findById(messageId)
+			.orElseThrow(() -> new IllegalArgumentException("Message not found"));
+		if (!chatParticipantRepository.isUserInChat(message.getChat().getId(), requesterId)) {
+			throw new IllegalArgumentException("Нет доступа к данному чату");
+		}
+		return messageReadReceiptRepository.findByMessageId(messageId).stream()
+			.map(r -> new MessageReadInfoDto(r.getUser().getId(), r.getUser().getFullName(), r.getReadAt()))
+			.sorted(Comparator.comparing(MessageReadInfoDto::readAt))
+			.collect(Collectors.toList());
 	}
 
 	/**
@@ -288,6 +328,21 @@ public class ChatMessageService {
 	}
 
 	/**
+	 * Короткое превью сообщения для отображения цитаты ответа.
+	 */
+	static String previewOf(ChatMessage message) {
+		if (Boolean.TRUE.equals(message.getIsDeleted())) {
+			return "Сообщение удалено";
+		}
+		String source = message.getContentPlain() != null ? message.getContentPlain() : message.getContent();
+		if (source == null) {
+			return "";
+		}
+		source = source.strip();
+		return source.length() > 120 ? source.substring(0, 120) + "…" : source;
+	}
+
+	/**
 	 * Конвертировать ChatMessage в ChatMessageDto.
 	 */
 	private ChatMessageDto convertToDto(ChatMessage message, UUID currentUserId) {
@@ -326,6 +381,10 @@ public class ChatMessageService {
 			message.getReadCount(),
 			isReadByCurrentUser,
 			readByUserIds,
+			message.getReplyTo() != null ? message.getReplyTo().getId() : null,
+			message.getReplyTo() != null ? message.getReplyTo().getSender().getId() : null,
+			message.getReplyTo() != null ? message.getReplyTo().getSender().getFullName() : null,
+			message.getReplyTo() != null ? previewOf(message.getReplyTo()) : null,
 			message.getCreatedAt(),
 			message.getUpdatedAt()
 		);

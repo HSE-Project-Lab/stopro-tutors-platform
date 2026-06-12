@@ -29,6 +29,11 @@ public record ChatMessageDto(
 		Boolean isReadByCurrentUser,
 		List<UUID> readByUserIds,
 
+		UUID replyToId,
+		UUID replyToSenderId,
+		String replyToSenderName,
+		String replyToPreview,
+
 		@JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm'Z'", timezone = "UTC")
 		LocalDateTime createdAt,
 
