@@ -12,6 +12,15 @@ interface ChatWindowProps {
   chatId: string;
 }
 
+interface StagedFile {
+  id: string;
+  file: File;
+  previewUrl: string | null;
+}
+
+const MAX_ATTACHMENTS = 5;
+const MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024;
+
 const formatTime = (iso: string) =>
   new Date(iso).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
 
@@ -45,6 +54,7 @@ export function ChatWindow({ chatId }: ChatWindowProps) {
   });
   const [showViewers, setShowViewers] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [staged, setStaged] = useState<StagedFile[]>([]);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
@@ -110,6 +120,10 @@ export function ChatWindow({ chatId }: ChatWindowProps) {
       setSelectionMode(false);
       setSelectedIds(new Set());
       setMenu(null);
+      setStaged((prev) => {
+        prev.forEach((s) => s.previewUrl && URL.revokeObjectURL(s.previewUrl));
+        return [];
+      });
     };
   }, [chatId, token]);
 
@@ -273,9 +287,41 @@ export function ChatWindow({ chatId }: ChatWindowProps) {
     }
   };
 
-  const handleSendMessage = () => {
+  const clearStaged = () => {
+    setStaged((prev) => {
+      prev.forEach((s) => s.previewUrl && URL.revokeObjectURL(s.previewUrl));
+      return [];
+    });
+  };
+
+  const handleSendMessage = async () => {
     const html = sanitizeRichHtml(input);
-    if (isRichHtmlEmpty(html)) return;
+    const hasText = !isRichHtmlEmpty(html);
+
+    if (staged.length > 0) {
+      const formData = new FormData();
+      staged.forEach((s) => formData.append('files', s.file));
+      if (hasText) formData.append('content', html);
+      if (replyTo?.id) formData.append('replyToId', replyTo.id);
+      setUploading(true);
+      try {
+        await api.post(`/chats/${chatId}/messages/attachment`, formData, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        });
+        inputRef.current?.clear();
+        setInput('');
+        setReplyTo(null);
+        clearStaged();
+      } catch (error) {
+        console.error('Error uploading attachments:', error);
+        window.alert('Не удалось загрузить файлы.');
+      } finally {
+        setUploading(false);
+      }
+      return;
+    }
+
+    if (!hasText) return;
     try {
       webSocketService.sendMessage(chatId, html, replyTo?.id ?? null);
       inputRef.current?.clear();
@@ -286,35 +332,50 @@ export function ChatWindow({ chatId }: ChatWindowProps) {
     }
   };
 
-  const handleAttachClick = () => fileInputRef.current?.click();
-
-  const handleFileSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    e.target.value = '';
-    if (!file) return;
-    if (file.size > 10 * 1024 * 1024) {
-      window.alert('Файл слишком большой. Максимальный размер — 10 МБ.');
+  const handleAttachClick = () => {
+    if (staged.length >= MAX_ATTACHMENTS) {
+      window.alert(`Можно прикрепить не более ${MAX_ATTACHMENTS} файлов.`);
       return;
     }
-    const formData = new FormData();
-    formData.append('file', file);
-    const html = sanitizeRichHtml(input);
-    if (!isRichHtmlEmpty(html)) formData.append('content', html);
-    if (replyTo?.id) formData.append('replyToId', replyTo.id);
-    setUploading(true);
-    try {
-      await api.post(`/chats/${chatId}/messages/attachment`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
-      inputRef.current?.clear();
-      setInput('');
-      setReplyTo(null);
-    } catch (error) {
-      console.error('Error uploading attachment:', error);
-      window.alert('Не удалось загрузить файл.');
-    } finally {
-      setUploading(false);
+    fileInputRef.current?.click();
+  };
+
+  const handleFileSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files ?? []);
+    e.target.value = '';
+    if (files.length === 0) return;
+
+    const room = MAX_ATTACHMENTS - staged.length;
+    if (room <= 0) {
+      window.alert(`Можно прикрепить не более ${MAX_ATTACHMENTS} файлов.`);
+      return;
     }
+
+    const accepted: StagedFile[] = [];
+    for (const file of files.slice(0, room)) {
+      if (file.size > MAX_ATTACHMENT_BYTES) {
+        window.alert(`Файл «${file.name}» больше 10 МБ и не будет прикреплён.`);
+        continue;
+      }
+      accepted.push({
+        id: `${file.name}-${file.size}-${Date.now()}-${Math.random()}`,
+        file,
+        previewUrl: file.type.startsWith('image/') ? URL.createObjectURL(file) : null,
+      });
+    }
+
+    if (files.length > room) {
+      window.alert(`Можно прикрепить не более ${MAX_ATTACHMENTS} файлов. Лишние не добавлены.`);
+    }
+    if (accepted.length > 0) setStaged((prev) => [...prev, ...accepted]);
+  };
+
+  const removeStaged = (id: string) => {
+    setStaged((prev) => {
+      const target = prev.find((s) => s.id === id);
+      if (target?.previewUrl) URL.revokeObjectURL(target.previewUrl);
+      return prev.filter((s) => s.id !== id);
+    });
   };
 
   const openMenu = async (msg: ChatMessage, clientX: number, clientY: number) => {
@@ -497,7 +558,7 @@ export function ChatWindow({ chatId }: ChatWindowProps) {
         </div>
       )}
 
-      <div ref={messagesContainerRef} className="flex-1 overflow-y-auto pt-0 pb-2 pl-4 pr-2 space-y-2">
+      <div ref={messagesContainerRef} className="flex-1 overflow-y-auto pt-0 pb-2 px-8 space-y-2">
         {renderMessages()}
         <div ref={messagesEndRef} />
       </div>
@@ -516,13 +577,49 @@ export function ChatWindow({ chatId }: ChatWindowProps) {
       )}
 
       <div className="p-4 border-t border-gray-200 bg-gray-50">
+        <input
+          ref={fileInputRef}
+          type="file"
+          multiple
+          className="hidden"
+          onChange={handleFileSelected}
+        />
+
+        {staged.length > 0 && (
+          <div className="flex flex-wrap gap-2 mb-2">
+            {staged.map((s) => (
+              <div
+                key={s.id}
+                className="relative flex items-center gap-2 bg-white border border-gray-200 rounded-lg p-1.5 pr-7 max-w-[12rem]"
+              >
+                {s.previewUrl ? (
+                  <img
+                    src={s.previewUrl}
+                    alt={s.file.name}
+                    className="w-10 h-10 rounded object-cover flex-shrink-0"
+                  />
+                ) : (
+                  <div className="w-10 h-10 rounded bg-gray-100 flex items-center justify-center flex-shrink-0">
+                    <FileText className="w-5 h-5 text-gray-500" />
+                  </div>
+                )}
+                <div className="min-w-0">
+                  <p className="text-xs font-medium text-gray-800 truncate">{s.file.name}</p>
+                  <p className="text-xs text-gray-500">{formatFileSize(s.file.size / 1024 / 1024)}</p>
+                </div>
+                <button
+                  onClick={() => removeStaged(s.id)}
+                  className="absolute top-1 right-1 p-0.5 rounded text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+                  aria-label="Убрать файл"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
         <div className="flex items-end gap-2">
-          <input
-            ref={fileInputRef}
-            type="file"
-            className="hidden"
-            onChange={handleFileSelected}
-          />
           <div className="flex-1 border border-gray-300 rounded-lg bg-white focus-within:ring-2 focus-within:ring-blue-500">
             <RichTextEditor
               ref={inputRef}
@@ -535,7 +632,7 @@ export function ChatWindow({ chatId }: ChatWindowProps) {
           </div>
           <button
             onClick={handleSendMessage}
-            disabled={isRichHtmlEmpty(input) || uploading}
+            disabled={(isRichHtmlEmpty(input) && staged.length === 0) || uploading}
             className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 transition-colors flex items-center gap-2 flex-shrink-0"
           >
             <Send className="w-4 h-4" />
@@ -543,7 +640,11 @@ export function ChatWindow({ chatId }: ChatWindowProps) {
           </button>
         </div>
         <div className="text-xs text-gray-500 mt-2">
-          {uploading ? 'Загрузка файла…' : `${htmlToPlainText(input).length}/4096`}
+          {uploading
+            ? 'Загрузка файлов…'
+            : staged.length > 0
+              ? `Файлов: ${staged.length}/${MAX_ATTACHMENTS}`
+              : `${htmlToPlainText(input).length}/4096`}
         </div>
       </div>
 

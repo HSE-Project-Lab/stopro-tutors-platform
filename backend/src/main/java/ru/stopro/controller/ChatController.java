@@ -57,6 +57,7 @@ import ru.stopro.service.chat.ChatService;
 public class ChatController {
 
 	private static final long MAX_ATTACHMENT_BYTES = 10L * 1024 * 1024;
+	private static final int MAX_ATTACHMENTS = 5;
 
 	private final ChatService chatService;
 	private final ChatMessageService chatMessageService;
@@ -181,13 +182,13 @@ public class ChatController {
 	}
 
 	/**
-	 * Отправить сообщение с вложением (файл размером до 10 МБ).
+	 * Отправить сообщение с вложениями (до 5 файлов, каждый до 10 МБ).
 	 */
 	@PostMapping(value = "/{chatId}/messages/attachment", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
 	@PreAuthorize("isAuthenticated()")
 	public ResponseEntity<ChatMessageDto> sendAttachment(
 		@PathVariable UUID chatId,
-		@RequestParam("file") MultipartFile file,
+		@RequestParam("files") List<MultipartFile> files,
 		@RequestParam(value = "content", required = false) String content,
 		@RequestParam(value = "replyToId", required = false) UUID replyToId,
 		Authentication authentication) {
@@ -195,21 +196,31 @@ public class ChatController {
 		UUID senderId = extractUserIdFromAuth(authentication);
 		chatService.requireChatAccess(chatId, senderId);
 
-		if (file == null || file.isEmpty()) {
+		if (files == null || files.isEmpty() || files.stream().allMatch(MultipartFile::isEmpty)) {
 			return ResponseEntity.badRequest().build();
 		}
-		if (file.getSize() > MAX_ATTACHMENT_BYTES) {
+		if (files.size() > MAX_ATTACHMENTS) {
+			return ResponseEntity.badRequest().build();
+		}
+		if (files.stream().anyMatch(f -> f.getSize() > MAX_ATTACHMENT_BYTES)) {
 			return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE).build();
 		}
 
 		try {
-			String fileUrl = storeAttachment(file);
-			AttachmentType type = resolveAttachmentType(file.getContentType());
-			String fileName = file.getOriginalFilename() != null ? file.getOriginalFilename() : "file";
-			Double sizeMb = Math.round(file.getSize() / 1024.0 / 1024.0 * 100.0) / 100.0;
+			List<ChatMessageService.NewAttachment> attachments = new java.util.ArrayList<>();
+			for (MultipartFile file : files) {
+				if (file.isEmpty()) {
+					continue;
+				}
+				String fileUrl = storeAttachment(file);
+				AttachmentType type = resolveAttachmentType(file.getContentType());
+				String fileName = file.getOriginalFilename() != null ? file.getOriginalFilename() : "file";
+				Double sizeMb = Math.round(file.getSize() / 1024.0 / 1024.0 * 100.0) / 100.0;
+				attachments.add(new ChatMessageService.NewAttachment(fileUrl, type, fileName, sizeMb));
+			}
 
-			ChatMessageDto dto = chatMessageService.sendMessageWithAttachment(
-				chatId, senderId, content, replyToId, fileUrl, type, fileName, sizeMb);
+			ChatMessageDto dto = chatMessageService.sendMessageWithAttachments(
+				chatId, senderId, content, replyToId, attachments);
 
 			messagingTemplate.convertAndSend("/topic/chat/" + chatId, ChatEvent.sent(dto));
 			return ResponseEntity.ok(dto);

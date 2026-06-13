@@ -108,24 +108,35 @@ public class ChatMessageService {
 	}
 
 	/**
-	 * Отправить сообщение с вложением. Текст необязателен — допускается пустой, если есть файл.
+	 * Данные одного нового вложения для прикрепления к сообщению.
 	 *
-	 * @param chatId     идентификатор чата
-	 * @param senderId   идентификатор отправителя
-	 * @param content    подпись к вложению (HTML, может быть пустой)
-	 * @param replyToId  идентификатор сообщения, на которое отвечают (необязательно)
 	 * @param fileUrl    URL сохранённого файла
 	 * @param fileType   тип вложения
 	 * @param fileName   исходное имя файла
 	 * @param fileSizeMb размер файла в мегабайтах
+	 */
+	public record NewAttachment(String fileUrl, AttachmentType fileType, String fileName, Double fileSizeMb) {
+	}
+
+	/**
+	 * Отправить сообщение с вложениями. Текст необязателен — допускается пустой, если есть хотя бы один файл.
+	 *
+	 * @param chatId      идентификатор чата
+	 * @param senderId    идентификатор отправителя
+	 * @param content     подпись к вложениям (HTML, может быть пустой)
+	 * @param replyToId   идентификатор сообщения, на которое отвечают (необязательно)
+	 * @param attachments список вложений (минимум одно)
 	 * @return DTO созданного сообщения
 	 */
 	@Transactional
-	public ChatMessageDto sendMessageWithAttachment(UUID chatId, UUID senderId, String content, UUID replyToId,
-			String fileUrl, AttachmentType fileType, String fileName, Double fileSizeMb) {
+	public ChatMessageDto sendMessageWithAttachments(UUID chatId, UUID senderId, String content, UUID replyToId,
+			List<NewAttachment> attachments) {
 		String safeContent = content == null ? "" : content;
 		if (safeContent.length() > 4096) {
 			throw new IllegalArgumentException("Сообщение не может быть длиннее 4096 символов");
+		}
+		if (attachments == null || attachments.isEmpty()) {
+			throw new IllegalArgumentException("Должно быть хотя бы одно вложение");
 		}
 		if (!chatParticipantRepository.isUserInChat(chatId, senderId)) {
 			throw new IllegalArgumentException("Пользователь не является участником чата");
@@ -153,14 +164,16 @@ public class ChatMessageService {
 			.replyTo(replyTo)
 			.build();
 
-		MessageAttachment attachment = MessageAttachment.builder()
-			.message(message)
-			.fileUrl(fileUrl)
-			.fileType(fileType)
-			.fileName(fileName)
-			.fileSizeMb(fileSizeMb)
-			.build();
-		message.getAttachments().add(attachment);
+		for (NewAttachment na : attachments) {
+			MessageAttachment attachment = MessageAttachment.builder()
+				.message(message)
+				.fileUrl(na.fileUrl())
+				.fileType(na.fileType())
+				.fileName(na.fileName())
+				.fileSizeMb(na.fileSizeMb())
+				.build();
+			message.getAttachments().add(attachment);
+		}
 
 		ChatMessage savedMessage = chatMessageRepository.save(message);
 
