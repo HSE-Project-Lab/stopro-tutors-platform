@@ -6,6 +6,9 @@ export interface Chat {
   chatAvatarUrl: string | null;
   status: 'ACTIVE' | 'ARCHIVED' | 'PENDING_DELETION';
   lastMessageAt: string | null;
+  lastMessagePreview: string | null;
+  lastMessageSenderName: string | null;
+  lastMessageSenderId: string | null;
   unreadCount: number;
   createdAt: string;
   updatedAt: string | null;

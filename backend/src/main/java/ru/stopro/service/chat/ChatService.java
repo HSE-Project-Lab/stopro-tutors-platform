@@ -204,6 +204,7 @@ public class ChatService {
 			participant.get().setLeftAt(LocalDateTime.now());
 			chatParticipantRepository.save(participant.get());
 		}
+		notifyChatRemoved(studentId, chatId, ChatType.GROUP);
 
 		GroupChat groupChat = groupChatRepository.findById(chatId)
 				.orElseThrow(() -> new IllegalArgumentException("Group chat not found"));
@@ -217,6 +218,24 @@ public class ChatService {
 		studyGroupRepository.save(groupChat.getStudyGroup());
 		chatMessageService.createSystemMessage(chatId, student.getFullName() + " удален из группы");
 		log.info("Student {} removed from group chat {}", studentId, chatId);
+	}
+
+	/**
+	 * Удаляет личный чат учителя с учеником вместе с сообщениями и участниками.
+	 *
+	 * @param teacherId идентификатор учителя-владельца чата
+	 * @param studentId идентификатор ученика
+	 */
+	@Transactional
+	public void deletePersonalChat(UUID teacherId, UUID studentId) {
+		personalChatRepository.findByTeacherAndStudent(teacherId, studentId).ifPresent(chat -> {
+			UUID chatId = chat.getId();
+			chatRepository.delete(chat);
+			chatRepository.flush();
+			notifyChatRemoved(studentId, chatId, ChatType.PERSONAL);
+			notifyChatRemoved(teacherId, chatId, ChatType.PERSONAL);
+			log.info("Personal chat {} deleted for teacher {} and student {}", chatId, teacherId, studentId);
+		});
 	}
 
 	@Transactional
@@ -282,6 +301,7 @@ public class ChatService {
 				.map(chat -> {
 					PersonalChat pc = (PersonalChat) chat;
 					Integer unreadCount = countUnreadMessages(chat.getId(), teacherId);
+					LastMessageInfo lastMessage = lastMessageInfo(chat.getId());
 					return new PersonalChatDto(
 							chat.getId(),
 							ChatType.PERSONAL.name(),
@@ -289,6 +309,9 @@ public class ChatService {
 							pc.getStudent().getFullName(),
 							null,
 							chat.getLastMessageAt(),
+							lastMessage.preview(),
+							lastMessage.senderName(),
+							lastMessage.senderId(),
 							unreadCount,
 							chat.getCreatedAt()
 					);
@@ -303,6 +326,7 @@ public class ChatService {
 				.filter(gc -> gc.getStatus() == ChatStatus.ACTIVE)
 				.map(gc -> {
 					Integer unreadCount = countUnreadMessages(gc.getId(), teacherId);
+					LastMessageInfo lastMessage = lastMessageInfo(gc.getId());
 					return new GroupChatDto(
 							gc.getId(),
 							ChatType.GROUP.name(),
@@ -311,6 +335,9 @@ public class ChatService {
 							gc.getStudyGroup().getId(),
 							gc.getStudyGroup().getStudentsCount(),
 							gc.getLastMessageAt(),
+							lastMessage.preview(),
+							lastMessage.senderName(),
+							lastMessage.senderId(),
 							unreadCount,
 							gc.getCreatedAt()
 					);
@@ -328,6 +355,7 @@ public class ChatService {
 				.filter(c -> c != null && c.getStatus() == ChatStatus.ACTIVE)
 				.map(chat -> {
 					Integer unreadCount = countUnreadMessages(chat.getId(), studentId);
+					LastMessageInfo lastMessage = lastMessageInfo(chat.getId());
 					if (chat.getChatType() == ChatType.PERSONAL) {
 						PersonalChat pc = (PersonalChat) chat;
 						return (Object) new PersonalChatDto(
@@ -337,6 +365,9 @@ public class ChatService {
 								chat.getTeacher().getFullName(),
 								null,
 								chat.getLastMessageAt(),
+								lastMessage.preview(),
+								lastMessage.senderName(),
+								lastMessage.senderId(),
 								unreadCount,
 								chat.getCreatedAt()
 						);
@@ -350,6 +381,9 @@ public class ChatService {
 								gc.getStudyGroup().getId(),
 								gc.getStudyGroup().getStudentsCount(),
 								chat.getLastMessageAt(),
+								lastMessage.preview(),
+								lastMessage.senderName(),
+								lastMessage.senderId(),
 								unreadCount,
 								chat.getCreatedAt()
 						);
@@ -359,6 +393,31 @@ public class ChatService {
 
 		log.info("Returning {} active chats for student {}", result.size(), studentId);
 		return result;
+	}
+
+	/**
+	 * Сведения о последнем сообщении чата для превью в списке чатов.
+	 */
+	private record LastMessageInfo(String preview, String senderName, UUID senderId) {
+	}
+
+	/**
+	 * Возвращает превью последнего сообщения чата и данные его автора.
+	 *
+	 * @param chatId идентификатор чата
+	 * @return превью, имя и идентификатор отправителя; поля null, если сообщений нет
+	 */
+	private LastMessageInfo lastMessageInfo(UUID chatId) {
+		List<ChatMessage> latest = chatMessageRepository.findLatestMessage(chatId, PageRequest.of(0, 1));
+		if (latest.isEmpty()) {
+			return new LastMessageInfo(null, null, null);
+		}
+		ChatMessage message = latest.get(0);
+		String preview = ChatMessageService.previewOf(message);
+		if (message.getMessageType() == ChatMessageType.SYSTEM || message.getSender() == null) {
+			return new LastMessageInfo(preview, null, null);
+		}
+		return new LastMessageInfo(preview, message.getSender().getFullName(), message.getSender().getId());
 	}
 
 	@Transactional(readOnly = true)
@@ -412,6 +471,29 @@ public class ChatService {
 		return pinnedMessages.stream()
 				.map(this::convertToDto)
 				.collect(Collectors.toList());
+	}
+
+	/**
+	 * Уведомляет пользователя о том, что чат для него удалён, чтобы клиент убрал его из списка.
+	 *
+	 * @param userId   идентификатор получателя уведомления
+	 * @param chatId   идентификатор удалённого чата
+	 * @param chatType тип чата
+	 */
+	private void notifyChatRemoved(UUID userId, UUID chatId, ChatType chatType) {
+		try {
+			messagingTemplate.convertAndSend(
+					"/topic/notifications/" + userId,
+					new ChatNotificationDto(
+							"chat_removed",
+							chatId.toString(),
+							chatType.name(),
+							"Чат удалён"
+					)
+			);
+		} catch (Exception e) {
+			log.error("Failed to send chat_removed notification to user {}: {}", userId, e.getMessage());
+		}
 	}
 
 	private void notifyStudentOfNewChat(UUID studentId, Chat chat) {

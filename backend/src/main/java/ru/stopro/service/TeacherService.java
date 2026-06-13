@@ -118,12 +118,11 @@ public class TeacherService {
 		if (!isTeacherOfStudent(teacherUserId, student)) {
 			throw new RuntimeException("Нет прав на удаление этого ученика");
 		}
-		for (StudyGroup g : studyGroupRepository.findByTeacherId(teacherUserId)) {
-			g.getStudents().removeIf(s -> s.getId().equals(studentId));
-			studyGroupRepository.save(g);
+		for (UUID groupId : currentGroupIds(teacherUserId, studentId)) {
+			removeStudentFromGroupInternal(teacherUserId, student, groupId);
 		}
+		chatService.deletePersonalChat(teacherUserId, studentId);
 		student.setTeacher(null);
-		userRepository.save(student);
 		student.setIsDeleted(true);
 		userRepository.save(student);
 	}

@@ -24,7 +24,12 @@ interface ChatStore {
   markMessageAsRead: (chatId: string, messageId: string) => void;
   applyReadReceipt: (chatId: string, messageId: string, readerId: string) => void;
   updateChatUnreadCount: (chatId: string, count: number) => void;
+  updateChatLastMessage: (
+    chatId: string,
+    info: { preview: string; senderName: string | null; senderId: string | null; lastMessageAt: string }
+  ) => void;
   markChatLoaded: (chatId: string) => void;
+  removeChat: (chatId: string) => void;
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
   setSearchQuery: (query: string) => void;
@@ -142,10 +147,45 @@ export const useChatStore = create<ChatStore>((set) => ({
       ),
     })),
 
+  updateChatLastMessage: (chatId, info) =>
+    set((state) => {
+      const apply = <T extends PersonalChat | GroupChat>(c: T): T =>
+        c.id === chatId
+          ? {
+              ...c,
+              lastMessagePreview: info.preview,
+              lastMessageSenderName: info.senderName,
+              lastMessageSenderId: info.senderId,
+              lastMessageAt: info.lastMessageAt,
+            }
+          : c;
+      return {
+        personalChats: state.personalChats.map(apply),
+        groupChats: state.groupChats.map(apply),
+      };
+    }),
+
   markChatLoaded: (chatId) =>
     set((state) => ({
       loadedChats: { ...state.loadedChats, [chatId]: true },
     })),
+
+  removeChat: (chatId) =>
+    set((state) => {
+      const messages = { ...state.messages };
+      delete messages[chatId];
+      const loadedChats = { ...state.loadedChats };
+      delete loadedChats[chatId];
+      const wasSelected = state.selectedChatId === chatId;
+      return {
+        personalChats: state.personalChats.filter((c) => c.id !== chatId),
+        groupChats: state.groupChats.filter((c) => c.id !== chatId),
+        messages,
+        loadedChats,
+        selectedChatId: wasSelected ? null : state.selectedChatId,
+        chatType: wasSelected ? null : state.chatType,
+      };
+    }),
 
   setLoading: (loading) =>
     set({

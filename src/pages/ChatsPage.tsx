@@ -6,6 +6,7 @@ import api from '@/lib/axios';
 import { Mail, Search, Users, User } from 'lucide-react';
 import type { ChatEvent, PersonalChat, GroupChat } from '@/types/chat';
 import { ChatWindow } from '@/components/chat/ChatWindow';
+import { htmlToInlineText } from '@/lib/richText';
 
 export function ChatsPage() {
   const { user, token } = useAuthStore();
@@ -19,6 +20,7 @@ export function ChatsPage() {
     setMessages,
     markChatLoaded,
     updateChatUnreadCount,
+    updateChatLastMessage,
   } = useChatStore();
 
   const [activeTab, setActiveTab] = useState<'personal' | 'group'>('personal');
@@ -34,6 +36,13 @@ export function ChatsPage() {
       const unsubscribe = webSocketService.subscribeToChatMessages(chat.id, (event: ChatEvent) => {
         if (event.type !== 'MESSAGE_SENT') return;
         if (event.message?.messageType !== 'TEXT') return;
+        const message = event.message;
+        updateChatLastMessage(chat.id, {
+          preview: htmlToInlineText(message.content),
+          senderName: message.senderName,
+          senderId: message.senderId,
+          lastMessageAt: message.createdAt,
+        });
         const state = useChatStore.getState();
         if (chat.id === state.selectedChatId) return;
         const current = [...state.personalChats, ...state.groupChats].find((c) => c.id === chat.id);
@@ -52,6 +61,14 @@ export function ChatsPage() {
     const unsubscribe = webSocketService.subscribeToUserNotifications(userId, (notification: any) => {
       if (notification.type === 'new_chat') {
         loadChats().then(() => setupChatSubscriptions());
+      } else if (notification.type === 'chat_removed') {
+        const removedId = notification.chatId;
+        const unsub = chatSubscriptionsRef.current.get(removedId);
+        if (unsub) {
+          unsub();
+          chatSubscriptionsRef.current.delete(removedId);
+        }
+        useChatStore.getState().removeChat(removedId);
       }
     });
     if (unsubscribe !== null) {
@@ -201,6 +218,17 @@ export function ChatsPage() {
                 ? (chat as PersonalChat).counterpartName
                 : (chat as GroupChat).chatName;
 
+              const prefix = chat.lastMessageSenderId
+                ? chat.lastMessageSenderId === user?.id
+                  ? 'Вы'
+                  : chat.lastMessageSenderName
+                : null;
+              const previewText = chat.lastMessagePreview
+                ? prefix
+                  ? `${prefix}: ${chat.lastMessagePreview}`
+                  : chat.lastMessagePreview
+                : 'Нет сообщений';
+
               return (
                 <button
                   key={chat.id}
@@ -222,14 +250,7 @@ export function ChatsPage() {
 
                     <div className="flex-1 min-w-0">
                       <h3 className="font-medium text-gray-900 truncate">{name}</h3>
-                      <p className="text-sm text-gray-500 truncate">
-                        {chat.lastMessageAt
-                          ? new Date(chat.lastMessageAt).toLocaleTimeString('ru-RU', {
-                              hour: '2-digit',
-                              minute: '2-digit',
-                            })
-                          : 'Нет сообщений'}
-                      </p>
+                      <p className="text-sm text-gray-500 truncate">{previewText}</p>
                     </div>
 
                     {chat.unreadCount > 0 && (

@@ -59,6 +59,10 @@ public class ChatMessageService {
 		if (content.length() > 4096) {
 			throw new IllegalArgumentException("Сообщение не может быть длиннее 4096 символов");
 		}
+		String contentPlain = htmlToPlainText(content);
+		if (contentPlain.isBlank()) {
+			throw new IllegalArgumentException("Сообщение не может быть пустым");
+		}
 		if (!chatParticipantRepository.isUserInChat(chatId, senderId)) {
 			throw new IllegalArgumentException("Пользователь не является участником чата");
 		}
@@ -81,7 +85,7 @@ public class ChatMessageService {
 			.sender(sender)
 			.messageType(ChatMessageType.TEXT)
 			.content(content)
-			.contentPlain(content)
+			.contentPlain(contentPlain)
 			.replyTo(replyTo)
 			.build();
 
@@ -123,7 +127,7 @@ public class ChatMessageService {
 		}
 
 		message.setContent(newContent);
-		message.setContentPlain(newContent);
+		message.setContentPlain(htmlToPlainText(newContent));
 		message.setIsEdited(true);
 		message.setEditedAt(LocalDateTime.now());
 
@@ -325,6 +329,30 @@ public class ChatMessageService {
 		return readReceipts.stream()
 			.map(r -> r.getUser().getId())
 			.collect(Collectors.toList());
+	}
+
+	/**
+	 * Преобразует HTML-разметку сообщения в чистый текст для полнотекстового поиска и превью.
+	 *
+	 * @param html содержимое сообщения с HTML-форматированием
+	 * @return текст без тегов с переносами строк на месте блочных элементов
+	 */
+	static String htmlToPlainText(String html) {
+		if (html == null) {
+			return "";
+		}
+		String text = html
+			.replaceAll("(?i)<\\s*br\\s*/?>", "\n")
+			.replaceAll("(?i)</\\s*(p|div|li)\\s*>", "\n")
+			.replaceAll("<[^>]+>", "");
+		text = text
+			.replace("&nbsp;", " ")
+			.replace("&amp;", "&")
+			.replace("&lt;", "<")
+			.replace("&gt;", ">")
+			.replace("&quot;", "\"")
+			.replace("&#39;", "'");
+		return text.replaceAll("\\n{3,}", "\n\n").strip();
 	}
 
 	/**

@@ -15,6 +15,10 @@ public record PersonalChatDto(
 		@JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm'Z'", timezone = "UTC")
 		LocalDateTime lastMessageAt,
 
+		String lastMessagePreview,
+		String lastMessageSenderName,
+		UUID lastMessageSenderId,
+
 		Integer unreadCount,
 
 		@JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm'Z'", timezone = "UTC")

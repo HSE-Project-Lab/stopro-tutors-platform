@@ -5,6 +5,8 @@ import { useChatStore } from '@/store/chatStore';
 import { useAuthStore } from '@/store/authStore';
 import { webSocketService } from '@/lib/websocket';
 import type { ChatEvent, ChatMessage, MessageReadInfo } from '@/types/chat';
+import { RichTextEditor, type RichTextEditorHandle } from './RichTextEditor';
+import { sanitizeRichHtml, htmlToPlainText, htmlToInlineText, isRichHtmlEmpty } from '@/lib/richText';
 
 interface ChatWindowProps {
   chatId: string;
@@ -45,7 +47,7 @@ export function ChatWindow({ chatId }: ChatWindowProps) {
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<RichTextEditorHandle>(null);
   const unsubscribeRef = useRef<(() => void) | null>(null);
   const observerRef = useRef<IntersectionObserver | null>(null);
   const markedRef = useRef<Set<string>>(new Set());
@@ -270,9 +272,11 @@ export function ChatWindow({ chatId }: ChatWindowProps) {
   };
 
   const handleSendMessage = () => {
-    if (!input.trim()) return;
+    const html = sanitizeRichHtml(input);
+    if (isRichHtmlEmpty(html)) return;
     try {
-      webSocketService.sendMessage(chatId, input, replyTo?.id ?? null);
+      webSocketService.sendMessage(chatId, html, replyTo?.id ?? null);
+      inputRef.current?.clear();
       setInput('');
       setReplyTo(null);
     } catch (error) {
@@ -308,8 +312,10 @@ export function ChatWindow({ chatId }: ChatWindowProps) {
   };
 
   const saveEdit = () => {
-    if (!editingId || !editText.trim()) return;
-    webSocketService.editMessage(chatId, editingId, editText);
+    if (!editingId) return;
+    const html = sanitizeRichHtml(editText);
+    if (isRichHtmlEmpty(html)) return;
+    webSocketService.editMessage(chatId, editingId, html);
     setEditingId(null);
     setEditText('');
   };
@@ -341,7 +347,7 @@ export function ChatWindow({ chatId }: ChatWindowProps) {
   const bulkCopy = () => {
     const text = chatMessages
       .filter((m) => selectedIds.has(m.id))
-      .map((m) => m.content)
+      .map((m) => htmlToPlainText(m.content))
       .join('\n');
     handleCopy(text);
     exitSelection();
@@ -446,7 +452,7 @@ export function ChatWindow({ chatId }: ChatWindowProps) {
           <div className="w-0.5 self-stretch bg-blue-500 rounded-full flex-shrink-0" />
           <div className="flex-1 min-w-0">
             <p className="text-xs font-semibold text-blue-600">Закреплённые сообщения</p>
-            <p className="text-sm text-gray-700 truncate">{pinnedBarMessage.content}</p>
+            <p className="text-sm text-gray-700 truncate">{htmlToInlineText(pinnedBarMessage.content)}</p>
           </div>
           <Pin className="w-4 h-4 text-gray-400 flex-shrink-0" />
         </button>
@@ -468,7 +474,7 @@ export function ChatWindow({ chatId }: ChatWindowProps) {
           <Reply className="w-4 h-4 text-blue-600 flex-shrink-0" />
           <div className="flex-1 min-w-0 border-l-2 border-blue-500 pl-2">
             <p className="text-xs font-semibold text-blue-700">{replyTo.senderName}</p>
-            <p className="text-xs text-gray-600 truncate">{replyTo.content}</p>
+            <p className="text-xs text-gray-600 truncate">{htmlToInlineText(replyTo.content)}</p>
           </div>
           <button onClick={() => setReplyTo(null)} className="p-1 hover:bg-gray-200 rounded">
             <X className="w-4 h-4 text-gray-500" />
@@ -477,27 +483,26 @@ export function ChatWindow({ chatId }: ChatWindowProps) {
       )}
 
       <div className="p-4 border-t border-gray-200 bg-gray-50">
-        <div className="flex gap-2">
-          <input
-            ref={inputRef}
-            type="text"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-            placeholder="Напишите сообщение..."
-            maxLength={4096}
-            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
+        <div className="flex items-end gap-2">
+          <div className="flex-1 border border-gray-300 rounded-lg bg-white focus-within:ring-2 focus-within:ring-blue-500">
+            <RichTextEditor
+              ref={inputRef}
+              placeholder="Напишите сообщение..."
+              ariaLabel="Поле ввода сообщения"
+              onChange={setInput}
+              onEnter={handleSendMessage}
+            />
+          </div>
           <button
             onClick={handleSendMessage}
-            disabled={!input.trim()}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 transition-colors flex items-center gap-2"
+            disabled={isRichHtmlEmpty(input)}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 transition-colors flex items-center gap-2 flex-shrink-0"
           >
             <Send className="w-4 h-4" />
             Отправить
           </button>
         </div>
-        <div className="text-xs text-gray-500 mt-2">{input.length}/4096</div>
+        <div className="text-xs text-gray-500 mt-2">{htmlToPlainText(input).length}/4096</div>
       </div>
 
       {menu && (
@@ -522,7 +527,7 @@ export function ChatWindow({ chatId }: ChatWindowProps) {
             setMenu(null);
           }}
           onCopy={() => {
-            handleCopy(menu.msg.content);
+            handleCopy(htmlToPlainText(menu.msg.content));
             setMenu(null);
           }}
           onDelete={() => {
@@ -607,16 +612,17 @@ function MessageBubble({
 
         {isEditing ? (
           <div className="space-y-2">
-            <input
-              autoFocus
-              value={editText}
-              onChange={(e) => onEditTextChange(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') onSaveEdit();
-                if (e.key === 'Escape') onCancelEdit();
-              }}
-              className="w-full px-2 py-1 rounded text-gray-900 text-sm"
-            />
+            <div className="rounded bg-white text-gray-900 overflow-hidden">
+              <RichTextEditor
+                compact
+                autoFocus
+                initialHtml={message.content}
+                ariaLabel="Редактирование сообщения"
+                onChange={onEditTextChange}
+                onEnter={onSaveEdit}
+                onEscape={onCancelEdit}
+              />
+            </div>
             <div className="flex gap-2 text-xs">
               <button onClick={onSaveEdit} className="underline">
                 Сохранить
@@ -627,7 +633,10 @@ function MessageBubble({
             </div>
           </div>
         ) : (
-          <p className="break-words">{message.content}</p>
+          <div
+            className="rich-content"
+            dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(message.content) }}
+          />
         )}
 
         <div className="flex items-center justify-end gap-1 mt-1 text-xs">

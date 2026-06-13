@@ -26,6 +26,14 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, UUID> 
 
 	List<ChatMessage> findByChatIdAndCreatedAtAfterOrderByCreatedAtAsc(UUID chatId, LocalDateTime createdAt);
 
+	@Query("""
+	            SELECT cm FROM ChatMessage cm
+	            WHERE cm.chat.id = :chatId
+	            AND cm.isDeleted = FALSE
+	            ORDER BY cm.createdAt DESC
+	            """)
+	List<ChatMessage> findLatestMessage(@Param("chatId") UUID chatId, Pageable pageable);
+
 	@Query(value = """
             SELECT cm.* FROM chat_messages cm
             WHERE cm.chat_id = :chatId
