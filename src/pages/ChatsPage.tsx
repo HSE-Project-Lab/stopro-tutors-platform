@@ -37,8 +37,11 @@ export function ChatsPage() {
         if (event.type !== 'MESSAGE_SENT') return;
         if (event.message?.messageType !== 'TEXT') return;
         const message = event.message;
+        const plainPreview = htmlToInlineText(message.content);
+        const preview =
+          plainPreview || (message.attachments?.length ? `📎 ${message.attachments[0].fileName}` : '');
         updateChatLastMessage(chat.id, {
-          preview: htmlToInlineText(message.content),
+          preview,
           senderName: message.senderName,
           senderId: message.senderId,
           lastMessageAt: message.createdAt,

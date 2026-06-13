@@ -40,8 +40,9 @@ RUN addgroup -g 1001 -S appgroup && \
 # Копируем JAR из builder stage
 COPY --from=builder /app/target/*.jar app.jar
 
-# Устанавливаем права
-RUN chown -R appuser:appgroup /app
+# Каталог для загруженных файлов и права на /app
+RUN mkdir -p /app/uploads && \
+    chown -R appuser:appgroup /app
 
 # Переключаемся на непривилегированного пользователя
 USER appuser

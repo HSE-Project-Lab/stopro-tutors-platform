@@ -6,7 +6,7 @@ import {
   useCallback,
   useEffect,
 } from 'react';
-import { Bold, Italic, Underline, Strikethrough, List, ListOrdered, ListMinus } from 'lucide-react';
+import { Bold, Italic, Underline, Strikethrough, List, ListOrdered, ListMinus, Paperclip } from 'lucide-react';
 
 export interface RichTextEditorHandle {
   focus: () => void;
@@ -23,6 +23,7 @@ interface RichTextEditorProps {
   onChange?: (html: string) => void;
   onEnter?: () => void;
   onEscape?: () => void;
+  onAttach?: () => void;
 }
 
 type InlineFormat = 'bold' | 'italic' | 'underline' | 'strikeThrough';
@@ -40,7 +41,7 @@ function closestUl(): HTMLUListElement | null {
 }
 
 export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorProps>(
-  ({ initialHtml, placeholder, autoFocus, ariaLabel, compact, onChange, onEnter, onEscape }, ref) => {
+  ({ initialHtml, placeholder, autoFocus, ariaLabel, compact, onChange, onEnter, onEscape, onAttach }, ref) => {
     const editorRef = useRef<HTMLDivElement>(null);
     const [isEmpty, setIsEmpty] = useState(!initialHtml);
     const [active, setActive] = useState({
@@ -201,6 +202,12 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
           {tool('Маркированный список', active.ul && !plainListActive, () => applyUnorderedList(false), List)}
           {tool('Нумерованный список', active.ol, applyOrderedList, ListOrdered)}
           {tool('Список без маркеров', plainListActive, () => applyUnorderedList(true), ListMinus)}
+          {onAttach && (
+            <>
+              <span className="w-px h-5 bg-gray-200 mx-1" />
+              {tool('Прикрепить файл (до 10 МБ)', false, onAttach, Paperclip)}
+            </>
+          )}
         </div>
         <div className="relative">
           <div

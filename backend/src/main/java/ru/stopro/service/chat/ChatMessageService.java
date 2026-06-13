@@ -108,6 +108,79 @@ public class ChatMessageService {
 	}
 
 	/**
+	 * Отправить сообщение с вложением. Текст необязателен — допускается пустой, если есть файл.
+	 *
+	 * @param chatId     идентификатор чата
+	 * @param senderId   идентификатор отправителя
+	 * @param content    подпись к вложению (HTML, может быть пустой)
+	 * @param replyToId  идентификатор сообщения, на которое отвечают (необязательно)
+	 * @param fileUrl    URL сохранённого файла
+	 * @param fileType   тип вложения
+	 * @param fileName   исходное имя файла
+	 * @param fileSizeMb размер файла в мегабайтах
+	 * @return DTO созданного сообщения
+	 */
+	@Transactional
+	public ChatMessageDto sendMessageWithAttachment(UUID chatId, UUID senderId, String content, UUID replyToId,
+			String fileUrl, AttachmentType fileType, String fileName, Double fileSizeMb) {
+		String safeContent = content == null ? "" : content;
+		if (safeContent.length() > 4096) {
+			throw new IllegalArgumentException("Сообщение не может быть длиннее 4096 символов");
+		}
+		if (!chatParticipantRepository.isUserInChat(chatId, senderId)) {
+			throw new IllegalArgumentException("Пользователь не является участником чата");
+		}
+
+		Chat chat = chatRepository.findById(chatId)
+			.orElseThrow(() -> new IllegalArgumentException("Chat not found"));
+
+		User sender = userRepository.findById(senderId)
+			.orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+		ChatMessage replyTo = null;
+		if (replyToId != null) {
+			replyTo = chatMessageRepository.findById(replyToId)
+				.filter(m -> m.getChat().getId().equals(chatId))
+				.orElse(null);
+		}
+
+		ChatMessage message = ChatMessage.builder()
+			.chat(chat)
+			.sender(sender)
+			.messageType(ChatMessageType.TEXT)
+			.content(safeContent)
+			.contentPlain(htmlToPlainText(safeContent))
+			.replyTo(replyTo)
+			.build();
+
+		MessageAttachment attachment = MessageAttachment.builder()
+			.message(message)
+			.fileUrl(fileUrl)
+			.fileType(fileType)
+			.fileName(fileName)
+			.fileSizeMb(fileSizeMb)
+			.build();
+		message.getAttachments().add(attachment);
+
+		ChatMessage savedMessage = chatMessageRepository.save(message);
+
+		chat.setLastMessageAt(LocalDateTime.now());
+
+		if (chat.getStatus() == ChatStatus.PENDING_DELETION) {
+			chatInactivityWarningRepository
+				.findLatestActiveWarning(chatId, PageRequest.of(0, 1))
+				.forEach(w -> w.setWarningDismissed(true));
+			chat.setStatus(ChatStatus.ACTIVE);
+			log.info("Chat {} restored to ACTIVE after attachment from user {}", chatId, senderId);
+		}
+
+		chatRepository.save(chat);
+
+		log.info("Attachment message sent to chat {} by user {}", chatId, senderId);
+		return convertToDto(savedMessage, senderId);
+	}
+
+	/**
 	 * Редактировать сообщение.
 	 */
 	@Transactional
@@ -363,10 +436,10 @@ public class ChatMessageService {
 			return "Сообщение удалено";
 		}
 		String source = message.getContentPlain() != null ? message.getContentPlain() : message.getContent();
-		if (source == null) {
-			return "";
+		source = source != null ? source.strip() : "";
+		if (source.isEmpty() && message.getAttachments() != null && !message.getAttachments().isEmpty()) {
+			return "📎 " + message.getAttachments().get(0).getFileName();
 		}
-		source = source.strip();
 		return source.length() > 120 ? source.substring(0, 120) + "…" : source;
 	}
 

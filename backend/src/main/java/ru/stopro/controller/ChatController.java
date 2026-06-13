@@ -8,15 +8,24 @@ import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 import jakarta.validation.Valid;
 
 import ru.stopro.domain.entity.Chat;
 import ru.stopro.domain.entity.User;
+import ru.stopro.domain.enums.AttachmentType;
 import ru.stopro.dto.chat.*;
 import ru.stopro.repository.UserRepository;
 import ru.stopro.service.chat.ChatMessageService;
@@ -47,9 +56,12 @@ import ru.stopro.service.chat.ChatService;
 @CrossOrigin(origins = {"http://localhost:3000", "http://localhost:5173"})
 public class ChatController {
 
+	private static final long MAX_ATTACHMENT_BYTES = 10L * 1024 * 1024;
+
 	private final ChatService chatService;
 	private final ChatMessageService chatMessageService;
 	private final UserRepository userRepository;
+	private final SimpMessagingTemplate messagingTemplate;
 
 	/**
 	 * Получить или создать личный чат между текущим учителем и студентом.
@@ -166,6 +178,74 @@ public class ChatController {
 		UUID teacherId = extractUserIdFromAuth(authentication);
 		chatService.removeStudentFromGroupChat(chatId, studentId, teacherId);
 		return ResponseEntity.ok().build();
+	}
+
+	/**
+	 * Отправить сообщение с вложением (файл размером до 10 МБ).
+	 */
+	@PostMapping(value = "/{chatId}/messages/attachment", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+	@PreAuthorize("isAuthenticated()")
+	public ResponseEntity<ChatMessageDto> sendAttachment(
+		@PathVariable UUID chatId,
+		@RequestParam("file") MultipartFile file,
+		@RequestParam(value = "content", required = false) String content,
+		@RequestParam(value = "replyToId", required = false) UUID replyToId,
+		Authentication authentication) {
+
+		UUID senderId = extractUserIdFromAuth(authentication);
+		chatService.requireChatAccess(chatId, senderId);
+
+		if (file == null || file.isEmpty()) {
+			return ResponseEntity.badRequest().build();
+		}
+		if (file.getSize() > MAX_ATTACHMENT_BYTES) {
+			return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE).build();
+		}
+
+		try {
+			String fileUrl = storeAttachment(file);
+			AttachmentType type = resolveAttachmentType(file.getContentType());
+			String fileName = file.getOriginalFilename() != null ? file.getOriginalFilename() : "file";
+			Double sizeMb = Math.round(file.getSize() / 1024.0 / 1024.0 * 100.0) / 100.0;
+
+			ChatMessageDto dto = chatMessageService.sendMessageWithAttachment(
+				chatId, senderId, content, replyToId, fileUrl, type, fileName, sizeMb);
+
+			messagingTemplate.convertAndSend("/topic/chat/" + chatId, ChatEvent.sent(dto));
+			return ResponseEntity.ok(dto);
+		} catch (IOException e) {
+			log.error("Ошибка при сохранении вложения", e);
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+		}
+	}
+
+	private String storeAttachment(MultipartFile file) throws IOException {
+		Path uploadDir = Paths.get("uploads").toAbsolutePath().normalize();
+		if (!Files.exists(uploadDir)) {
+			Files.createDirectories(uploadDir);
+		}
+		String original = file.getOriginalFilename();
+		String extension = "";
+		if (original != null && original.contains(".")) {
+			extension = original.substring(original.lastIndexOf("."));
+		}
+		String newName = UUID.randomUUID() + extension;
+		Path target = uploadDir.resolve(newName);
+		file.transferTo(target.toFile());
+		return "/api/v1/uploads/" + newName;
+	}
+
+	private AttachmentType resolveAttachmentType(String contentType) {
+		if (contentType == null) {
+			return AttachmentType.FILE;
+		}
+		if (contentType.startsWith("image/")) {
+			return AttachmentType.IMAGE;
+		}
+		if (contentType.startsWith("video/")) {
+			return AttachmentType.VIDEO;
+		}
+		return AttachmentType.FILE;
 	}
 
 	/**

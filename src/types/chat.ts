@@ -58,7 +58,7 @@ export interface MessageReadInfo {
 export interface MessageAttachment {
   id: string;
   fileUrl: string;
-  fileType: 'IMAGE' | 'VIDEO';
+  fileType: 'IMAGE' | 'VIDEO' | 'FILE';
   fileName: string;
   fileSizeMb: number | null;
   width: number | null;

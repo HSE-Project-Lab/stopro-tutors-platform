@@ -7,6 +7,8 @@ public enum AttachmentType {
 	/** Изображение */
 	IMAGE,
 	/** Видео */
-	VIDEO
+	VIDEO,
+	/** Произвольный файл (документ, архив и т.п.) */
+	FILE
 }
 
