@@ -56,8 +56,8 @@ spring:
   # File Upload
   servlet:
     multipart:
-      max-file-size: 50MB
-      max-request-size: 50MB
+      max-file-size: 10MB
+      max-request-size: 60MB
 
 # Server Configuration
 server:

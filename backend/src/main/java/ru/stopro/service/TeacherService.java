@@ -9,6 +9,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import ru.stopro.domain.entity.GroupChat;
 import ru.stopro.domain.entity.StudyGroup;
 import ru.stopro.domain.entity.User;
 import ru.stopro.domain.enums.UserRole;
@@ -17,6 +18,8 @@ import ru.stopro.dto.student.StudentCredentialsDto;
 import ru.stopro.dto.student.StudentDto;
 import ru.stopro.repository.StudyGroupRepository;
 import ru.stopro.repository.UserRepository;
+import ru.stopro.repository.chat.GroupChatRepository;
+import ru.stopro.service.chat.ChatService;
 
 @Service
 @RequiredArgsConstructor
@@ -24,7 +27,9 @@ public class TeacherService {
 
 	private final UserRepository userRepository;
 	private final StudyGroupRepository studyGroupRepository;
+	private final GroupChatRepository groupChatRepository;
 	private final PasswordEncoder passwordEncoder;
+	private final ChatService chatService;
 
 	private static final SecureRandom RANDOM = new SecureRandom();
 	private static final String PASSWORD_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789";
@@ -32,23 +37,22 @@ public class TeacherService {
 
 	@Transactional(readOnly = true)
 	public List<StudentDto> getStudentsByTeacherId(UUID teacherUserId) {
-		Map<UUID, UUID> studentToGroup = new HashMap<>();
+		Map<UUID, List<UUID>> studentToGroups = new LinkedHashMap<>();
 		for (StudyGroup g : studyGroupRepository.findByTeacherId(teacherUserId)) {
 			for (User s : g.getStudents()) {
 				if (!Boolean.TRUE.equals(s.getIsDeleted())) {
-					studentToGroup.putIfAbsent(s.getId(), g.getId());
+					studentToGroups.computeIfAbsent(s.getId(), k -> new ArrayList<>()).add(g.getId());
 				}
 			}
 		}
-		Set<UUID> fromGroups = studentToGroup.keySet();
 		List<StudentDto> result = new ArrayList<>();
 		for (User s : userRepository.findByTeacherIdAndRoleAndIsDeletedFalse(teacherUserId, UserRole.STUDENT)) {
-			result.add(StudentDto.fromEntity(s, studentToGroup.get(s.getId())));
+			result.add(StudentDto.fromEntity(s, studentToGroups.getOrDefault(s.getId(), new ArrayList<>())));
 		}
-		for (UUID studentId : fromGroups) {
+		for (UUID studentId : studentToGroups.keySet()) {
 			if (result.stream().noneMatch(dto -> dto.getId().equals(studentId))) {
 				userRepository.findById(studentId)
-						.ifPresent(s -> result.add(StudentDto.fromEntity(s, studentToGroup.get(studentId))));
+						.ifPresent(s -> result.add(StudentDto.fromEntity(s, studentToGroups.get(studentId))));
 			}
 		}
 		return result;
@@ -67,17 +71,12 @@ public class TeacherService {
 		User student = User.builder().username(username).passwordHash(passwordEncoder.encode(rawPassword))
 				.role(UserRole.STUDENT).fullName(fullName).teacher(teacher).dataConsentStatus(false).build();
 		userRepository.save(student);
-		UUID groupId = dto.getGroupId();
-		if (groupId != null) {
-			StudyGroup group = studyGroupRepository.findById(groupId)
-					.orElseThrow(() -> new RuntimeException("Группа не найдена"));
-			if (!group.getTeacher().getId().equals(teacherUserId)) {
-				throw new RuntimeException("Группа принадлежит другому учителю");
-			}
-			group.getStudents().add(student);
-			studyGroupRepository.save(group);
+		chatService.getOrCreatePersonalChat(teacherUserId, student.getId());
+		List<UUID> groupIds = resolveRequestedGroupIds(dto);
+		for (UUID groupId : groupIds) {
+			addStudentToGroupInternal(teacherUserId, student, groupId);
 		}
-		return StudentCreateResponse.builder().student(StudentDto.fromEntity(student, groupId)).credentials(
+		return StudentCreateResponse.builder().student(StudentDto.fromEntity(student, groupIds)).credentials(
 				StudentCredentialsDto.builder().fullName(fullName).username(username).password(rawPassword).build())
 				.build();
 	}
@@ -92,28 +91,25 @@ public class TeacherService {
 			student.setFullName(dto.getFullName().trim());
 		}
 		userRepository.save(student);
-		UUID newGroupId = dto.getGroupId();
-		UUID currentGroupId = findStudentGroupId(teacherUserId, studentId);
-		if (Objects.equals(currentGroupId, newGroupId)) {
-			return StudentDto.fromEntity(student, currentGroupId);
+
+		if (dto.getGroupIds() == null && dto.getGroupId() == null) {
+			return StudentDto.fromEntity(student, currentGroupIds(teacherUserId, studentId));
 		}
-		if (currentGroupId != null) {
-			StudyGroup old = studyGroupRepository.findById(currentGroupId).orElse(null);
-			if (old != null) {
-				old.getStudents().removeIf(s -> s.getId().equals(studentId));
-				studyGroupRepository.save(old);
+
+		List<UUID> desired = resolveRequestedGroupIds(dto);
+		List<UUID> current = currentGroupIds(teacherUserId, studentId);
+
+		for (UUID groupId : current) {
+			if (!desired.contains(groupId)) {
+				removeStudentFromGroupInternal(teacherUserId, student, groupId);
 			}
 		}
-		if (newGroupId != null) {
-			StudyGroup group = studyGroupRepository.findById(newGroupId)
-					.orElseThrow(() -> new RuntimeException("Группа не найдена"));
-			if (!group.getTeacher().getId().equals(teacherUserId)) {
-				throw new RuntimeException("Группа принадлежит другому учителю");
+		for (UUID groupId : desired) {
+			if (!current.contains(groupId)) {
+				addStudentToGroupInternal(teacherUserId, student, groupId);
 			}
-			group.getStudents().add(student);
-			studyGroupRepository.save(group);
 		}
-		return StudentDto.fromEntity(student, newGroupId);
+		return StudentDto.fromEntity(student, desired);
 	}
 
 	@Transactional
@@ -122,12 +118,11 @@ public class TeacherService {
 		if (!isTeacherOfStudent(teacherUserId, student)) {
 			throw new RuntimeException("Нет прав на удаление этого ученика");
 		}
-		for (StudyGroup g : studyGroupRepository.findByTeacherId(teacherUserId)) {
-			g.getStudents().removeIf(s -> s.getId().equals(studentId));
-			studyGroupRepository.save(g);
+		for (UUID groupId : currentGroupIds(teacherUserId, studentId)) {
+			removeStudentFromGroupInternal(teacherUserId, student, groupId);
 		}
+		chatService.deletePersonalChat(teacherUserId, studentId);
 		student.setTeacher(null);
-		userRepository.save(student);
 		student.setIsDeleted(true);
 		userRepository.save(student);
 	}
@@ -140,13 +135,56 @@ public class TeacherService {
 				.anyMatch(g -> g.getStudents().stream().anyMatch(s -> s.getId().equals(student.getId())));
 	}
 
-	private UUID findStudentGroupId(UUID teacherId, UUID studentId) {
-		for (StudyGroup g : studyGroupRepository.findByTeacherId(teacherId)) {
+	/** Список ID групп учителя, в которых сейчас состоит ученик. */
+	private List<UUID> currentGroupIds(UUID teacherUserId, UUID studentId) {
+		List<UUID> ids = new ArrayList<>();
+		for (StudyGroup g : studyGroupRepository.findByTeacherId(teacherUserId)) {
 			if (g.getStudents().stream().anyMatch(s -> s.getId().equals(studentId))) {
-				return g.getId();
+				ids.add(g.getId());
 			}
 		}
-		return null;
+		return ids;
+	}
+
+	/** Желаемый набор групп из запроса: предпочитает groupIds, иначе одиночный groupId. */
+	private List<UUID> resolveRequestedGroupIds(StudentDto dto) {
+		if (dto.getGroupIds() != null) {
+			return new ArrayList<>(new LinkedHashSet<>(dto.getGroupIds()));
+		}
+		if (dto.getGroupId() != null) {
+			return new ArrayList<>(List.of(dto.getGroupId()));
+		}
+		return new ArrayList<>();
+	}
+
+	/** Добавляет ученика в группу (и в связанный групповой чат), не трогая остальные группы. */
+	private void addStudentToGroupInternal(UUID teacherUserId, User student, UUID groupId) {
+		StudyGroup group = studyGroupRepository.findById(groupId)
+				.orElseThrow(() -> new RuntimeException("Группа не найдена"));
+		if (!group.getTeacher().getId().equals(teacherUserId)) {
+			throw new RuntimeException("Группа принадлежит другому учителю");
+		}
+		Optional<GroupChat> chat = groupChatRepository.findByStudyGroupId(groupId);
+		if (chat.isPresent()) {
+			chatService.addStudentToGroupChat(chat.get().getId(), student.getId(), teacherUserId);
+		} else if (group.getStudents().stream().noneMatch(s -> s.getId().equals(student.getId()))) {
+			group.getStudents().add(student);
+			studyGroupRepository.save(group);
+		}
+	}
+
+	/** Убирает ученика из одной группы (и из связанного группового чата), не трогая остальные. */
+	private void removeStudentFromGroupInternal(UUID teacherUserId, User student, UUID groupId) {
+		Optional<GroupChat> chat = groupChatRepository.findByStudyGroupId(groupId);
+		if (chat.isPresent()) {
+			chatService.removeStudentFromGroupChat(chat.get().getId(), student.getId(), teacherUserId);
+			return;
+		}
+		StudyGroup group = studyGroupRepository.findById(groupId).orElse(null);
+		if (group != null) {
+			group.getStudents().removeIf(s -> s.getId().equals(student.getId()));
+			studyGroupRepository.save(group);
+		}
 	}
 
 	private String generateUniqueUsername(String fullName) {

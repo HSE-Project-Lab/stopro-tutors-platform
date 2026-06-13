@@ -99,7 +99,7 @@ export function StudentsPage() {
   const [editStudentForm, setEditStudentForm] = useState({
     firstName: '',
     lastName: '',
-    groupId: '',
+    groupIds: [] as string[],
     grade: '11',
     targetScore: '70',
   });
@@ -208,16 +208,20 @@ export function StudentsPage() {
       .join('');
   };
 
+  const groupIdsOf = (s: Student): string[] =>
+    s.groupIds && s.groupIds.length > 0 ? s.groupIds : s.groupId ? [s.groupId] : [];
+
   const handleConfirmRemove = async () => {
     if (!studentToRemove) return;
     const sid = studentToRemove.id;
     const name = studentToRemove.fullName || studentToRemove.username || sid;
-    const prevGroupId = studentToRemove.groupId || null;
+    const removedGroupId = showGroupDetail?.id || studentToRemove.groupId || null;
+    const remaining = groupIdsOf(studentToRemove).filter((id) => id !== removedGroupId);
     try {
-      await api.put(`/teacher/students/${sid}`, { groupId: null });
+      await api.put(`/teacher/students/${sid}`, { groupIds: remaining });
       await refreshData();
       setStudentToRemove(null);
-      setLastRemoval({ studentId: sid, groupId: prevGroupId, name });
+      setLastRemoval({ studentId: sid, groupId: removedGroupId, name });
       if (undoTimerRef.current) clearTimeout(undoTimerRef.current);
       undoTimerRef.current = window.setTimeout(() => {
         setLastRemoval(null);
@@ -232,8 +236,14 @@ export function StudentsPage() {
   const handleUndoRemoval = async () => {
     if (!lastRemoval) return;
     try {
+      const current = students.find((s) => s.id === lastRemoval.studentId);
+      const next = lastRemoval.groupId
+        ? Array.from(new Set([...(current ? groupIdsOf(current) : []), lastRemoval.groupId]))
+        : current
+          ? groupIdsOf(current)
+          : [];
       await api.put(`/teacher/students/${lastRemoval.studentId}`, {
-        groupId: lastRemoval.groupId,
+        groupIds: next,
       });
       await refreshData();
       setLastRemoval(null);
@@ -306,7 +316,7 @@ export function StudentsPage() {
   const confirmDeleteGroup = async () => {
     if (!showDeleteGroupModal) return;
     const group = showDeleteGroupModal;
-    const studentIds = students.filter((s) => s.groupId === group.id).map((s) => s.id);
+    const studentIds = students.filter((s) => groupIdsOf(s).includes(group.id)).map((s) => s.id);
     try {
       await api.delete(`/groups/${group.id}`);
       setGroups((prev) => prev.filter((g) => g.id !== group.id));
@@ -355,7 +365,7 @@ export function StudentsPage() {
     setEditStudentForm({
       firstName: nameParts[0] || '',
       lastName: nameParts.slice(1).join(' ') || '',
-      groupId: student.groupId || '',
+      groupIds: groupIdsOf(student),
       grade: String(student.grade ?? '11'),
       targetScore: String(student.targetScore ?? '70'),
     });
@@ -370,7 +380,7 @@ export function StudentsPage() {
     try {
       await api.put(`/teacher/students/${editingStudent.id}`, {
         fullName,
-        groupId: editStudentForm.groupId || null,
+        groupIds: editStudentForm.groupIds,
         grade: parseInt(editStudentForm.grade) || 11,
         targetScore: parseInt(editStudentForm.targetScore) || 70,
       });
@@ -395,8 +405,15 @@ export function StudentsPage() {
       const targetGroupId = addOriginGroupId || newStudent.groupId || '';
       if (addMode === 'existing') {
         if (!selectedExistingStudentId) return alert('Выберите ученика');
+        const existing = students.find((s) => s.id === selectedExistingStudentId);
+        const next = Array.from(
+          new Set([
+            ...(existing ? groupIdsOf(existing) : []),
+            ...(targetGroupId ? [targetGroupId] : []),
+          ])
+        );
         await api.put(`/teacher/students/${selectedExistingStudentId}`, {
-          groupId: targetGroupId || null,
+          groupIds: next,
         });
       } else {
         const fullName = `${newStudent.firstName.trim()} ${newStudent.lastName.trim()}`;
@@ -404,7 +421,7 @@ export function StudentsPage() {
 
         const response = await api.post<StudentCreateResponse>('/teacher/students', {
           fullName,
-          groupId: targetGroupId || null,
+          groupIds: targetGroupId ? [targetGroupId] : [],
         });
 
         if (response.data?.credentials) {
@@ -470,7 +487,7 @@ export function StudentsPage() {
   const filteredStudents = students.filter((student) => {
     const fullName = (student.fullName || '').toLowerCase();
     if (searchQuery && !fullName.includes(searchQuery.toLowerCase())) return false;
-    if (selectedGroup && student.groupId !== selectedGroup) return false;
+    if (selectedGroup && !groupIdsOf(student).includes(selectedGroup)) return false;
     return true;
   });
 
@@ -685,15 +702,38 @@ export function StudentsPage() {
                 }
               />
             </div>
-            <Select
-              label="Группа"
-              options={[
-                { value: '', label: 'Без группы' },
-                ...groups.map((g) => ({ value: g.id, label: g.name })),
-              ]}
-              value={editStudentForm.groupId}
-              onChange={(value) => setEditStudentForm((prev) => ({ ...prev, groupId: value }))}
-            />
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">Группы</label>
+              {groups.length === 0 ? (
+                <p className="text-sm text-slate-400">Групп пока нет</p>
+              ) : (
+                <div className="space-y-1 max-h-40 overflow-y-auto rounded-lg border border-slate-200 p-2">
+                  {groups.map((g) => {
+                    const checked = editStudentForm.groupIds.includes(g.id);
+                    return (
+                      <label
+                        key={g.id}
+                        className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-slate-50 cursor-pointer text-sm text-slate-700"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={() =>
+                            setEditStudentForm((prev) => ({
+                              ...prev,
+                              groupIds: checked
+                                ? prev.groupIds.filter((id) => id !== g.id)
+                                : [...prev.groupIds, g.id],
+                            }))
+                          }
+                        />
+                        {g.name}
+                      </label>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
             <div className="grid grid-cols-2 gap-4">
               <Select
                 label="Класс"
@@ -843,7 +883,10 @@ export function StudentsPage() {
                   label="Ученик"
                   placeholder="Выберите ученика..."
                   options={students
-                    .filter((s) => s.groupId !== (addOriginGroupId || newStudent.groupId))
+                    .filter((s) => {
+                      const target = addOriginGroupId || newStudent.groupId;
+                      return !target || !groupIdsOf(s).includes(target);
+                    })
                     .map((s) => ({
                       value: s.id,
                       label: s.fullName || s.username || 'Без имени',
@@ -987,7 +1030,7 @@ export function StudentsPage() {
 
   if (showStudentDetail) {
     const progress = getStudentProgress(showStudentDetail.id);
-    const group = groups.find((g) => g.id === showStudentDetail.groupId);
+    const studentGroups = groups.filter((g) => groupIdsOf(showStudentDetail).includes(g.id));
 
     return (
       <>
@@ -1004,10 +1047,14 @@ export function StudentsPage() {
               <div className="flex-1">
                 <h1 className="text-2xl font-bold text-slate-900">{showStudentDetail.fullName}</h1>
                 <p className="text-slate-500">{showStudentDetail.username}</p>
-                {group && (
-                  <Badge variant="info" className="mt-2">
-                    {group.name}
-                  </Badge>
+                {studentGroups.length > 0 && (
+                  <div className="flex flex-wrap gap-1 mt-2">
+                    {studentGroups.map((g) => (
+                      <Badge key={g.id} variant="info">
+                        {g.name}
+                      </Badge>
+                    ))}
+                  </div>
                 )}
               </div>
               <div className="flex gap-2">
@@ -1083,7 +1130,7 @@ export function StudentsPage() {
   }
 
   if (showGroupDetail) {
-    const groupStudents = students.filter((s) => s.groupId === showGroupDetail.id);
+    const groupStudents = students.filter((s) => groupIdsOf(s).includes(showGroupDetail.id));
 
     return (
       <>
@@ -1270,7 +1317,9 @@ export function StudentsPage() {
             )}
             {filteredStudents.map((student) => {
               const progress = getStudentProgress(student.id);
-              const group = groups.find((g) => g.id === student.groupId);
+              const studentGroupNames = groups
+                .filter((g) => groupIdsOf(student).includes(g.id))
+                .map((g) => g.name);
 
               return (
                 <Card
@@ -1305,9 +1354,21 @@ export function StudentsPage() {
                   </div>
 
                   <div className="space-y-3">
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-slate-500">Группа</span>
-                      <Badge variant="info">{group?.name || 'Без группы'}</Badge>
+                    <div className="flex items-center justify-between text-sm gap-2">
+                      <span className="text-slate-500 shrink-0">
+                        {studentGroupNames.length > 1 ? 'Группы' : 'Группа'}
+                      </span>
+                      {studentGroupNames.length === 0 ? (
+                        <Badge variant="info">Без группы</Badge>
+                      ) : (
+                        <div className="flex flex-wrap gap-1 justify-end">
+                          {studentGroupNames.map((n) => (
+                            <Badge key={n} variant="info">
+                              {n}
+                            </Badge>
+                          ))}
+                        </div>
+                      )}
                     </div>
                     <div className="flex items-center justify-between text-sm">
                       <span className="text-slate-500">Класс</span>
@@ -1363,7 +1424,7 @@ export function StudentsPage() {
               </div>
             )}
             {filteredGroups.map((group) => {
-              const groupStudents = students.filter((s) => s.groupId === group.id);
+              const groupStudents = students.filter((s) => groupIdsOf(s).includes(group.id));
               const avgSuccess =
                 groupStudents.length > 0
                   ? Math.round(

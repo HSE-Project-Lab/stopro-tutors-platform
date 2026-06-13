@@ -17,7 +17,7 @@ export function Layout({ children }: LayoutProps) {
       <Header />
       <main
         className={cn(
-          'pt-16 min-h-screen transition-all duration-300',
+          'pt-16 min-h-screen transition-all duration-300 flex flex-col',
           sidebarOpen ? 'pl-64' : 'pl-20'
         )}
       >

@@ -367,3 +367,54 @@ html.theme-dark ::-webkit-scrollbar-thumb:hover {
 .animate-fade-in {
   animation: fadeIn 0.3s ease-out forwards;
 }
+
+.rich-content {
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+.rich-content ul,
+.rich-content ol {
+  margin: 0.25rem 0;
+  padding-left: 1.5rem;
+}
+
+.rich-content ul {
+  list-style: disc;
+}
+
+.rich-content ol {
+  list-style: decimal;
+}
+
+.rich-content ul.cw-list-plain {
+  list-style: none;
+  padding-left: 1rem;
+}
+
+.rich-content ul.cw-list-plain > li {
+  position: relative;
+}
+
+.rich-content ul.cw-list-plain > li::before {
+  content: '–';
+  position: absolute;
+  left: -1rem;
+}
+
+.rich-content li {
+  margin: 0.1rem 0;
+}
+
+.rich-content u {
+  text-decoration: underline;
+}
+
+.rich-content s,
+.rich-content strike {
+  text-decoration: line-through;
+}
+
+.rich-editor {
+  min-height: 2.5rem;
+}
